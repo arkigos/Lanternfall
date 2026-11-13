@@ -102,7 +102,7 @@
   }
 
   DEFS.angler = {
-    name: 'The False Light', title: 'Not every glow down here is a piece of the Sun', boss: true,
+    name: 'The False Light', title: 'Not every glow down here is a piece of the Lantern', boss: true,
     hp: 1500, speed: 58, r: 31, dmg: 9.5, embers: 0, glass: 0, phases: [0.66, 0.33],
     eyes: [[8, -13, 2.2], [8, 13, 2.2]], eyeColor: '200,255,160',
     hideEyes(e) { return e.dived; },
@@ -547,7 +547,7 @@
   };
 
   DEFS.bearer = {
-    name: 'The First Bearer', title: 'The first Lamplighter to reach the Sun. It stayed', boss: true,
+    name: 'The First Bearer', title: 'The first Lamplighter to reach the Lantern. It stayed', boss: true,
     hp: 4600, speed: 128, r: 18, dmg: 14, embers: 0, glass: 0, phases: [0.66, 0.33],
     eyes: [[6, -2.2, 1.3], [6, 2.2, 1.3]], eyeColor: '255,255,255',
     init(e) { B.bossInit(e); e.orbit = 1; e.orbitT = 2; e.mirrorT = 4; e.pDash = false; e.pFlare = 0; e.told = false; e.k = 0; e.lx = 0; e.ly = 0; e.aim = 0; e.shotT = 0; e.ghosts = []; e.fl = 0; },

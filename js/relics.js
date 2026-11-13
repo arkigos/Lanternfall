@@ -22,13 +22,13 @@
   // Starting lanterns: each reshapes the base stats before relics apply.
   LF.LANTERNS = [
     { id: 'tin', name: 'Tin Lantern', glyph: 'candle', color: '#ffd28a', desc: 'A steady, honest flame. No tricks, no weaknesses.', unlockText: '', unlocked: () => true, stats() {} },
-    { id: 'hunter', name: "Hunter's Lamp", glyph: 'arrow', color: '#fff2cc', desc: 'Slow, heavy bolts that pierce. Half the fire rate, more than double the damage.', unlockText: 'Reach depth 4', unlocked: m => m.best >= 4,
+    { id: 'hunter', name: "Hunter's Lamp", glyph: 'arrow', color: '#fff2cc', desc: 'Slow, heavy bolts that pierce. Half the fire rate, more than double the damage.', unlockText: 'Reach Level 4', unlocked: m => m.best >= 4,
       stats(s) { s.fireRate *= 0.5; s.damage *= 2.3; s.pierce += 1; s.boltSpeed *= 1.3; s.boltSize *= 1.35; s.boltColor = '#fff6dc'; } },
     { id: 'votive', name: 'Votive Candle', glyph: 'flame', color: '#ffb36b', desc: 'A small bright flame. Quick hands, quick feet and a fast flare, but only 70 light.', unlockText: 'Fell a great shadow', unlocked: m => (m.bosses || 0) >= 1,
       stats(s) { s.maxLight -= 30; s.fireRate *= 1.3; s.speed *= 1.14; s.flareCd *= 0.6; s.dashCd *= 0.8; s.boltColor = '#ffd0a0'; } },
     { id: 'miner', name: "Miner's Lamp", glyph: 'split', color: '#ffc98a', desc: 'A wide, short blast of four bolts. Burns bright and close, with 130 light.', unlockText: 'Unmake 300 creatures in total', unlocked: m => (m.kills || 0) >= 300,
       stats(s) { s.multishot += 3; s.damage *= 0.5; s.boltLife *= 0.42; s.maxLight += 30; s.spread = 0.19; s.fireRate *= 0.9; s.boltColor = '#ffd9a0'; } },
-    { id: 'storm', name: 'Chain Lantern', glyph: 'chain', color: '#ffb070', desc: 'Its fire leaps from creature to creature along links of flame, and cinders of the Sun fall where its light rests. Weaker single hits.', unlockText: 'Reach the dawn', unlocked: m => (m.wins || 0) >= 1,
+    { id: 'storm', name: 'Chain Lantern', glyph: 'chain', color: '#ffb070', desc: 'Its fire leaps from creature to creature along links of flame, and cinders of the Lantern fall where its light rests. Weaker single hits.', unlockText: 'Finish a Depth', unlocked: m => (m.wins || 0) >= 1,
       stats(s) { s.chain += 2; s.damage *= 0.78; s.storm += 1; s.flareDmg *= 1.4; s.boltColor = '#ffcf9a'; } },
   ];
   LF.LANTERN = {}; for (const l of LF.LANTERNS) LF.LANTERN[l.id] = l;
@@ -87,7 +87,7 @@
     R('ricochet', 'Rebounding Spark', U, 2, 'bolt', '#ffc98a', 'Bolts bounce off walls once more.', (s, n) => { s.bounce += n; }),
     R('ray', 'Piercing Ray', U, 2, 'arrow', '#ffe08a', 'Bolts pierce one more enemy.', (s, n) => { s.pierce += n; }),
     R('afterglow', 'Afterglow', U, 2, 'flame', '#ff8a3d', 'Dashing leaves a trail of fire that burns enemies.', (s, n) => { s.afterglow += n; }),
-    R('sunshard', 'Sun Shard', U, 2, 'sun', '#ffcf5c', 'Flare deals 60% more damage in a 20% larger area.', (s, n) => { s.flareDmg *= 1 + 0.6 * n; s.flareRadius *= 1 + 0.2 * n; }),
+    R('sunshard', 'Lantern Shard', U, 2, 'sun', '#ffcf5c', 'Flare deals 60% more damage in a 20% larger area.', (s, n) => { s.flareDmg *= 1 + 0.6 * n; s.flareRadius *= 1 + 0.2 * n; }),
     R('cinderskin', 'Cinder Skin', U, 2, 'shield', '#ff7b54', 'When hit, erupt in flame: damages and repels nearby enemies.', (s, n) => { s.cinderSkin += n; }),
     R('hungry', 'Hungry Flame', U, 2, 'skull', '#ff5d5d', 'Kills restore 1.2 light. -10 maximum light.', (s, n) => { s.killHeal += 1.2 * n; s.maxLight -= 10 * n; }),
     R('vigil', 'Candle of Vigil', U, 1, 'candle', '#fff1c1', 'Stand still for a moment: +35% damage and +15% light radius.', (s, n) => { s.vigil += n; }),
@@ -126,7 +126,7 @@
     R('wildfire', 'Wildfire', X, 1, 'flame', '#ff4d1f', 'Bolts ignite. Burning enemies explode when they die, spreading the fire.', (s) => { s.wildfire += 1; s.ignite += 1; }),
     R('prismcore', 'Bursting Coal', X, 1, 'split', '#ffb070', 'Bolts split in two on their first hit.', (s) => { s.split += 1; }),
     R('hearth', 'Heart of the Hearth', X, 1, 'heart', '#ffb07a', 'Slowly regain light whenever no enemy is hunting you.', (s) => { s.hearth += 1; }),
-    R('storm', 'Cinderfall', X, 1, 'flame', '#ffb347', 'Every 3 seconds a cinder of the Sun falls on an enemy inside your light.', (s) => { s.storm += 1; }),
+    R('storm', 'Cinderfall', X, 1, 'flame', '#ffb347', 'Every 3 seconds a cinder of the Lantern falls on an enemy inside your light.', (s) => { s.storm += 1; }),
     R('phoenix', 'Phoenix Feather', X, 1, 'feather', '#ff9140', 'Once per floor, when your light dies it rekindles at 35%.', (s) => { s.phoenix += 1; }),
     R('lastlight', 'Last Light', S, 1, 'hourglass', '#e6dcff', 'Below 25% light, enemies move 35% slower and you take 25% less damage.', (s) => { s.lastLight += 1; }),
     R('overburn', 'Overburn', X, 1, 'flame', '#fff0d0', '+70% damage, but every shot burns a little of your light.', (s) => { s.overburn += 1; s.damage *= 1.7; }),

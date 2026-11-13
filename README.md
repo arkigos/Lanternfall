@@ -2,18 +2,18 @@
 
 A top-down action roguelite for the browser. Your lantern's light is your health, your sight and your weapon.
 
-Vael was built where no sky reaches, under a sun its people made: the Great Lantern, hung on a chain from the roof
-of the world. One night the chain broke. It fell through the city, through the catacombs and on into the deep,
-and that night is the Lanternfall. It broke as it fell. You are the last Lamplighter, your lantern lit from the
-last ember it shed, following its shards down to where the Lantern itself still burns.
+Vael was built where no sky reaches, under a light its people made: the Great Lantern, hung on a chain from the roof
+of the world. Between one bell and the next, the chain broke. It fell through the city, through the catacombs and on into the deep,
+and that is the Lanternfall. It broke as it fell, and it is going out. You are the last of the four born to keep
+the Vigil, the one flame held back to relight it, following its shards down to where it lies.
 
-**Five cycles.** Nine depths make a cycle, and each cycle ends at a shard of the Lantern. A shard is kept for
+**Five Depths.** Nine Levels make a Depth, and each of the first four ends at a shard of the Lantern. A shard is kept for
 every descent after: Morning (+25 light, slower burn), the Rites (start with a rite), the Chain (two more
 rerolls and one more choice at every stair), the Heart (one free rekindling per descent). Once you hold a
-shard, a descent can begin in the next cycle (chosen on the lantern screen), or you can carry on down in the
-same run. The fifth cycle ends at the Great Lantern, and you become the ember that lights it.
+shard, a descent can begin in the next Depth (chosen on the lantern screen), or you can carry on down in the
+same run. The fifth Depth ends at the Great Lantern, and you become the ember that lights it.
 
-Nine depths, three biomes, nine bosses, 70 relics, five starting lanterns, vows, a daily seed,
+Nine Levels to a Depth, three biomes, nine bosses, 70 relics, five starting lanterns, vows, a daily seed,
 and an endless wave-survival mode (The Long Vigil).
 
 Play it in the browser: https://arkigos.github.io/Lanternfall/
@@ -72,16 +72,16 @@ Settings has an auto-fire option for trackpads.
 - Dead wall lamps relight as you pass, so explored routes stay softly lit, and each lamp is a small pool of real light
   that unshrouds whatever stands in it and stops your own light burning down. Some rooms have floor hazards on a visible
   warn-then-strike cycle (burst drains, the grasping dark, flame vents).
-- Each lantern gains mastery from depths descended with it over all runs (three levels: +4% damage and +5 light each).
+- Each lantern gains mastery from Levels descended with it over all runs (three ranks: +4% damage and +5 light each).
 - Feats (in the Codex) are one-time goals that pay cinders. Lightless vaults, mimics and trials hide on some floors.
-- Depths 3, 6 and 9 are bosses, three per depth. After you fell a depth's first boss, its second can appear;
+- Levels 3, 6 and 9 are bosses, three per Level. After you fell a Level's first boss, its second can appear;
   after you fell the second, its third can appear. The third bosses:
-  - The False Light (depth 3): when it dives, the lure with a shadow beneath it is the real one, and the shadow
+  - The False Light (Level 3): when it dives, the lure with a shadow beneath it is the real one, and the shadow
     only shows inside your light. Break that lure and the beast is dragged up, stunned.
-  - The Sexton (depth 6): his blows knock embers out of you, and he heals from any embers he calls in.
-  - The First Bearer (depth 9): fights the way you do, and answers each dash and each flare with its own.
+  - The Sexton (Level 6): his blows knock embers out of you, and he heals from any embers he calls in.
+  - The First Bearer (Level 9): fights the way you do, and answers each dash and each flare with its own.
 - The Long Vigil is a separate mode: one hall, endless waves, a relic every second wave, a champion every fifth.
-- The Gauntlet (opens after three boss kills) is six bosses back to back (two drawn from each boss depth), with five relic picks to start.
+- The Gauntlet (opens after three boss kills) is six bosses back to back (two drawn from each boss Level), with five relic picks to start.
 - Rehearsal: on the Shadows page of the Codex, pick any great shadow (known or not) to fight it alone with a
   short relic draft. Nothing is won or lost, and it does not unlock anything. It is the quickest way to see a
   particular boss.
@@ -161,11 +161,11 @@ should fare somewhat better):
 
 | Bot | Typical result |
 | --- | --- |
-| novice | half fall to the depth 3 boss, the rest to the depth 6 boss |
-| average | most reach depth 6, about one in ten reaches the dawn |
-| perfect aim | about a third reach the dawn |
+| novice | half fall to the Level 3 boss, the rest to the Level 6 boss |
+| average | most reach Level 6, about one in ten finishes the first Depth |
+| perfect aim | about a third finish the first Depth |
 
-On Kindled the novice bot reaches the dawn about a third of the time.
+On Kindled the novice bot finishes the first Depth about a third of the time.
 
 ## Balance knobs
 

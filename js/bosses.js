@@ -76,7 +76,7 @@
   // 1. THE FALLEN BELL
   // =====================================================================================
   DEFS.bell = {
-    name: 'The Fallen Bell', title: 'It rang the hours of the Sun, and fell with it', boss: true,
+    name: 'The Fallen Bell', title: 'It rang the hours of the Lantern, and fell with it', boss: true,
     hp: 1400, speed: 42, r: 34, dmg: 10, embers: 0, glass: 0, phases: [0.66, 0.33],
     eyes: [[12, -9, 2.6], [12, 9, 2.6]], eyeColor: '120,220,255',
     init: bossInit,
@@ -361,7 +361,7 @@
   // 3. THE ECLIPSE
   // =====================================================================================
   DEFS.eclipse = {
-    name: 'The Eclipse', title: 'The dark that closed around the fallen Sun', boss: true,
+    name: 'The Eclipse', title: 'The dark that closed around the fallen Lantern', boss: true,
     hp: 4400, speed: 26, r: 40, dmg: 14, embers: 0, glass: 0, phases: [0.66, 0.33], flies: true, ghost: true,
     eyes: null,
     init(e, g) { bossInit(e); e.totalT = 14; e.total = 0; e.cx = e.x; e.cy = e.y; },

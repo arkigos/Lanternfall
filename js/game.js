@@ -31,42 +31,42 @@
     ['glass', 'Throws your bolts back while shrouded. Light makes it brittle.'],
     ['thief', 'Eats embers off the floor and runs with them. Unmake it to get them back.'],
     ['breaker', 'Goes for your lit braziers and smothers them. Stop it, or relight them after.'],
-    ['bell', 'It rang the hours of the Sun, and fell with it. Read the gaps in its rings.', true],
+    ['bell', 'It rang the hours of the Lantern, and fell with it. Read the gaps in its rings.', true],
     ['warden', 'He kept the great chain. Stay outside what is left of it, and out of the whirlpool.', true],
-    ['angler', 'Not every glow down here is a piece of the Sun. When it dives, find the lure with a shadow beneath it.', true],
+    ['angler', 'Not every glow down here is a piece of the Lantern. When it dives, find the lure with a shadow beneath it.', true],
     ['mother', 'Every flame is hers to drink. She is only truly hurt while something lights her.', true],
     ['king', 'Crowned in wax. Snuff his votives or your bolts will barely mark him.', true],
     ['sexton', 'His blows knock embers out of you. Take them back before he calls them in and mends.', true],
-    ['eclipse', 'The dark that closed around the fallen Sun. Totality passes. Outlast it.', true],
+    ['eclipse', 'The dark that closed around the fallen Lantern. Totality passes. Outlast it.', true],
     ['choir', 'Three masks, one song. Only the mask that is singing can truly be hurt.', true],
-    ['bearer', 'The first Lamplighter to reach the Sun. It answers each dash and each flare with its own.', true],
+    ['bearer', 'The first Lamplighter to reach the Lantern. It answers each dash and each flare with its own.', true],
   ];
   // Feats: one-time goals, checked when a run ends. Each pays cinders once.
   LF.FEATS = [
-    { id: 'd3', name: 'First Light', desc: 'Reach depth 3.', reward: 15, test: g => g.mode === 'descent' && g.depth >= 3 },
+    { id: 'd3', name: 'First Light', desc: 'Reach Level 3.', reward: 15, test: g => g.mode === 'descent' && g.depth >= 3 },
     { id: 'boss1', name: 'Giantslayer', desc: 'Fell a great shadow.', reward: 25, test: (g, r) => r.bosses >= 1 },
-    { id: 'd6', name: 'Into the Catacombs', desc: 'Reach depth 6.', reward: 30, test: g => g.mode === 'descent' && g.depth >= 6 },
-    { id: 'dawn', name: 'Dawnbringer', desc: 'Reach the dawn.', reward: 80, test: (g, r) => g.mode === 'descent' && !!r.everWon },
+    { id: 'd6', name: 'Into the Catacombs', desc: 'Reach Level 6.', reward: 30, test: g => g.mode === 'descent' && g.depth >= 6 },
+    { id: 'dawn', name: 'Dawnbringer', desc: 'Finish a Depth.', reward: 80, test: (g, r) => g.mode === 'descent' && !!r.everWon },
     { id: 'trial', name: 'Tried by Fire', desc: 'Complete a Trial of Embers.', reward: 20, test: (g, r) => (r.trials || 0) >= 1 },
     { id: 'mimic', name: 'Not a Reliquary', desc: 'Unmake a mimic.', reward: 20, test: (g, r) => (r.mimics || 0) >= 1 },
     { id: 'clean', name: 'Thorough', desc: 'Unmake everything on three floors in one descent.', reward: 35, test: (g, r) => (r.fullClears || 0) >= 3 },
     { id: 'relics12', name: 'Collector', desc: 'Carry twelve different relics at once.', reward: 40, test: g => g.player.relicOrder.length >= 12 },
     { id: 'syn2', name: 'Resonance', desc: 'Hold two synergies at once.', reward: 40, test: g => (g.player.synergies || []).length >= 2 },
-    { id: 'daily', name: 'Regular', desc: 'Reach depth 4 on a Daily Descent.', reward: 30, test: g => !!g.daily && g.depth >= 4 },
+    { id: 'daily', name: 'Regular', desc: 'Reach Level 4 on a Daily Descent.', reward: 30, test: g => !!g.daily && g.depth >= 4 },
     { id: 'vigil10', name: 'Night Watch', desc: 'Break wave 10 of the Long Vigil.', reward: 40, test: g => g.mode === 'vigil' && (g.vigil.cleared || 0) >= 10 },
     { id: 'vigil20', name: 'The Longest Night', desc: 'Break wave 20 of the Long Vigil.', reward: 120, test: g => g.mode === 'vigil' && (g.vigil.cleared || 0) >= 20 },
-    { id: 'vow3', name: 'Oathbound', desc: 'Reach depth 6 with three vows sworn.', reward: 90, test: g => g.mode === 'descent' && g.depth >= 6 && Object.keys(g.vows).length >= 3 },
+    { id: 'vow3', name: 'Oathbound', desc: 'Reach Level 6 with three vows sworn.', reward: 90, test: g => g.mode === 'descent' && g.depth >= 6 && Object.keys(g.vows).length >= 3 },
     { id: 'lamps', name: "Lamplighter's Work", desc: 'Relight 500 wall lamps in total.', reward: 50, test: g => (g.meta.lamps || 0) >= 500 },
     { id: 'kills1000', name: 'Unmaker', desc: 'Unmake 1,000 creatures in total.', reward: 60, test: g => (g.meta.kills || 0) >= 1000 },
-    { id: 'lanterns', name: 'Lamplighter', desc: 'Reach the dawn with three different lanterns.', reward: 120, test: g => Object.keys(g.meta.wonWith || {}).length >= 3 },
+    { id: 'lanterns', name: 'Lamplighter', desc: 'Finish a Depth with three different lanterns.', reward: 120, test: g => Object.keys(g.meta.wonWith || {}).length >= 3 },
     { id: 'allboss', name: 'Nine Shadows', desc: 'Fell all nine great shadows at least once.', reward: 100, test: g => ['bell', 'warden', 'angler', 'mother', 'king', 'sexton', 'bearer', 'eclipse', 'choir'].every(k => (g.meta.felled || {})[k]) },
-    { id: 'umbral', name: 'Umbral Dawn', desc: 'Reach the dawn on Umbral.', reward: 150, test: (g, r) => g.mode === 'descent' && !!r.everWon && g.diff === LF.DIFFS[2] },
-    { id: 'cycle2', name: 'Deeper Still', desc: 'Reach depth 12, in the second cycle.', reward: 120, test: g => g.mode === 'descent' && g.depth >= 12 },
+    { id: 'umbral', name: 'Umbral Dawn', desc: 'Finish a Depth on Umbral.', reward: 150, test: (g, r) => g.mode === 'descent' && !!r.everWon && g.diff === LF.DIFFS[2] },
+    { id: 'cycle2', name: 'Deeper Still', desc: 'Reach Level 3 of the second Depth.', reward: 120, test: g => g.mode === 'descent' && g.depth >= 12 },
     { id: 'gauntlet', name: 'Six in a Row', desc: 'Run the Gauntlet: six great shadows, back to back.', reward: 150, test: (g, r) => g.mode === 'rush' && !!r.everWon },
   ];
   LF.TEACH = {
     shroud: ['Shrouded', 'That creature is outside your light, so it shrugs off most of the bolt. Bring it into the glow.'],
-    ember: ['Embers', 'Embers are crumbs of the fallen Sun, and the creatures down here have swallowed them. They rekindle your light, and wait on the ground while you are full.'],
+    ember: ['Embers', 'Everyone in Vael carried a little of its light. The creatures down here still do. Embers rekindle your light, and wait on the ground while you are full.'],
     school: ['Schools', 'Every relic belongs to a school, named on its card. Three of one school attunes your lantern; five and seven attune it further. The deep outscales a lantern that takes a little of everything.'],
     brazier: ['Braziers', 'A brazier takes a moment to catch: stay beside it, or put bolts into it. A flare lights it at once. Lit, it refills you and mends you up to half while you rest there.'],
     low: ['Guttering', 'Your light is low. Find embers or a brazier. A dying lantern does burn hotter, though.'],
@@ -89,6 +89,13 @@
     { name: 'The Great Lantern', power: '' },
   ];
   LF.ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  // What the player reads: five Depths of nine Levels each. In code a `depth` is still one floor, counted from 1,
+  // and `loop` / `cycle` is which Depth it belongs to.
+  LF.depthOf = d => Math.floor((Math.max(1, d | 0) - 1) / 9);
+  LF.levelOf = d => ((Math.max(1, d | 0) - 1) % 9) + 1;
+  LF.depthName = d => 'Depth ' + (LF.ROMAN[LF.depthOf(d)] || LF.depthOf(d) + 1);
+  LF.place = (d, sep) => LF.depthName(d) + (sep || '  ·  ') + 'Level ' + LF.levelOf(d);
+  LF.placeIn = d => 'Level ' + LF.levelOf(d) + ' of ' + LF.depthName(d);
   LF.DIFFS = [
     { name: 'Kindled', desc: 'Gentler dark', hp: 0.8, dmg: 0.7, drain: 0.7, cinders: 0.75 },
     { name: 'Standard', desc: 'As intended', hp: 1, dmg: 1, drain: 1, cinders: 1 },
@@ -104,7 +111,7 @@
     'A flare lights every brazier it touches.',
     'A flare leaves what it touches kindled: for a few seconds it takes far more damage. Flare first, then fire.',
     'Three relics of one school attune your lantern. Five and seven attune it much further. Reroll for your school.',
-    'A lantern that takes a little of everything is outscaled by depth six. Commit to a school.',
+    'A lantern that takes a little of everything is outscaled by Level six. Commit to a school.',
     'Rest beside a lit brazier to recover up to half your light.',
     'Your light burns down on its own, and it can go all the way out. Beside any fire, it holds.',
     'Linger on a floor and the dark sends hunters after you, up to four. They carry nothing worth taking.',
@@ -164,15 +171,15 @@
     ['Snuffer', 'Snuffers shrink your light from a distance. Hunt them down before anything else.'],
     ['Skitter', 'Skitters are weak alone. Back through a doorway so they come at you in a line.'],
     ['oil', 'Oil jars burn you too. Shoot them from a few steps away.'],
-    ['geyser', 'The drains burst when the Sun came down. They bubble for a second before they blow: step around them.'],
+    ['geyser', 'The drains burst when the Lantern came down. They bubble for a second before they blow: step around them.'],
     ['grasp', 'The dark reaches up through split floors on a steady rhythm. Cross just after it sinks back, or flare: it shrinks from the burst for a while.'],
     ['vent', 'These mains fed oil to every lamp in the city. A broken one glows before it fires, and it burns shadows as readily as you: lure them across it.'],
   ];
   LF.tipFor = cause => { const c = String(cause || ''); for (const [k, t] of LF.CAUSE_TIPS) if (c.indexOf(k) >= 0) return t; return LF.pick(LF.TIPS); };
   LF.BIOMES = [
-    { name: 'The Shattered Quarter', sub: 'Where the Sun came through the streets', floor: [34, 46, 58], wallFace: [44, 60, 78], wallTop: [13, 19, 27], water: [26, 78, 98], accent: '#6fc3d8', ambient: [5, 9, 18], dark: 0.975 },
+    { name: 'The Shattered Quarter', sub: 'Where the Lantern came through the streets', floor: [34, 46, 58], wallFace: [44, 60, 78], wallTop: [13, 19, 27], water: [26, 78, 98], accent: '#6fc3d8', ambient: [5, 9, 18], dark: 0.975 },
     { name: 'The Moth Catacombs', sub: 'It fell through the dead without slowing', floor: [46, 39, 54], wallFace: [62, 50, 74], wallTop: [20, 15, 26], water: [58, 44, 92], accent: '#b89cff', ambient: [9, 5, 17], dark: 0.98 },
-    { name: 'The Umbral Deep', sub: 'Where the Sun came to rest', floor: [48, 34, 38], wallFace: [70, 44, 48], wallTop: [22, 13, 15], water: [84, 30, 44], accent: '#ff7b7b', ambient: [11, 3, 6], dark: 0.985 },
+    { name: 'The Umbral Deep', sub: 'Where the Lantern came to rest', floor: [48, 34, 38], wallFace: [70, 44, 48], wallTop: [22, 13, 15], water: [84, 30, 44], accent: '#ff7b7b', ambient: [11, 3, 6], dark: 0.985 },
   ];
 
   // ---------- persistent save ----------
@@ -286,7 +293,7 @@
         else this.openRushDraft();
       } else if (this.mode === 'descent' && (this.meta.shards || 0) >= 2) {
         const rites = LF.rollRelics(this.player, 3, { rng: this.rng, floor: 3, pool: 'brand' });
-        if (rites.length) this.openOffer({ title: 'The Shard of the Rites', sub: 'It remembers how the Lamplighters tended the Sun. Choose how you will fight, or walk on.', relics: rites, canSkip: true, dim: true, noReroll: true });
+        if (rites.length) this.openOffer({ title: 'The Shard of the Rites', sub: 'It remembers how the Lamplighters tended the Lantern. Choose how you will fight, or walk on.', relics: rites, canSkip: true, dim: true, noReroll: true });
       }
     }
     // The Gauntlet opens with three relic picks, so there is a build to fight with.
@@ -363,7 +370,7 @@
       this.renderer.buildMap(map, this.biome);
       this.room = null; this.flowT = 0; this.seenT = 0;
       const isBoss = !!map.boss;
-      this.banner = { text: this.mode === 'rush' ? (this.practice ? 'Rehearsal' : 'Shadow ' + this.depth + ' of ' + this.rushLen()) : isBoss ? 'Depth ' + this.depth : this.biome.name, sub: isBoss ? (this.floor === 9 && this.mode === 'descent' ? (this.loop >= 4 ? 'The Great Lantern is below. Something stands in front of it' : 'A shard of the Sun is below. Something stands in front of it') : 'Something vast is waiting') : 'Depth ' + this.depth + (this.loop ? '  ·  Cycle ' + (this.loop + 1) : '') + (this.omen ? '  ·  Omen: ' + this.omen.name : ''), sub2: isBoss ? '' : LF.pick(LF.EPIGRAPHS[Math.floor((this.floor - 1) / 3)]), t: 0, dur: 4.6 };
+      this.banner = { text: this.mode === 'rush' ? (this.practice ? 'Rehearsal' : 'Shadow ' + this.depth + ' of ' + this.rushLen()) : isBoss ? LF.place(this.depth) : this.biome.name, sub: isBoss ? (this.floor === 9 && this.mode === 'descent' ? (this.loop >= 4 ? 'The Great Lantern is below. Something stands in front of it' : 'A shard of the Lantern is below. Something stands in front of it') : 'Something vast is waiting') : LF.place(this.depth) + (this.omen ? '  ·  Omen: ' + this.omen.name : ''), sub2: isBoss ? '' : LF.pick(LF.EPIGRAPHS[Math.floor((this.floor - 1) / 3)]), t: 0, dur: 4.6 };
       if (this.mode === 'vigil') this.banner = { text: 'The Long Vigil', sub: 'Hold the light for as long as you can', sub2: 'The first wave comes in a moment.', t: 0, dur: 4.2 };
       if (this.omen) this.toast('Omen: ' + this.omen.name, this.omen.desc, '#c9a7ff', 'eye', '#c9a7ff');
       if ((this.omen && this.omen.id === 'hunt') || (this.vows.hunted && !isBoss)) {
@@ -652,6 +659,7 @@
         : this.mode === 'rush' ? Math.round((r.bosses * 26 + (won || r.everWon ? 50 : 0)) * this.diff.cinders * (1 + this.vowBonus()))
         : Math.round(((this.depth - (this.startDepth || 1)) * 6 + Math.min(r.kills, (this.depth - (this.startDepth || 1) + 1) * 45) * 0.22 + r.bosses * 22 + (won || r.everWon ? 60 : 0)) * this.diff.cinders * (1 + this.vowBonus()));
       if (won) r.everWon = true;
+      if (won && this.mode === 'descent' && this.loop >= 4) r.lit = true; // the fifth Depth: the Great Lantern itself
       // the shard at the bottom of this cycle, if it is the next one unclaimed
       r.shard = 0;
       if (won && this.mode === 'descent' && this.loop < 5 && this.loop === (this.meta.shards || 0)) { this.meta.shards = this.loop + 1; r.shard = this.loop + 1; this.player.recalc(); }
@@ -668,7 +676,7 @@
       if (won && this.mode === 'rush') this.meta.rushWins = (this.meta.rushWins || 0) + 1;
       else if (won) { this.meta.wins++; if (!this.meta.wonWith) this.meta.wonWith = {}; this.meta.wonWith[this.lanternId] = 1; }
       // history: one entry per run, refreshed if the run carries on after a victory
-      const h = { mode: this.mode, wave: r.wave || 0, depth: this.depth, lantern: this.lanternId, won: !!r.everWon, time: Math.round(r.time), cause: r.everWon ? '' : (r.cause || 'abandoned'), kills: r.kills, diff: this.meta.diff, daily: this.daily, vows: Object.keys(this.vows).length };
+      const h = { mode: this.mode, wave: r.wave || 0, depth: this.depth, lantern: this.lanternId, won: !!r.everWon, lit: !!r.lit, time: Math.round(r.time), cause: r.everWon ? '' : (r.cause || 'abandoned'), kills: r.kills, diff: this.meta.diff, daily: this.daily, vows: Object.keys(this.vows).length };
       if (!Array.isArray(this.meta.history)) this.meta.history = [];
       if (r.histSaved) this.meta.history[0] = h; else { this.meta.history.unshift(h); r.histSaved = true; }
       if (this.meta.history.length > 10) this.meta.history.length = 10;
@@ -982,7 +990,7 @@
         const spoils = () => {
         if (!relics.length) { if (alt) { p.glass += alt; this.run.glass += alt; } next(); return; }
         this.openOffer({
-          title: boss ? 'A Shard of the Sun' : 'The Stair Offers a Gift', minRarity: boss ? 'rare' : undefined,
+          title: boss ? 'A Shard of the Lantern' : 'The Stair Offers a Gift', minRarity: boss ? 'rare' : undefined,
           sub: boss ? 'The shadow had closed around this. It is yours now.' : dusk ? 'Your flame is nearly out. Something in the dark has left a gift among them.' : (cleared >= 0.85 ? 'You left nothing alive behind you: one more to choose from.' : 'Take one with you into the dark below.'),
           relics, canSkip: false, dim: true, altGlass: alt,
           onDone: picked => {
@@ -995,7 +1003,7 @@
           },
         });
         };
-        if (rites.length) this.openOffer({ title: 'A Rite Is Offered', sub: 'The old Lamplighters tended the Sun in more ways than one. A rite changes how you fight for the rest of the descent. Take one, or walk on.', relics: rites, canSkip: true, dim: true, noReroll: true, onDone: spoils });
+        if (rites.length) this.openOffer({ title: 'A Rite Is Offered', sub: 'The old Lamplighters tended the Lantern in more ways than one. A rite changes how you fight for the rest of the descent. Take one, or walk on.', relics: rites, canSkip: true, dim: true, noReroll: true, onDone: spoils });
         else spoils();
       });
     }
@@ -1121,7 +1129,7 @@
       }
       if (this.mode === 'rush' ? this.depth >= this.rushLen() : this.floor === 9) this.victoryReady = true;
       if (this.mode === 'rush') { const pl = this.player; pl.bonusMax += 15; pl.recalc(); pl.addLight(pl.stats.maxLight); fx.text(pl.x, pl.y - 44, '+15 max light', '#ffe2a6', 13, 1.6); }
-      this.banner = { text: e.def.name + ' is unmade', sub: this.floor === 9 ? (this.mode === 'descent' ? (this.loop >= 4 ? 'Beneath it, the Great Lantern. It is nearly out' : 'Beneath it, a shard of the Sun') : 'A stair of pale light rises') : 'The way down lies open', t: 0, dur: 4, small: true };
+      this.banner = { text: e.def.name + ' is unmade', sub: this.floor === 9 ? (this.mode === 'descent' ? (this.loop >= 4 ? 'Beneath it, the Great Lantern. It has gone out' : 'Beneath it, a shard of the Lantern') : 'A stair of pale light rises') : 'The way down lies open', t: 0, dur: 4, small: true };
       LF.audio.play('gateOpen');
     }
 

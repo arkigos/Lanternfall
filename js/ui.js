@@ -447,7 +447,7 @@
     if (g.player.stats.noMap) {
       const w0 = 150 * u, x0 = W - w0 - 20 * u, y0 = 20 * u;
       panel(x0 - 6 * u, y0 - 6 * u, w0 + 12 * u, 60 * u, 8, 'rgba(8,8,14,0.72)', 'rgba(255,217,160,0.2)');
-      txt(g.mode === 'rush' ? (g.practice ? 'REHEARSAL' : 'SHADOW ' + g.depth + '/' + g.rushLen()) : 'DEPTH ' + g.depth, x0, y0 + 12 * u, 11, '#ffd28a', 'left', LF.FONT_UI, 'bold');
+      txt(g.mode === 'rush' ? (g.practice ? 'REHEARSAL' : 'SHADOW ' + g.depth + '/' + g.rushLen()) : LF.place(g.depth).toUpperCase(), x0, y0 + 12 * u, 11, '#ffd28a', 'left', LF.FONT_UI, 'bold');
       txt('The map is moth-eaten.', x0, y0 + 34 * u, 11, '#8f8a80', 'left', LF.FONT_UI, 'italic');
       return;
     }
@@ -460,7 +460,7 @@
     ctx.drawImage(ui.mini, x, y, w, h);
     ctx.imageSmoothingEnabled = true;
     mapIcons(g, x, y, sc);
-    txt(g.mode === 'rush' ? (g.practice ? 'REHEARSAL' : 'SHADOW ' + g.depth + '/' + g.rushLen()) : g.mode === 'vigil' ? 'VIGIL' : 'DEPTH ' + g.depth, x, y + h + 12 * u, 11, '#ffd28a', 'left', LF.FONT_UI, 'bold');
+    txt(g.mode === 'rush' ? (g.practice ? 'REHEARSAL' : 'SHADOW ' + g.depth + '/' + g.rushLen()) : g.mode === 'vigil' ? 'VIGIL' : LF.place(g.depth).toUpperCase(), x, y + h + 12 * u, 11, '#ffd28a', 'left', LF.FONT_UI, 'bold');
     if (w > 150 * u) txt(g.biome.name, x + w, y + h + 12 * u, 10, '#9a948a', 'right');
     if (g.omen) txt('Omen: ' + g.omen.name, x + w + 6 * u, y + h + 38 * u, 11, '#c9a7ff', 'right', LF.FONT_UI, 'bold');
     if (g.totalSpawns > 0) txt('Unmade ' + Math.min(g.floorKills, g.totalSpawns) + '/' + g.totalSpawns, x + w + 6 * u, y + h + (g.omen ? 54 : 38) * u, 11, g.floorKills >= g.totalSpawns * 0.85 ? '#ffd28a' : '#8f8a80', 'right');
@@ -504,20 +504,20 @@
     if (button('Help', x + tw + 8 * u, y, tw, sh, { size: 13.5 })) { g.state = 'help'; ui.enter(g, 'help'); return; }
     if (button('Settings', x + (tw + 8 * u) * 2, y, tw, sh, { size: 13.5 })) { ui.settingsFrom = 'title'; g.state = 'settings'; ui.enter(g, 'settings'); return; }
     const dd = g.meta.daily && g.meta.daily.date === LF.todayKey() ? g.meta.daily : null;
-    const dline = (dd ? 'Today\'s descent: depth ' + dd.best + (dd.won ? ', dawn reached' : '') + ' in ' + dd.tries + (dd.tries === 1 ? ' try' : ' tries') : 'Daily: one seed a day') + (g.meta.vigilBest ? '   ·   Longest vigil: wave ' + g.meta.vigilBest : '   ·   Vigil: endless waves') + (rushOpen ? (g.meta.rushWins ? '   ·   Gauntlets run: ' + g.meta.rushWins : '') : '   ·   Gauntlet: fell 3 shadows to open');
+    const dline = (dd ? 'Today\'s descent: ' + LF.placeIn(dd.best) + (dd.won ? ', shard reached' : '') + ' in ' + dd.tries + (dd.tries === 1 ? ' try' : ' tries') : 'Daily: one seed a day') + (g.meta.vigilBest ? '   ·   Longest vigil: wave ' + g.meta.vigilBest : '   ·   Vigil: endless waves') + (rushOpen ? (g.meta.rushWins ? '   ·   Gauntlets run: ' + g.meta.rushWins : '') : '   ·   Gauntlet: fell 3 shadows to open');
     txt(dline, W / 2, y + sh + 16 * u, 12, dd ? '#9dffcf' : '#77747e', 'center', LF.FONT_UI, 'italic');
     if (LF.makeBot && button('Watch a descent', x + bw * 0.2, y + sh + 32 * u, bw * 0.6, 30 * u, { size: 12 })) { g.startDemo(); return; }
-    const st = `Deepest: ${g.meta.best || 0}   ·   Descents: ${g.meta.runs}   ·   Shards: ${Math.min(5, g.meta.shards || 0)} of 5`;
+    const st = `Deepest: ${g.meta.best ? LF.placeIn(g.meta.best) : 'none'}   ·   Descents: ${g.meta.runs}   ·   Shards: ${Math.min(5, g.meta.shards || 0)} of 5`;
     txt(st, W / 2, H - 34 * u, 13, '#7d786f', 'center');
     txt('Made in one night by Claude', W / 2, H - 14 * u, 10.5, '#55524c', 'center', LF.FONT_UI, 'italic');
   }
   function intro(g) {
     backdrop('#08090f', H * 0.2);
     const lines = [
-      'Vael was built where no sky reaches, under a sun its people made: the Great Lantern.',
-      'One night its chain broke. It fell through the city, through the dead, and on into the dark.',
-      'You are the last Lamplighter. Your lantern was lit from the last ember it shed.',
-      'It broke as it fell. Follow the shards down: where the last one lies, the Lantern is still burning.',
+      'Vael was built where no sky reaches, under a light its people made: the Great Lantern.',
+      'Between one bell and the next, its chain broke. It fell through the city, through the dead, and on into the dark.',
+      'You are the last of the four born to keep the Vigil: the one flame held back to relight it. No one thought that would mean going down.',
+      'It broke as it fell, and it is going out. Follow the shards down to where it lies.',
     ];
     ctx.font = `${Math.round(21 * u)}px ${LF.FONT_TITLE}`;
     let y = H * 0.26;
@@ -672,7 +672,7 @@
       if (k) portrait(g, b[0], pcx, y + ch / 2, ps);
       else { ctx.fillStyle = 'rgba(10,10,18,0.8)'; ctx.beginPath(); ctx.arc(pcx, y + ch / 2, ps * 0.55, 0, TAU); ctx.fill(); txt('?', pcx, y + ch / 2 + 1 * u, 20, '#4a4852', 'center', LF.FONT_TITLE, '700'); }
       const fs = NAR ? 10.5 : 11.5, lh = NAR ? 13 : 15, maxL = Math.max(1, Math.floor((ch - 26 * u) / (lh * u)));
-      txt(k ? def.name : (b[2] ? 'A great shadow  ·  depth ' + (LF.BOSS_SETS.findIndex(s => s.includes(b[0])) + 1) * 3 : 'Not yet met'), tx, y + 16 * u, NAR ? 12.5 : 14, k ? (b[2] ? '#e2c9ff' : '#f3e9d6') : '#6f6c78', 'left', LF.FONT_UI, 'bold');
+      txt(k ? def.name : (b[2] ? 'A great shadow  ·  Level ' + (LF.BOSS_SETS.findIndex(s => s.includes(b[0])) + 1) * 3 : 'Not yet met'), tx, y + 16 * u, NAR ? 12.5 : 14, k ? (b[2] ? '#e2c9ff' : '#f3e9d6') : '#6f6c78', 'left', LF.FONT_UI, 'bold');
       if (k) { ctx.font = `${Math.round(fs * u)}px ${LF.FONT_UI}`; LF.wrapText(ctx, b[1], cw - (tx - x) - 8 * u).slice(0, maxL).forEach((l, j) => txt(l, tx, y + (NAR ? 31 : 38) * u + j * lh * u, fs, '#b9ad96')); }
     });
     tabs(g, 'shadows');
@@ -691,7 +691,7 @@
     backdrop('#10121c');
     bigTitle('Descents', 62 * u, NAR ? 36 : 44);
     const H0 = Array.isArray(g.meta.history) ? g.meta.history : [];
-    const sb = wtxt(`Descents: ${g.meta.runs}   ·   Deepest: ${g.meta.best || 0}   ·   Dawns reached: ${g.meta.wins}   ·   Creatures unmade: ${g.meta.kills || 0}   ·   Great shadows felled: ${g.meta.bosses || 0}`, W / 2, 102 * u, 13, '#c9bfae', W - 36 * u, 17);
+    const sb = wtxt(`Descents: ${g.meta.runs}   ·   Deepest: ${g.meta.best ? LF.placeIn(g.meta.best) : 'none'}   ·   Depths cleared: ${g.meta.wins}   ·   Creatures unmade: ${g.meta.kills || 0}   ·   Great shadows felled: ${g.meta.bosses || 0}`, W / 2, 102 * u, 13, '#c9bfae', W - 36 * u, 17);
     const w = Math.min(900 * u, W - 32 * u), x = (W - w) / 2; let y = sb + 14 * u;
     const rh = Math.min((NAR ? 48 : 34) * u, (H - y - 150 * u) / Math.max(1, H0.length));
     panel(x, y, w, 20 * u + Math.max(1, H0.length) * rh, 10);
@@ -700,15 +700,15 @@
     H0.forEach(h => {
       const lan = LF.LANTERN[h.lantern] || LF.LANTERNS[0];
       const detail = lan.name + '  ·  ' + (LF.DIFFS[h.diff] || LF.DIFFS[1]).name + (h.vows ? '  ·  ' + h.vows + (h.vows > 1 ? ' vows' : ' vow') : '') + (h.daily ? '  ·  daily ' + h.daily : '');
-      const result = h.won ? 'Reached the dawn' : h.cause === 'abandoned' ? 'Abandoned' : 'Snuffed by ' + h.cause;
+      const result = h.won ? (h.lit ? 'Kept the Vigil' : 'Reached the shard') : h.cause === 'abandoned' ? 'Abandoned' : 'Snuffed by ' + h.cause;
       LF.drawIcon(ctx, lan.glyph, x + 24 * u, y, 18 * u, lan.color);
       if (NAR) {
-        txt(h.mode === 'vigil' ? 'Vigil ' + h.wave : h.mode === 'rush' ? 'Gauntlet ' + h.depth : 'Depth ' + h.depth, x + 44 * u, y - 9 * u, 14, h.won ? '#ffe08a' : '#f3e9d6', 'left', LF.FONT_UI, 'bold');
+        txt(h.mode === 'vigil' ? 'Vigil ' + h.wave : h.mode === 'rush' ? 'Gauntlet ' + h.depth : LF.place(h.depth, ', '), x + 44 * u, y - 9 * u, 14, h.won ? '#ffe08a' : '#f3e9d6', 'left', LF.FONT_UI, 'bold');
         txt(result + '  ·  ' + LF.fmtTime(h.time), x + w - 14 * u, y - 9 * u, 11.5, h.won ? '#ffe08a' : '#c9a0a0', 'right');
         txt(detail, x + 44 * u, y + 9 * u, 11, '#b9ad96');
       } else {
-        txt(h.mode === 'vigil' ? 'Vigil ' + h.wave : h.mode === 'rush' ? 'Gauntlet ' + h.depth : 'Depth ' + h.depth, x + 48 * u, y, 14, h.won ? '#ffe08a' : '#f3e9d6', 'left', LF.FONT_UI, 'bold');
-        txt(detail, x + 130 * u, y, 12, '#b9ad96');
+        txt(h.mode === 'vigil' ? 'Vigil ' + h.wave : h.mode === 'rush' ? 'Gauntlet ' + h.depth : LF.place(h.depth, ', '), x + 48 * u, y, 14, h.won ? '#ffe08a' : '#f3e9d6', 'left', LF.FONT_UI, 'bold');
+        txt(detail, x + 190 * u, y, 12, '#b9ad96');
         txt(result, x + w - 90 * u, y, 12, h.won ? '#ffe08a' : '#c9a0a0', 'right');
         txt(LF.fmtTime(h.time), x + w - 20 * u, y, 12, '#9a948a', 'right');
       }
@@ -815,7 +815,7 @@
           LF.wrapText(ctx, d.unlockText, cw - 26 * u).forEach((l, j) => txt(l, x + cw / 2, y + 256 * u + j * 16 * u, 12.5, '#c9a36a', 'center'));
         }
         if (cur && open) txt('LAST CARRIED', x + cw / 2, y + ch - 18 * u, 10, d.color, 'center', LF.FONT_UI, 'bold');
-        { const md = (g.meta.mastery || {})[d.id] || 0, ml = LF.masteryLevel(g.meta, d.id); if (open && md > 0) txt((ml ? 'Mastery ' + ['', 'I', 'II', 'III'][ml] : 'No mastery yet') + '  ·  ' + md + (md === 1 ? ' depth' : ' depths'), x + cw / 2, y + ch - 36 * u, 10, '#c9a36a', 'center'); }
+        { const md = (g.meta.mastery || {})[d.id] || 0, ml = LF.masteryLevel(g.meta, d.id); if (open && md > 0) txt((ml ? 'Mastery ' + ['', 'I', 'II', 'III'][ml] : 'No mastery yet') + '  ·  ' + md + (md === 1 ? ' level' : ' levels'), x + cw / 2, y + ch - 36 * u, 10, '#c9a36a', 'center'); }
       } else {
         const tx = x + 92 * u;
         txt(d.name, tx, y + 22 * u, 16, open ? '#fff2d6' : '#77747e', 'left', LF.FONT_TITLE, '700');
@@ -839,7 +839,7 @@
     if (button((NAR ? '' : 'Difficulty: ') + LF.DIFFS[g.meta.diff].name, bx2, bby, bw2, 42 * u, { size: 14 })) { g.meta.diff = (g.meta.diff + 1) % LF.DIFFS.length; g.save(); }
     if (ui.mode === 'descent' && !ui.daily && (g.meta.shards || 0) >= 1) {
       const sh = Math.min(4, g.meta.shards), cur = LF.clamp(g.meta.cycle >= 0 ? g.meta.cycle : sh, 0, sh), cwid = (NAR ? 132 : 170) * u;
-      if (button('Cycle ' + LF.ROMAN[cur] + ' of ' + LF.ROMAN[sh], W - cwid - 16 * u, 16 * u, cwid, 36 * u, { size: 13 })) { g.meta.cycle = (cur + 1) % (sh + 1); g.save(); }
+      if (button('Depth ' + LF.ROMAN[cur] + ' of ' + LF.ROMAN[sh], W - cwid - 16 * u, 16 * u, cwid, 36 * u, { size: 13 })) { g.meta.cycle = (cur + 1) % (sh + 1); g.save(); }
     }
     { const lw = (NAR ? 138 : 190) * u; lookButton(g, 16 * u, 16 * u, lw, 36 * u, 13); figurePreview(g, 16 * u + lw + (NAR ? 26 : 52) * u, (NAR ? 36 : 44) * u, (NAR ? 1.3 : 2.4) * u);
       if (!NAR) wtxt(LF.LOOK[LF.lookOf(g.meta)].perk, 16 * u, 72 * u, 12, '#c9bfae', 250 * u, 15, 'italic', 'left'); }
@@ -996,7 +996,7 @@
   }
   function statRows(g, y0) {
     const r = g.run;
-    const rows = [g.mode === 'vigil' ? ['Waves survived', String(r.wave || 0)] : g.mode === 'rush' ? ['Shadows faced', (r.depth || g.depth) + ' of ' + g.rushLen()] : ['Depth reached', String(r.depth || g.depth)], ['Creatures unmade', String(r.kills)], ['Elites', String(r.elites || 0)], ['Great shadows felled', String(r.bosses)], ['Time in the dark', LF.fmtTime(r.time)], g.mode === 'descent' ? ['Lamps relit', String(r.lamps || 0)] : ['Glass gathered', String(Math.floor(r.glass))]];
+    const rows = [g.mode === 'vigil' ? ['Waves survived', String(r.wave || 0)] : g.mode === 'rush' ? ['Shadows faced', (r.depth || g.depth) + ' of ' + g.rushLen()] : ['Reached', LF.place(r.depth || g.depth, ', ')], ['Creatures unmade', String(r.kills)], ['Elites', String(r.elites || 0)], ['Great shadows felled', String(r.bosses)], ['Time in the dark', LF.fmtTime(r.time)], g.mode === 'descent' ? ['Lamps relit', String(r.lamps || 0)] : ['Glass gathered', String(Math.floor(r.glass))]];
     const w = Math.min(420 * u, W - 48 * u), x = (W - w) / 2;
     rows.forEach((row, i) => {
       const y = y0 + i * 26 * u;
@@ -1018,7 +1018,7 @@
     ctx.globalAlpha = a;
     const ty = NAR ? 80 * u : H * 0.17;
     bigTitle('Your light went out', ty, NAR ? 34 : 50, '#ffb3a0');
-    const sb = wtxt('Snuffed by ' + (g.run.cause || 'the dark') + (g.mode === 'vigil' ? ' during wave ' + (g.vigil ? g.vigil.wave : 0) : g.mode === 'rush' ? (g.practice ? ' in rehearsal' : ', shadow ' + (g.run.depth || g.depth) + ' of the Gauntlet') : ' on depth ' + (g.run.depth || g.depth) + (() => { const f = (((g.run.depth || g.depth) - 1) % 9) + 1, what = g.loop >= 4 ? 'The Lantern' : 'The shard'; return f < 9 ? '. ' + what + ' lies ' + (9 - f) + (9 - f === 1 ? ' depth' : ' depths') + ' below' : '. ' + what + ' was within reach'; })()), W / 2, ty + (NAR ? 38 : 48) * u, NAR ? 14 : 16, '#c9bfae', W - 40 * u, 18, 'italic');
+    const sb = wtxt('Snuffed by ' + (g.run.cause || 'the dark') + (g.mode === 'vigil' ? ' during wave ' + (g.vigil ? g.vigil.wave : 0) : g.mode === 'rush' ? (g.practice ? ' in rehearsal' : ', shadow ' + (g.run.depth || g.depth) + ' of the Gauntlet') : ' on ' + LF.placeIn(g.run.depth || g.depth) + (() => { const f = (((g.run.depth || g.depth) - 1) % 9) + 1, what = g.loop >= 4 ? 'The Lantern' : 'The shard'; return f < 9 ? '. ' + what + ' lies ' + (9 - f) + (9 - f === 1 ? ' level' : ' levels') + ' below' : '. ' + what + ' was within reach'; })()), W / 2, ty + (NAR ? 38 : 48) * u, NAR ? 14 : 16, '#c9bfae', W - 40 * u, 18, 'italic');
     const y = statRows(g, NAR ? sb + 24 * u : H * 0.3);
     if (g.run.tip) wtxt('Tip: ' + g.run.tip, W / 2, H - (NAR ? 40 : 26) * u, 13, '#a89f90', W - 40 * u, 16, 'italic');
     ctx.globalAlpha = 1;
@@ -1039,7 +1039,7 @@
     sun.addColorStop(0, 'rgba(255,236,190,0.9)'); sun.addColorStop(0.4, 'rgba(255,170,90,0.35)'); sun.addColorStop(1, 'rgba(255,120,60,0)');
     ctx.fillStyle = sun; ctx.fillRect(0, 0, W, H);
     const ty = NAR ? 80 * u : H * 0.15;
-    bigTitle(g.practice ? 'Rehearsed' : g.mode === 'rush' ? 'The Gauntlet Is Run' : g.loop >= 4 ? 'Dawn' : 'A Shard of the Sun', ty, g.mode === 'rush' || g.loop < 4 ? (NAR ? 34 : 50) : (NAR ? 54 : 70), '#fff2d6');
+    bigTitle(g.practice ? 'Rehearsed' : g.mode === 'rush' ? 'The Gauntlet Is Run' : g.loop >= 4 ? 'The Vigil Is Kept' : 'A Shard of the Lantern', ty, g.mode === 'rush' || g.loop < 4 ? (NAR ? 34 : 50) : (NAR ? 36 : 60), '#fff2d6');
     const sb = wtxt(g.practice ? (g.run.finalBoss || 'The shadow') + ' is unmade, for now. Nothing was won or lost; below, it is still waiting.' : g.mode === 'rush' ? 'Six great shadows, one lantern, no rest between. The dark will remember this.' : g.loop >= 4 ? 'You set your lantern down inside the Great Lantern and do not take it up again. You were the ember it was waiting for. Far above, in a city that had forgotten the colour, the windows are turning gold.' : g.run.shard ? LF.SHARDS[g.run.shard - 1].name + ' is yours, for this descent and every one after it. ' + LF.SHARDS[g.run.shard - 1].power + ' ' + ['Four more lie', 'Three more lie', 'Two more lie', 'Only the Lantern itself lies'][g.run.shard - 1] + ' below.' : (g.run.finalBoss || 'The shadow') + ' is unmade again. You carry this shard already; the next one lies deeper.', W / 2, ty + (NAR ? 46 : 56) * u, NAR ? 14 : 16, '#f3e2c6', W - 40 * u, 19, 'italic');
     const y = statRows(g, NAR ? sb + 26 * u : H * 0.3);
     const un = g.run.unlocks || [];
@@ -1047,7 +1047,7 @@
     const gap = 12 * u, bw = Math.min(270 * u, (W - 32 * u - gap) / 2), bh = 48 * u, x0 = (W - bw * 2 - gap) / 2, by = Math.min(H - 70 * u, y + 14 * u + un.length * 22 * u);
     if (ui.t > 1) {
       if (g.mode === 'rush') { if (button(NAR ? 'Again' : g.practice ? 'Face it again' : 'Run it again', x0, by, bw, bh, { size: 15 })) { ui.daily = null; ui.practice = g.practice || null; ui.mode = 'rush'; goDescend(g); return; } }
-      else if (g.loop < 4 && button(NAR ? 'Deeper (Cycle ' + LF.ROMAN[g.loop + 1] + ')' : 'Descend deeper  (Cycle ' + LF.ROMAN[g.loop + 1] + ')', x0, by, bw, bh, { size: NAR ? 13 : 15 })) { g.continueDeeper(); return; }
+      else if (g.loop < 4 && button(NAR ? 'Deeper (Depth ' + LF.ROMAN[g.loop + 1] + ')' : 'Descend deeper  (Depth ' + LF.ROMAN[g.loop + 1] + ')', x0, by, bw, bh, { size: NAR ? 13 : 15 })) { g.continueDeeper(); return; }
       if (button(NAR ? 'Return' : g.loop >= 4 && g.mode === 'descent' ? 'Let it burn' : 'Return with the light', x0 + bw + gap, by, bw, bh, { size: 15 })) { g.state = 'title'; ui.enter(g, 'title'); LF.audio.intensity = 0; }
     }
     tooltip();
