@@ -17,7 +17,7 @@
       this.dashing = 0; this.dashDx = 1; this.dashDy = 0; this.dashHit = new Set(); this.trailD = 0;
       this.invuln = 0; this.hurtFlash = 0; this.glass = 0; this.kills = 0; this.shots = 0;
       this.still = 0; this.vigilOn = false; this.phoenixUsed = false; this.lifelineUsed = false;
-      this.familiars = []; this.orbitA = 0; this.stormT = 3; this.bob = 0; this.ghosts = [];
+      this.familiars = []; this.swarm = []; this.orbitA = 0; this.stormT = 3; this.bob = 0; this.ghosts = [];
       this.dead = false; this.beatT = 0; this.inWater = false; this.recoil = 0; this.rerolls = 0; this.sacrificed = 0; this.stepT = 0; this.windT = 0; this.charge = 0; this.bonusMax = 0; this.critEmberT = 0;
       this.recalc();
       this.light = this.stats.maxLight;
@@ -62,6 +62,11 @@
       if (sch) { const t1 = LF.tierOf(this.schools[sch] || 0), S = LF.SCHOOLS[sch]; if (t1 > t0) { this.g.toast('Attuned: ' + S.name + ' ' + ['', 'I', 'II', 'III'][t1], S.tiers[t1 - 1], S.color, S.glyph, S.color, 7); LF.audio.play('rare'); } }
       for (const sy of this.synergies) if (!had.includes(sy.id)) { this.g.toast('Synergy: ' + sy.name, sy.desc, '#9dffcf', 'star', '#9dffcf', 6.5); LF.audio.play('rare'); }
       if (d.onGain) d.onGain(this.g);
+    }
+    swarmMoths(n, life) {
+      for (let i = 0; i < n; i++) this.swarm.push({ a: Math.random() * TAU, x: this.x, y: this.y, t: 0.15 + Math.random() * 0.6, life: life + Math.random() * 0.8, temp: true });
+      if (this.swarm.length > 14) this.swarm.splice(0, this.swarm.length - 14);
+      LF.audio.play('spawn');
     }
     addLight(v) { this.light = Math.min(this.stats.maxLight, this.light + v); }
     frac() { return this.light / this.stats.maxLight; }
@@ -167,20 +172,20 @@
         const cost = s.flareFree ? 0 : s.flareCost;
         if (cost <= 0 || this.light > cost + 1) {
           this.light -= cost; this.flareT = s.flareCd;
-          const fd = s.flareDmg * this.damageMul(), p = this;
+          const fd = s.flareDmg * this.damageMul(), p = this, fk = LF.LOOK[LF.lookOf(g.meta)].flare;
           if (s.lance) g.lanceBurst(this.x, this.y, this.aim, fd * 2.3, s.flareStun, 1);
           else if (s.blink) {
             // one burst where you stood, one where you land; walls still stop you
             const w = g.screenToWorld(inp.aimX, inp.aimY), cx = Math.cos(this.aim), cy = Math.sin(this.aim);
             let far = (inp.aimDir !== null && inp.aimDir !== undefined) ? 230 : LF.clamp(LF.dist(this.x, this.y, w.x, w.y), 60, 300);
             far = Math.min(far, map.raycast(this.x, this.y, cx, cy, far) - this.r - 3);
-            g.flareBurst(this.x, this.y, s.flareRadius * 0.75, fd * 0.6, s.flareStun * 0.6, 0.6);
+            g.flareBurst(this.x, this.y, s.flareRadius * 0.75, fd * 0.6, s.flareStun * 0.6, 0.6, fk);
             if (far > 8) {
               for (let i = 0; i < 5; i++) this.ghosts.push({ x: this.x + cx * far * i / 5, y: this.y + cy * far * i / 5, life: 0.25 });
               this.x += cx * far; this.y += cy * far; map.resolveCircle(this, this.r);
             }
             this.invuln = Math.max(this.invuln, 0.45);
-            g.flareBurst(this.x, this.y, s.flareRadius, fd, s.flareStun, 1);
+            g.flareBurst(this.x, this.y, s.flareRadius, fd, s.flareStun, 1, fk);
           } else if (s.implode) {
             // the pull comes first, the fire a breath later
             const R2 = s.flareRadius * 1.75;
@@ -192,13 +197,13 @@
               const k = Math.min(950, d * 6.2);
               e.kx -= (e.x - this.x) / d * k; e.ky -= (e.y - this.y) / d * k;
             }
-            g.delay(0.3, () => { if (!p.dead) g.flareBurst(p.x, p.y, s.flareRadius, fd * 1.5, s.flareStun, 1.2); });
-          } else g.flareBurst(this.x, this.y, s.flareRadius, fd, s.flareStun, 1);
+            g.delay(0.3, () => { if (!p.dead) g.flareBurst(p.x, p.y, s.flareRadius, fd * 1.5, s.flareStun, 1.2, fk); });
+          } else g.flareBurst(this.x, this.y, s.flareRadius, fd, s.flareStun, 1, fk);
           if (s.echo) {
             g.delay(0.5, () => {
               if (p.dead) return;
               if (s.lance) g.lanceBurst(p.x, p.y, p.aim, fd * 1.15, s.flareStun * 0.5, 0.6);
-              else g.flareBurst(p.x, p.y, s.flareRadius * 0.9, s.flareDmg * 0.5 * p.damageMul(), s.flareStun * 0.5, 0.6);
+              else g.flareBurst(p.x, p.y, s.flareRadius * 0.9, s.flareDmg * 0.5 * p.damageMul(), s.flareStun * 0.5, 0.6, fk);
             });
           }
           if (s.beacon) g.addZone({ kind: 'beacon', x: this.x, y: this.y, r: 150, life: 9, dps: 16 });
@@ -216,17 +221,19 @@
         } else if (this.stoke > 0 && this.dashing <= 0) { if (this.stoke >= 0.15) this.fire(); else this.stoke = 0; }
       } else if (inp.fire && this.fireT <= 0 && this.dashing <= 0) this.fire();
 
-      // familiars (mirror moths)
-      for (let i = 0; i < this.familiars.length; i++) {
-        const f = this.familiars[i];
-        f.a += dt * 2.1; f.t -= dt;
-        const tx = this.x + Math.cos(f.a + i * 2.1) * 30, ty = this.y + Math.sin(f.a + i * 2.1) * 22 - 8;
+      // familiars (mirror moths), and the flock the Moth's flare looses: those fly wider and do not stay
+      for (let i = this.swarm.length - 1; i >= 0; i--) { this.swarm[i].life -= dt; if (this.swarm[i].life <= 0) { fx.burst(this.swarm[i].x, this.swarm[i].y, 3, { color: '#ffe2b0', speed1: 50, life: 0.3, size: 1.5 }); this.swarm.splice(i, 1); } }
+      const flock = this.swarm.length ? this.familiars.concat(this.swarm) : this.familiars;
+      for (let i = 0; i < flock.length; i++) {
+        const f = flock[i];
+        f.a += dt * (f.temp ? 2.8 : 2.1); f.t -= dt;
+        const tx = this.x + Math.cos(f.a + i * 2.1) * (f.temp ? 52 : 30), ty = this.y + Math.sin(f.a + i * 2.1) * (f.temp ? 38 : 22) - 8;
         f.x += (tx - f.x) * Math.min(1, dt * 9); f.y += (ty - f.y) * Math.min(1, dt * 9);
         if (f.t <= 0) {
           const e = g.nearestEnemy(f.x, f.y, 300, en => en.lit && !en.intangible);
           if (e) {
             f.t = 0.85;
-            g.fireBolt({ x: f.x, y: f.y, angle: Math.atan2(e.y - f.y, e.x - f.x), dmg: s.damage * 0.5 * this.damageMul(), size: 3, color: '#e4d4ff', minor: true });
+            g.fireBolt({ x: f.x, y: f.y, angle: Math.atan2(e.y - f.y, e.x - f.x), dmg: s.damage * 0.5 * this.damageMul(), size: 3, color: f.temp ? '#ffe2b0' : '#e4d4ff', minor: true });
           } else f.t = 0.2;
         }
       }
@@ -445,10 +452,10 @@
         ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(this.lx, this.ly, sr, 0, TAU); ctx.fill();
       }
       if (this.vigilOn) { ctx.strokeStyle = 'rgba(255,241,193,0.35)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(this.x, this.y, 20 + Math.sin(g.time * 4) * 2, 0, TAU); ctx.stroke(); }
-      // familiars
-      for (const fm of this.familiars) {
+      // familiars, and the Moth's flock (warm, and fading as their time runs out)
+      for (const fm of (this.swarm.length ? this.familiars.concat(this.swarm) : this.familiars)) {
         const w = Math.sin(g.time * 30 + fm.a) * 3;
-        ctx.fillStyle = 'rgba(228,212,255,0.9)';
+        ctx.fillStyle = fm.temp ? `rgba(255,226,176,${0.9 * Math.min(1, fm.life / 0.8)})` : 'rgba(228,212,255,0.9)';
         ctx.beginPath(); ctx.ellipse(fm.x - 3, fm.y, 3.5, 2 + Math.abs(w) * 0.6, -0.5, 0, TAU); ctx.ellipse(fm.x + 3, fm.y, 3.5, 2 + Math.abs(w) * 0.6, 0.5, 0, TAU); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(fm.x, fm.y, 1.4, 0, TAU); ctx.fill();
       }

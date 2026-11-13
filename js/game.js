@@ -693,19 +693,26 @@
       if (r.unlocks.length > 6) r.unlocks.length = 6;
       this.save();
     }
-    flareBurst(x, y, R, dmg, stun, power = 1) {
-      LF.audio.play('flare'); this.shake(8 * power);
-      this.addFlash(x, y, R * 2.4, 0.55, '#fff2cc');
-      fx.ring(x, y, 10, R, 0.35, '#fff2cc', 6); fx.ring(x, y, 4, R * 0.7, 0.5, '#ffb347', 3);
-      fx.burst(x, y, 30, { color: ['#fff2cc', '#ffb347', '#fff'], speed0: 120, speed1: 420, life: 0.5, size: 2.4, drag: 4 });
+    // `kind` is the look's own flare: undefined is the Wick's plain blinding flash; 'ward' (Keeper) is smaller and leaves a
+    // standing ring that burns and stops shots; 'wax' (Candle) hits softer, slows everything and leaves light that lingers;
+    // 'moths' (Moth) does no harm at all and looses a flock of moths instead.
+    flareBurst(x, y, R, dmg, stun, power = 1, kind) {
+      const ward = kind === 'ward', wax = kind === 'wax', moths = kind === 'moths';
+      if (ward) { R *= 0.7; dmg *= 0.6; stun *= 0.6; } else if (wax) { dmg *= 0.55; stun *= 0.5; } else if (moths) { dmg = 0; stun *= 0.6; }
+      const tint = wax ? '#f0e2c0' : moths ? '#ffe2b0' : '#fff2cc';
+      LF.audio.play('flare'); if (wax) LF.audio.play('wax'); this.shake((moths ? 4 : 8) * power);
+      this.addFlash(x, y, R * 2.4, wax ? 0.9 : 0.55, tint);
+      fx.ring(x, y, 10, R, 0.35, tint, 6); fx.ring(x, y, 4, R * 0.7, 0.5, wax ? '#d8c28a' : '#ffb347', 3);
+      fx.burst(x, y, 30, { color: wax ? ['#f0e2c0', '#d8c28a', '#fff'] : ['#fff2cc', '#ffb347', '#fff'], speed0: wax ? 60 : 120, speed1: wax ? 260 : 420, life: wax ? 0.8 : 0.5, size: wax ? 3 : 2.4, drag: 4 });
       for (const e of this.enemies) {
         if (e.dead || e.spawnT > 0) continue;
         if (LF.dist2(x, y, e.x, e.y) > (R + e.r) * (R + e.r)) continue;
         if (e.type === 'wraith') { e.solid = 1; e.intangible = false; }
         if (e.affix === 'warded') { e.wardBroken = 7; fx.text(e.x, e.y - e.r - 16, 'WARD BROKEN', '#ffe08a', 10, 0.9); }
         if (e.type === 'weaver') { e.intangible = false; }
-        this.damageEnemy(e, dmg, { type: 'flare', noShroud: true, force: true });
+        if (dmg > 0) this.damageEnemy(e, dmg, { type: 'flare', noShroud: true, force: true });
         if (e.dead) continue;
+        if (wax) e.chill = Math.max(e.chill, e.boss ? 3 : 5.5);
         e.mark = Math.max(e.mark, 3 + this.player.stats.markTime);
         if (!e.boss) {
           e.stun = Math.max(e.stun, stun);
@@ -722,7 +729,9 @@
         if (pr.kind === 'oiljar' && !pr.broken && LF.dist2(x, y, pr.x, pr.y) < R * R * 0.6) this.delay(0.1, () => this.breakJar(pr));
         if (pr.kind === 'trap' && pr.sub === 'grasp' && LF.dist2(x, y, pr.x, pr.y) < R * R) { pr.calm = 7; pr.state = 0; fx.burst(pr.x, pr.y, 8, { color: ['#12081e', '#2a2540'], speed1: 90, life: 0.5, size: 4, glow: false }); }
       }
-      this.addZone({ kind: 'light', x, y, r: R * 1.3, life: 4 });
+      this.addZone({ kind: 'light', x, y, r: R * (wax ? 1.6 : 1.3), life: wax ? 10 : 4 });
+      if (ward) this.addZone({ kind: 'beacon', x, y, r: R, life: 2.8, dps: Math.max(6, dmg * 0.5), ward: true });
+      if (moths) this.player.swarmMoths(Math.round(5 * power), 5);
     }
     // Rite of the Lance: the flare thrown as a beam along `ang`, from (x, y) to the first wall.
     lanceBurst(x, y, ang, dmg, stun, power = 1) {
@@ -849,12 +858,19 @@
             fx.burst(pr.x, pr.y, 18, { color: ['#4a3320', '#120a20'], glow: false, speed1: 200, life: 0.6, size: 5 });
             break;
           }
-          pr.opened = true; LF.audio.play('chest');
-          const rel = LF.rollRelics(p, 1, { rng: this.rng, floor: this.floor, minRarity: pr.rare ? 'rare' : this.floor >= 4 ? 'uncommon' : undefined })[0];
-          if (rel) this.pickups.push(new LF.Pickup('relic', pr.x, pr.y + 4, 0, { relic: rel.id, vx: 0, vy: 70 }));
-          for (let i = 0; i < 5 + this.floor; i++) this.pickups.push(new LF.Pickup('glass', pr.x, pr.y, 1));
-          fx.burst(pr.x, pr.y, 20, { color: ['#ffe08a', '#fff'], speed1: 180, life: 0.6 });
-          this.addFlash(pr.x, pr.y, 160, 0.4, '#ffe08a');
+          // Three things, rolled once and kept: walk away and the same three are there when you come back. No rerolls.
+          // A plain reliquary leans common; a sealed vault's or a trial's still holds something rare.
+          if (!pr.loot) {
+            pr.loot = LF.rollRelics(p, 3, { rng: this.rng, floor: this.floor, low: !pr.rare && !pr.prize, minRarity: pr.rare ? 'rare' : undefined });
+            LF.audio.play('chest');
+            for (let i = 0; i < 5 + this.floor; i++) this.pickups.push(new LF.Pickup('glass', pr.x, pr.y, 1));
+            fx.burst(pr.x, pr.y, 20, { color: ['#ffe08a', '#fff'], speed1: 180, life: 0.6 });
+            this.addFlash(pr.x, pr.y, 160, 0.4, '#ffe08a');
+          }
+          pr.loot = pr.loot.filter(d => (p.relics[d.id] || 0) < d.max);
+          if (!pr.loot.length) { pr.opened = true; this.hint('Nothing left in it that you can carry'); break; }
+          this.openOffer({ title: pr.rare ? 'A Sealed Reliquary' : 'A Reliquary', sub: 'Three things were left in it. Take one; the others stay behind.', relics: pr.loot, canSkip: true, noReroll: true,
+            onDone: picked => { if (picked) pr.opened = true; } });
           break;
         }
         case 'shrine': {
@@ -881,11 +897,12 @@
         }
         case 'statue': {
           if (pr.used) break;
-          if (p.stats.maxLight < 50) { LF.audio.play('deny'); this.hint('You have too little light to give'); break; }
-          const offers = LF.rollRelics(p, 3, { rng: this.rng, floor: this.floor + 3, minRarity: 'rare' }).filter(r => r.rarity !== 'common');
+          // a blessing, not a bargain: three plain lasting gains, each said in full, one to keep
+          if (!pr.loot) pr.loot = LF.rollRelics(p, 3, { rng: this.rng, pool: 'boon' });
+          const offers = pr.loot;
           if (!offers.length) { this.hint('The statue has nothing left to give'); pr.used = true; break; }
-          this.openOffer({ title: 'The Weeping Lamplighter', sub: 'Give 20 of your maximum light, forever, for a greater gift. Or walk away.', relics: offers, canSkip: true, cursed: true,
-            onDone: picked => { if (picked) { pr.used = true; p.sacrificed += 20; p.recalc(); fx.text(p.x, p.y - 30, '-20 max light', '#9fc7ff', 13, 1.4); } } });
+          this.openOffer({ title: 'The Weeping Lamplighter', sub: 'A blessing, kept for the rest of this descent. Choose one.', relics: offers, canSkip: true, noReroll: true,
+            onDone: picked => { if (picked) { pr.used = true; fx.ring(pr.x, pr.y, 8, 120, 0.6, '#ffe2a6', 3); } } });
           break;
         }
         case 'trial': {
@@ -910,7 +927,7 @@
           return 'Buy ' + nm + '  ·  ' + this.price(pr) + ' glass' + (p.glass < this.price(pr) ? '  (too few)' : '');
         }
         case 'font': return pr.used ? null : 'Drink from the Font of Light';
-        case 'statue': return pr.used ? null : 'Offer 20 maximum light to the Lamplighter';
+        case 'statue': return pr.used ? null : 'Kneel before the Weeping Lamplighter';
         case 'trial': return pr.used ? null : 'Wake the Brazier of Trials';
         case 'exit': return pr.open && !pr.hidden ? (this.victoryReady ? (this.mode === 'descent' ? (this.loop >= 4 ? 'Give it your flame' : 'Take up the shard') : 'Step into the light') : 'Descend') : null;
       }
@@ -1186,6 +1203,7 @@
       for (const z of this.zones) {
         z.life -= dt; z.t += dt;
         if (z.life <= 0) { z.dead = true; continue; }
+        if (z.ward) for (const b of this.ebullets) if (!b.dead && LF.dist2(z.x, z.y, b.x, b.y) < z.r * z.r) { b.dead = true; fx.burst(b.x, b.y, 4, { color: '#ffe9a8', speed1: 80, life: 0.3 }); }
         if (z.kind === 'fire' || z.kind === 'beacon') {
           for (const e of this.enemies) {
             if (e.dead || e.intangible || e.spawnT > 0) continue;

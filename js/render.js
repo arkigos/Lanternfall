@@ -512,7 +512,11 @@
       for (const b of g.litBraziers) if (inView(b.x, b.y, 200)) drawGlow(ctx, '#ff9a3d', b.x, b.y, 150, 0.2);
       for (const z of g.zones) {
         const k = Math.min(1, z.life / 0.6);
-        if (z.kind === 'beacon') { drawGlow(ctx, '#ffe9a8', z.x, z.y, z.r * 1.1, 0.3 * k); drawGlow(ctx, '#ffffff', z.x, z.y - 6, 16 + Math.sin(g.time * 12) * 3, 0.9 * k); }
+        if (z.ward) {
+          drawGlow(ctx, '#ffe9a8', z.x, z.y, z.r * 1.2, 0.34 * k);
+          ctx.strokeStyle = `rgba(255,236,190,${0.85 * k})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.stroke();
+          ctx.strokeStyle = `rgba(255,190,96,${0.5 * k})`; ctx.lineWidth = 1.5; ctx.setLineDash([10, 9]); ctx.lineDashOffset = -g.time * 40; ctx.beginPath(); ctx.arc(z.x, z.y, z.r - 7, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+        } else if (z.kind === 'beacon') { drawGlow(ctx, '#ffe9a8', z.x, z.y, z.r * 1.1, 0.3 * k); drawGlow(ctx, '#ffffff', z.x, z.y - 6, 16 + Math.sin(g.time * 12) * 3, 0.9 * k); }
         else if (z.kind === 'fire') drawGlow(ctx, '#ff7b2e', z.x, z.y, z.r * 1.6, 0.5 * k);
         else if (z.kind === 'wax') {
           drawGlow(ctx, '#ff9a3d', z.x, z.y, z.r * 1.5, 0.45 * k);

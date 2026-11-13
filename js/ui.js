@@ -593,7 +593,7 @@
       ['Omens', 'Some floors carry an omen that bends the rules there: thicker dark, hungrier light, a hunter on your trail. The banner and the pause screen say which.'],
       ['Vows', 'Once you have felled a great shadow you can swear handicaps on the lantern screen. Each pays extra cinders when the descent ends.'],
       ['Schools', 'Every relic belongs to one of six schools. Three of a school attunes your lantern to it; five and seven attune it further. The deep outscales a lantern that takes a little of everything, so pick a school and reroll for it. Some pairs also form named synergies.'],
-      ['Trials, vaults, statues, altars', 'A trial is three sealed waves for a rare relic. A vault halves your light until its braziers burn. A statue trades maximum light for power. An altar offers a cursed bargain.'],
+      ['Trials, vaults, statues, altars', 'A trial is three sealed waves for a rare relic. A vault halves your light until its braziers burn. A statue of the Weeping Lamplighter gives one lasting blessing, freely. An altar offers a cursed bargain.'],
       ['The Long Vigil and the Gauntlet', 'The Vigil is one hall and endless waves, with a relic every second wave. The Gauntlet is six great shadows back to back, and opens once you have felled three. Any great shadow can be rehearsed alone from the Shadows page of the Codex.'],
       ['Daily Descent', 'One seed each day: the same floors, omens and bosses on every try.'],
       ['Rites, lanterns, feats', 'When a great shadow falls you are offered a rite, a power that changes how you fight: a blade in place of bolts, a flare thrown as a lance. New lanterns unlock as you go deeper, and feats in the Codex pay cinders.'],
@@ -605,7 +605,7 @@
       [touch ? 'Flare' : 'Flare (right click, or Q)', 'A burst that wounds, stuns and throws back everything near you, shatters enemy shots and lights braziers. What it touches stays kindled for a few seconds and takes far more damage. When the crowd closes in, this is the way out.'],
       [touch ? 'Dash' : 'Dash (space)', 'A short burst of speed that passes through attacks. Costs a little light.'],
       ['Fires hold the dark off', 'Beside a lit brazier or a relit wall lamp your light stops burning down. A brazier also refills you when lit, and slowly mends you up to half while you rest there.'],
-      ['Relics', 'Each stair down offers a relic. Unmake nearly everything on a floor for an extra choice. Altars, statues and trials offer more, at a price.'],
+      ['Relics', 'Each stair down offers a relic. Unmake nearly everything on a floor for an extra choice. Altars and trials offer more, at a price. A reliquary holds three humbler things and lets you take one; a statue gives a blessing.'],
       ['Glass and cinders', 'Glass buys relics from the Chandler during a run. Cinders are earned at the end and spent at the Hearth.'],
     ];
     ctx.font = `${Math.round(13 * u)}px ${LF.FONT_UI}`;
@@ -986,7 +986,7 @@
     const by = NAR ? y0 + n * (ch + gap) + 6 * u : y0 + ch + 30 * u;
     if (o.canSkip) { if (button('Walk away', (W - 220 * u) / 2, by, 220 * u, 44 * u, { back: true }) && o.t > 0.35) chosen = -1; }
     else {
-      const rr = g.player.rerolls > 0, alt = o.altGlass > 0, cnt = (rr ? 1 : 0) + (alt ? 1 : 0);
+      const rr = g.player.rerolls > 0 && !o.noReroll, alt = o.altGlass > 0, cnt = (rr ? 1 : 0) + (alt ? 1 : 0);
       const bw2 = Math.min(250 * u, (W - 32 * u - (cnt - 1) * 12 * u) / Math.max(1, cnt));
       const total = cnt * bw2 + (cnt - 1) * 12 * u; let bx = (W - total) / 2;
       if (rr) { if (button('Reroll  (' + g.player.rerolls + ' left)', bx, by, bw2, 44 * u, { size: 14 }) || inp.reroll) { g.rerollOffer(); return; } bx += bw2 + 12 * u; }

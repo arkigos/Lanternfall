@@ -175,6 +175,21 @@
   for (const r of list) LF.RELICS[r.id] = r;
   LF.RELIC_LIST = list;
 
+  // Blessings: what the Weeping Lamplighter gives. Plain lasting gains, each one said in full on its card.
+  // They live in LF.RELICS so the player carries them like relics, but stay out of the relic pools and the codex count.
+  const BN = 'boon';
+  LF.BOONS = [
+    R('boonwick', 'A Longer Wick', BN, 9, 'candle', '#ffe2a6', '+18 maximum light.', (s, n) => { s.maxLight += 18 * n; }),
+    R('boonoil', 'Clean Oil', BN, 9, 'drop', '#ffd28a', 'Your light burns down 10% slower.', (s, n) => { s.drainMul *= Math.pow(0.9, n); }),
+    R('boonspark', 'A Whetted Spark', BN, 9, 'flame', '#ffb347', '+10% damage.', (s, n) => { s.damage *= 1 + 0.1 * n; }),
+    R('boonstride', 'Light Feet', BN, 9, 'wing', '#ffe9b8', '+5% move speed.', (s, n) => { s.speed *= 1 + 0.05 * n; }),
+    R('boonbreath', 'A Deep Breath', BN, 9, 'star', '#fff2cc', 'Your flare returns 12% sooner.', (s, n) => { s.flareCd *= Math.pow(0.88, n); }),
+    R('boonember', 'Banked Embers', BN, 9, 'flame', '#ff9a50', 'Embers restore 12% more light.', (s, n) => { s.emberMul += 0.12 * n; }),
+    R('boonhand', 'An Open Hand', BN, 9, 'eye', '#ffe2a6', 'Two more rerolls, now.', () => {}, { onGain: g => { g.player.rerolls += 2; } }),
+    R('boonpurse', 'A Full Purse', BN, 9, 'glass', '#bfe3ff', '60 glass now, and 10% more glass from here on.', (s, n) => { s.glassMul += 0.1 * n; }, { onGain: g => { g.player.glass += 60; g.run.glass += 60; } }),
+  ];
+  for (const r of LF.BOONS) LF.RELICS[r.id] = r;
+
   // ---------- schools ----------
   // Every relic belongs to a school. Holding 3, 5 and 7 relics of one school (stacks count) attunes the lantern
   // to it, and the bonuses are large on purpose: the deep outscales a lantern that takes a little of everything.
@@ -216,12 +231,18 @@
     cursed: { name: 'Cursed', color: '#c08bff', weight: 0, price: 0 },
     brand: { name: 'Rite', color: '#ff8a4d', weight: 0, price: 0 },
     shadow: { name: 'Shadow', color: '#8f6bff', weight: 0, price: 0 },
+    boon: { name: 'Blessing', color: '#ffe2a6', weight: 0, price: 0 },
   };
 
   // Pick `n` distinct relic offers. opts: {minRarity, pool:'cursed', rng, floor}
   LF.rollRelics = function (player, n, opts = {}) {
     const rng = opts.rng || new LF.RNG((Math.random() * 1e9) | 0);
     const floor = opts.floor || 1;
+    if (opts.pool === 'boon') {
+      const left = LF.BOONS.filter(r => (player.relics[r.id] || 0) < r.max), got = [];
+      while (got.length < n && left.length) got.push(left.splice(rng.int(0, left.length - 1), 1)[0]);
+      return got;
+    }
     const avail = list.filter(r => (player.relics[r.id] || 0) < r.max);
     const counts = LF.schoolCounts(player);
     const out = [];
@@ -241,6 +262,7 @@
         let w = LF.RARITY[r.rarity].weight || 10;
         if (r.rarity === X) w += floor * 1.5;
         if (r.rarity === U) w += floor * 1.2;
+        if (opts.low) w *= r.rarity === C ? 1.7 : r.rarity === X ? 0.35 : 0.9; // a reliquary holds humbler things than a stair does
         if (player.relics[r.id]) w *= 0.85;
         if (r.school && counts[r.school]) w *= 1.15 + 0.05 * Math.min(5, counts[r.school]); // the lantern draws its own kind, a little
         return w;

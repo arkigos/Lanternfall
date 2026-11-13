@@ -7,13 +7,13 @@
   const LF = window.LF, TAU = Math.PI * 2;
 
   LF.LOOKS = [
-    { id: 'wick', name: 'The Wick', perk: 'The lamplighter. Braziers catch twice as fast, and bolts carry 15% farther.',
+    { id: 'wick', name: 'The Wick', perk: 'The lamplighter. Braziers catch twice as fast, and bolts carry 15% farther. Flare: the plain blinding flash.',
       stats(s) { s.kindleMul *= 2; s.boltLife *= 1.15; } },
-    { id: 'keeper', name: 'The Keeper', perk: 'Heavy. Takes 15% less harm and holds 20 more light, but walks 7% slower.',
+    { id: 'keeper', name: 'The Keeper', perk: 'Heavy. Takes 15% less harm and holds 20 more light, but walks 7% slower. Flare: smaller, and leaves a ring of light that burns and stops shots for a moment.', flare: 'ward',
       stats(s) { s.dmgTaken *= 0.85; s.maxLight += 20; s.speed *= 0.93; } },
-    { id: 'candle', name: 'The Candle', perk: 'Small and hard to hit. The flare returns 25% sooner. Holds 15 less light.', r: 8,
+    { id: 'candle', name: 'The Candle', perk: 'Small and hard to hit. Holds 15 less light. Flare: returns 25% sooner and hits softer, but wax slows all it touches and the light lingers.', r: 8, flare: 'wax',
       stats(s) { s.flareCd *= 0.75; s.maxLight -= 15; } },
-    { id: 'moth', name: 'The Moth', perk: 'Quick. 8% faster, the dash returns 20% sooner and embers come from farther. Takes 10% more harm.',
+    { id: 'moth', name: 'The Moth', perk: 'Quick. 8% faster, the dash returns 20% sooner and embers come from farther. Takes 10% more harm. Flare: does no harm, and looses a flock of moths that fight for you.', flare: 'moths',
       stats(s) { s.speed *= 1.08; s.dashCd *= 0.8; s.pickup *= 1.4; s.dmgTaken *= 1.1; } },
   ];
   LF.LOOK = {};

@@ -480,7 +480,7 @@
           map.spawns.push({ type: rng.pick(opts2).type, x: sp.x, y: sp.y, room: r.id, elite: true, wave: 0 });
         }
       } else if (r.type === 'vault') {
-        map.props.push({ kind: 'chest', x: c.x, y: c.y, room: r.id, opened: false, locked: true, rare: floor >= 6 });
+        map.props.push({ kind: 'chest', x: c.x, y: c.y, room: r.id, opened: false, locked: true, prize: true, rare: floor >= 6 });
         for (const side of [-1, 1]) {
           const bp = map.nearestOpen(c.x + side * 3 * TILE, c.y);
           map.props.push({ kind: 'brazier', x: bp.x, y: bp.y, lit: false, room: r.id, vault: true });
