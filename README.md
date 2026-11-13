@@ -16,7 +16,7 @@ same run. The fifth cycle ends at the Great Lantern, and you become the ember th
 Nine depths, three biomes, nine bosses, 70 relics, five starting lanterns, vows, a daily seed,
 and an endless wave-survival mode (The Long Vigil).
 
-Play the published build: https://claude.ai/artifact/Ck2y4wLTbyuNZFjtSwj4XX
+Play it in the browser: https://arkigos.github.io/Lanternfall/
 Or open `Lanternfall-standalone.html` in any browser (one file, no server needed).
 
 ## Controls

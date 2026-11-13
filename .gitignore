@@ -8,3 +8,6 @@ js.bak/
 sol-*.txt
 tools/p[0-9]*.py
 __pycache__/
+
+# Working notes stay on this machine: they quote private conversations
+NOTES.md
