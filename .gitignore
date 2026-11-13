@@ -1,0 +1,10 @@
+# Built by `node tools/build.js` from index.html and js/
+dist/
+Lanternfall-standalone.html
+
+# Scratch left by patching and review passes
+js.bak/
+*.bak
+sol-*.txt
+tools/p[0-9]*.py
+__pycache__/

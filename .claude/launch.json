@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "lanternfall", "runtimeExecutable": "python", "runtimeArgs": ["tools/serve.py", "8418"], "port": 8418 }
+  ]
+}
