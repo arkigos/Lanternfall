@@ -1,0 +1,2 @@
+# Keep every text file LF in the working copy: the patch workflow matches text exactly
+* text=auto eol=lf
