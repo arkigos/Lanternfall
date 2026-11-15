@@ -3,6 +3,38 @@
 (function () {
   const fx = LF.fx, TAU = LF.TAU;
 
+  // A censer, swung or thrown: a little lantern seen from the side, hanging out along a straight chain from the hand.
+  // (x, y) is where it strikes; `col` is the light in its window.
+  // The chain is drawn as the Chain Warden's is: open links, face-on and edge-on by turns. It starts a little way out
+  // from the bearer, not over them, and when it is swung it hangs in a slight arc behind the censer (`lag`, in radians
+  // at the hand; 0 for a thrown censer, whose chain is taut). `big` is the censer's size: 1, or more while it is swollen.
+  // A censer's chain is fine work, not a flail's: small thin links, light against the censer they carry.
+  function drawCenser(ctx, px, py, x, y, col, lag = 0, big = 1) {
+    const ang = Math.atan2(y - py, x - px), far = Math.hypot(x - px, y - py), out = 14, end = Math.max(out, far - 8 * big);
+    const n = Math.max(2, Math.round((end - out) / 4.6)), pt = f => { const a = ang + lag * (1 - f) * (1 - f), r = out + (end - out) * f; return [px + Math.cos(a) * r, py + Math.sin(a) * r]; };
+    ctx.lineCap = 'round';
+    let lx = 0, ly = 0;
+    const link = (i, cx, cy, la) => { ctx.beginPath(); if (i % 2) { ctx.moveTo(cx - Math.cos(la) * 2.3, cy - Math.sin(la) * 2.3); ctx.lineTo(cx + Math.cos(la) * 2.3, cy + Math.sin(la) * 2.3); } else ctx.ellipse(cx, cy, 2.7, 1.6, la, 0, TAU); ctx.stroke(); };
+    for (let i = 0; i <= n; i++) {
+      const [cx, cy] = pt(i / n), [nx, ny] = pt(Math.min(1, (i + 0.5) / n)), la = Math.atan2(ny - cy, nx - cx) || ang;
+      ctx.strokeStyle = '#2a2216'; ctx.lineWidth = 2; link(i, cx, cy, la);
+      ctx.strokeStyle = '#d2b278'; ctx.lineWidth = 0.9; link(i, cx, cy, la);
+      lx = cx; ly = cy;
+    }
+    // the censer: a little lantern seen from the side, hanging out along the last of the chain
+    ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(y - ly, x - lx)); ctx.scale(0.9 * big, 0.9 * big); ctx.translate(-8, 0);
+    ctx.strokeStyle = '#2a2216'; ctx.lineWidth = 1.2; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.arc(-1, 0, 2.3, 0, TAU); ctx.stroke();
+    ctx.fillStyle = '#e0bb78'; ctx.beginPath(); ctx.moveTo(1, -1.6); ctx.lineTo(5, -6.5); ctx.lineTo(5, 6.5); ctx.lineTo(1, 1.6); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = col; ctx.fillRect(5, -5.5, 9, 11);
+    ctx.fillStyle = '#fffbe8'; ctx.beginPath(); ctx.ellipse(9.5, 0, 2.2, 3.4, 0, 0, TAU); ctx.fill();
+    ctx.strokeRect(5, -5.5, 9, 11); ctx.beginPath(); ctx.moveTo(8, -5.5); ctx.lineTo(8, 5.5); ctx.moveTo(11, -5.5); ctx.lineTo(11, 5.5); ctx.stroke();
+    ctx.fillStyle = '#e0bb78'; ctx.fillRect(14, -6.5, 2.6, 13); ctx.strokeRect(14, -6.5, 2.6, 13);
+    ctx.restore();
+  }
+  LF.CENSER_REACH = 60;   // how far out a swung censer hangs, before chain relics lengthen it
+  const censerCol = st => st.chainBurn ? '#ff9a4d' : st.chainLight ? '#fff6dc' : '#ffd98a';
+
   // ------------------------------------------------------------------ Player
   class Player {
     constructor(game) {
@@ -24,24 +56,31 @@
     }
     recalc() {
       const s = LF.baseStats(), m = this.g.meta ? this.g.meta.up : {};
-      s.maxLight += 8 * (m.wick || 0);
+      s.maxLight += 7.5 * (m.wick || 0);
       s.damage *= 1 + 0.05 * (m.spark || 0);
       s.speed *= 1 + 0.03 * (m.boots || 0);
       s.drainMul *= Math.pow(0.9, m.oil || 0);
       s.flareCd *= Math.pow(0.92, m.flare || 0);
       s.emberMul += 0.08 * (m.ember || 0);
       s.extraChoice += (m.choice || 0);
-      s.brazierBonus += 0.2 * (m.tinder || 0);
+      s.brazierBonus += (m.tinder || 0) / 6;
       s.glassMul += 0.08 * (m.pockets || 0);
       { const sh = (this.g.meta && this.g.meta.shards) || 0; if (sh >= 1) { s.maxLight += 25; s.drainMul *= 0.85; } if (sh >= 3) s.extraChoice += 1; }
       const lan = LF.LANTERN[this.g.lanternId]; if (lan) lan.stats(s);
-      { const lk = LF.LOOK[LF.lookOf(this.g.meta)]; if (lk.stats) lk.stats(s); this.r = lk.r || 10; }
+      { const lk = LF.LOOK[LF.lookOf(this.g.meta)], sear0 = s.sear; if (lk.stats) lk.stats(s); this.r = lk.r || 10; if (s.sear > sear0) s.searOn = 1; } // light only sears for a bearer whose perk says so, or with a relic
       { const ml = LF.masteryLevel(this.g.meta, this.g.lanternId); s.damage *= 1 + 0.04 * ml; s.maxLight += 5 * ml; }
-      for (const id in this.relics) { const d = LF.RELICS[id]; if (d) d.stats(s, this.relics[id], this); }
+      for (const id in this.relics) { const d = LF.RELICS[id]; if (d) d.stats(s, LF.rankValue(d, this.relics[id]), this); }
       this.synergies = [];
-      for (const sy of LF.SYNERGIES) if (sy.needs.every(n => this.relics[n])) { sy.stats(s); this.synergies.push(sy); }
+      for (const sy of LF.SYNERGIES) if (sy.needs.every(n => (this.relics[n] || 0) >= (sy.rank || 1))) { sy.stats(s); this.synergies.push(sy); }
       this.schools = LF.schoolCounts(this);
-      LF.applySchools(s, this.schools);
+      LF.applySchools(s, this.schools, this);
+      s.waxSlow = Math.min(0.8, s.waxSlow);
+      s.flareCd = Math.max(0.8, s.flareCd); s.dashCd = Math.max(0.25, s.dashCd); s.stormCd = Math.max(0.4, s.stormCd); s.flareStun = Math.min(5, s.flareStun);
+      if (s.counterweight && s.chainGuard) s.dmgTaken *= Math.max(0.5, Math.pow(0.97, s.counterweight * s.chainGuard));
+      if (s.undying) s.burnTime = 999;
+      s.flareDmg *= s.flareAmp; // White Flash multiplies whatever harm the flare has been given
+      // ward: the strongest theme multiplier the lantern has divides every blow it takes (a lantern is as tough as it is deep)
+      s.ward = Math.max(1, s.fireAll, s.lightAll, s.waxAll, s.chainAll, s.mothAll);
       if (s.buckler > (this.wardMax || 0)) this.ward = s.buckler; // a new buckler arrives whole
       this.wardMax = s.buckler; this.ward = Math.min(this.ward || 0, s.buckler);
       s.maxLight += this.bonusMax;
@@ -55,17 +94,21 @@
     }
     addRelic(id) {
       const d = LF.RELICS[id]; if (!d) return;
+      // a bolt carries one type: taking another's lets go of the one it had
+      if (d.vt && d.verb === 'bolt') for (const k of Object.keys(this.relics)) { const o = LF.RELICS[k]; if (k !== id && o && o.vt && o.verb === 'bolt') { delete this.relics[k]; this.relicOrder = this.relicOrder.filter(x => x !== k); } }
       this.relics[id] = (this.relics[id] || 0) + 1;
       if (!this.relicOrder.includes(id)) this.relicOrder.push(id);
+      const c0 = d.school ? (d.dmg ? 1 : Object.keys(this.relics).filter(k => k !== id && LF.RELICS[k] && LF.RELICS[k].school === d.school && !LF.RELICS[k].dmg).length + (this.relics[id] > 1 ? 1 : 0)) : 0;
       const had = (this.synergies || []).map(sy => sy.id), sch = d.school, t0 = sch ? LF.tierOf((this.schools || {})[sch] || 0) : 0;
       this.recalc();
-      if (sch) { const t1 = LF.tierOf(this.schools[sch] || 0), S = LF.SCHOOLS[sch]; if (t1 > t0) { this.g.toast('Attuned: ' + S.name + ' ' + ['', 'I', 'II', 'III'][t1], S.tiers[t1 - 1], S.color, S.glyph, S.color, 7); LF.audio.play('rare'); } }
-      for (const sy of this.synergies) if (!had.includes(sy.id)) { this.g.toast('Synergy: ' + sy.name, sy.desc, '#9dffcf', 'star', '#9dffcf', 6.5); LF.audio.play('rare'); }
+      if (sch) { const t1 = LF.tierOf(this.schools[sch] || 0), S = LF.SCHOOLS[sch]; if (t1 > t0) { this.g.toast('Attuned: ' + S.name + ' ' + ['', 'I', 'II', 'III'][t1], S.tiers[t1 - 1] + (LF.RELIC_LIST.some(r => r.school === sch && r.tier > t0 && r.tier <= t1) ? '. Stronger relics of ' + S.name.toLowerCase() + ' can now be offered' : ''), S.color, S.glyph, S.color, 7); LF.audio.play('rare'); if (this.g.attuned) this.g.attuned(sch, t0, t1); } }
+      if (sch && !c0 && LF.SCHOOLS[sch].first) { const S = LF.SCHOOLS[sch]; this.g.toast(S.name, S.first, S.color, S.glyph, S.color, 7); }
+      for (const sy of this.synergies) if (!had.includes(sy.id)) { this.g.toast('Kindred: ' + sy.name, sy.desc, '#9dffcf', 'star', '#9dffcf', 6.5); LF.audio.play('rare'); }
       if (d.onGain) d.onGain(this.g);
     }
-    swarmMoths(n, life) {
-      for (let i = 0; i < n; i++) this.swarm.push({ a: Math.random() * TAU, x: this.x, y: this.y, t: 0.15 + Math.random() * 0.6, life: life + Math.random() * 0.8, temp: true });
-      if (this.swarm.length > 14) this.swarm.splice(0, this.swarm.length - 14);
+    swarmMoths(n, life, x, y) {
+      for (let i = 0; i < n; i++) this.swarm.push({ a: Math.random() * TAU, x: x === undefined ? this.x : x, y: y === undefined ? this.y : y, t: 0.15 + Math.random() * 0.6, life: (life + (this.stats.mothLife || 0)) * (this.stats.mothStay ? 2 : 1) + Math.random() * 0.8, temp: true });
+      { const cap = this.stats.mothStay ? 21 : 14; if (this.swarm.length > cap) this.swarm.splice(0, this.swarm.length - cap); }
       LF.audio.play('spawn');
     }
     addLight(v) { this.light = Math.min(this.stats.maxLight, this.light + v); }
@@ -82,7 +125,7 @@
 
     update(dt, inp) {
       const g = this.g, s = this.stats, map = g.map;
-      this.fireT -= dt; this.dashT -= dt; this.flareT -= dt; this.invuln -= dt;
+      this.fireT -= dt; this.dashT -= dt; this.flareT -= dt; this.invuln -= dt; this.noonT = (this.noonT || 0) - dt; this.castCd = (this.castCd || 0) - dt;
       this.hurtFlash = Math.max(0, this.hurtFlash - dt * 3); this.recoil = Math.max(0, this.recoil - dt * 8);
       // the Candle sheds wax when it is struck, and when it is nearly burnt down
       if (g.meta.look === 'candle' && (this.hurtFlash > 0.2 || this.frac() < 0.3) && Math.random() < dt * (this.hurtFlash > 0.2 ? 30 : 5)) fx.spawn({ x: this.x + LF.rand(-7, 7), y: this.y + LF.rand(-5, 7), vx: LF.rand(-25, 25), vy: LF.rand(-25, 25), life: 0.9, size: 2.2, color: '#b89f68', drag: 4, glow: false });
@@ -105,18 +148,26 @@
       }
       else { const w = g.screenToWorld(inp.aimX, inp.aimY); this.aim = Math.atan2(w.y - this.y, w.x - this.x); }
 
+      // how far off the aim point is (the Gout lands there): the cursor, or with a stick or a bot the creature nearest the line of aim
+      if (s.gout) {
+        if (inp.aimDir !== null && inp.aimDir !== undefined) { let bd = 150; for (const e of g.enemies) { if (e.dead || e.intangible || e.spawnT > 0) continue; const d = LF.dist(this.x, this.y, e.x, e.y); if (d < Math.max(bd, 260) && Math.abs(LF.angDiff(this.aim, Math.atan2(e.y - this.y, e.x - this.x))) < 0.3 && (bd === 150 || d < bd)) bd = d; } this.aimDist = bd; }
+        else { const w = g.screenToWorld(inp.aimX, inp.aimY); this.aimDist = LF.dist(this.x, this.y, w.x, w.y); }
+      }
+      if (this.thrownOut && !g.bullets.some(b => b.ret && !b.dead)) this.thrownOut = false;
       // movement
       this.inWater = map.waterAt(this.x, this.y);
       this.windT -= dt; this.critEmberT -= dt;
-      let speed = s.speed * (this.inWater ? (g.tideHigh ? 0.62 : 0.86) : 1) * (this.windT > 0 ? 1 + 0.35 * s.secondWind : 1);
+      let speed = s.speed * (this.inWater && !s.hover ? (g.tideHigh ? 0.62 : 0.86) : 1) * (this.windT > 0 ? 1 + 0.35 * s.secondWind : 1);
       if (this.dashing > 0) {
         this.dashing -= dt;
         this.vx = this.dashDx * 640; this.vy = this.dashDy * 640;
         this.trailD += 640 * dt;
         this.ghosts.push({ x: this.x, y: this.y, life: 0.25 });
-        if (s.afterglow && this.trailD > 16) {
+        if ((s.afterglow || s.waxTrail || s.dashLight) && this.trailD > 16) {
           this.trailD = 0;
-          g.addZone({ kind: 'fire', x: this.x, y: this.y, r: 22, life: 2.4, dps: 26 * s.afterglow });
+          if (s.dashLight && (this.trailN = (this.trailN || 0) + 1) % 2 === 1) g.addZone({ kind: 'light', x: this.x, y: this.y, r: 64, life: 6 * s.linger });
+          if (s.afterglow) g.addZone({ kind: 'fire', x: this.x, y: this.y, r: 22, life: 2.4, dps: 70 * s.afterglow });
+          if (s.waxTrail) g.addZone({ kind: 'tallow', x: this.x, y: this.y, r: 24, life: 3 + 2 * s.waxTrail });
         }
         if (s.eclipseMask || s.comet) {
           for (const e of g.enemies) {
@@ -140,8 +191,8 @@
       if (moving) {
         this.bob += dt * 11; this.still = 0;
         this.stepT -= dt;
-        if (this.stepT <= 0 && this.dashing <= 0) { this.stepT = 0.3; LF.audio.play(this.inWater ? 'splash' : 'step'); }
-        if (this.inWater && Math.random() < dt * 14) fx.ring(this.x + LF.rand(-4, 4), this.y + LF.rand(-4, 4), 2, 12, 0.5, 'rgba(160,210,230,0.5)', 1.2, false);
+        if (this.stepT <= 0 && this.dashing <= 0) { this.stepT = s.hover ? 0.42 : 0.3; LF.audio.play(s.hover ? 'flutter' : this.inWater ? 'splash' : 'step'); }
+        if (this.inWater && !s.hover && Math.random() < dt * 14) fx.ring(this.x + LF.rand(-4, 4), this.y + LF.rand(-4, 4), 2, 12, 0.5, 'rgba(160,210,230,0.5)', 1.2, false);
       } else this.still += dt;
       const vig = s.vigil > 0 && this.still > 0.6;
       if (vig && !this.vigilOn) fx.ring(this.x, this.y, 8, 36, 0.4, '#fff1c1', 2);
@@ -157,13 +208,14 @@
           if (!dx && !dy) { dx = Math.cos(this.aim); dy = Math.sin(this.aim); }
           const l = Math.hypot(dx, dy) || 1;
           this.dashDx = dx / l; this.dashDy = dy / l;
-          this.dashing = s.comet ? 0.3 : 0.17; this.dashT = s.dashCd; this.invuln = Math.max(this.invuln, s.comet ? 0.42 : 0.3);
-          this.dashHit.clear(); this.trailD = 99;
+          this.dashing = (s.comet ? 0.3 : 0.17) * s.dashLen; this.dashT = s.dashCd;
+          if (s.dashMoth) this.swarmMoths(s.dashMoth, 4); this.invuln = Math.max(this.invuln, s.comet ? 0.42 : 0.3);
+          this.dashHit.clear(); this.trailD = 99; this.trailN = 0; this.flailT = 1.5;
           if (s.shadeStep && this.shadeCd <= 0) { this.shadeCd = 6; this.shadeT = 1.45; this.invuln = Math.max(this.invuln, 1.45); fx.ring(this.x, this.y, 6, 44, 0.35, '#8f6bff', 3); }
           LF.audio.play('dash'); if (s.comet) LF.audio.play('ignite');
           fx.burst(this.x, this.y, 10, { color: ['#ffd9a0', '#fff'], speed1: 90, life: 0.3, angle: Math.atan2(-dy, -dx), spread: 1.4 });
           g.stat('dashes');
-        } else { LF.audio.play('noLight'); g.hint('Too little light to dash'); }
+        } else { LF.audio.play('noLight'); g.hint('Too few embers to dash'); }
       }
 
       // flare
@@ -173,7 +225,19 @@
         if (cost <= 0 || this.light > cost + 1) {
           this.light -= cost; this.flareT = s.flareCd;
           const fd = s.flareDmg * this.damageMul(), p = this, fk = LF.LOOK[LF.lookOf(g.meta)].flare;
-          if (s.lance) g.lanceBurst(this.x, this.y, this.aim, fd * 2.3, s.flareStun, 1);
+          if (s.haul) {
+            // the Haul: chains go out past the flare's edge, and whatever they catch is fastened to the bearer and drawn in
+            const R2 = s.flareRadius * s.haul;
+            fx.ring(this.x, this.y, R2, 16, 0.3, '#d9b070', 3); LF.audio.play('chain');
+            for (const e of g.enemies) {
+              if (e.dead || e.spawnT > 0 || e.intangible || LF.dist2(this.x, this.y, e.x, e.y) > (R2 + e.r) * (R2 + e.r)) continue;
+              fx.arc(this.x, this.y, e.x, e.y, '#d9b070', 0.3, 2.5, 'chain');
+              g.shackle(e, s.haulTime);
+              if (e.shackle > 0) { e.shackle = Math.max(e.shackle, s.haulTime); if (!e.boss) { e.onLeash = true; e.haulL = 64; } }
+            }
+          }
+          if (s.noonFor) { /* High Noon: the light itself, no burst */ }
+          else if (s.lance) g.lanceBurst(this.x, this.y, this.aim, fd * 2.3, s.flareStun, 1);
           else if (s.blink) {
             // one burst where you stood, one where you land; walls still stop you
             const w = g.screenToWorld(inp.aimX, inp.aimY), cx = Math.cos(this.aim), cy = Math.sin(this.aim);
@@ -206,10 +270,22 @@
               else g.flareBurst(p.x, p.y, s.flareRadius * 0.9, s.flareDmg * 0.5 * p.damageMul(), s.flareStun * 0.5, 0.6, fk);
             });
           }
-          if (s.beacon) g.addZone({ kind: 'beacon', x: this.x, y: this.y, r: 150, life: 9, dps: 16 });
+          if (s.beacon) g.addZone({ kind: 'beacon', x: this.x, y: this.y, r: 150, life: 9, dps: 0, flare: true });
+          // The Ring of Fire: fire laid round the flare's edge, where the burst throws what it strikes
+          if (s.ringFire) { const RR = s.flareRadius * 0.95, k = Math.max(10, Math.round(RR / 22)); for (let i = 0; i < k; i++) { const a = i * TAU / k; g.addZone({ kind: 'fire', x: this.x + Math.cos(a) * RR, y: this.y + Math.sin(a) * RR, r: 24, life: s.ringFire, dps: 90 }); } }
+          // High Noon: the bearer's own light becomes noon for a while
+          if (s.noonFor) { this.noonT = s.noonFor; fx.ring(this.x, this.y, 10, s.flareRadius * 1.3, 0.5, '#fff6dc', 5); }
+          // The Moth Cloud: a cloud of moths hangs where the flare burst
+          if (s.mothCloud) g.addZone({ kind: 'mothcloud', x: this.x, y: this.y, r: s.flareRadius * 0.75, life: s.mothCloud, tick: 0 });
+          // The Wax Cast: a shell of wax that takes whole blows, once in 6 seconds at most
+          if (s.cast && (this.castCd || 0) <= 0) { this.castN = s.cast; this.castCd = 6; fx.ring(this.x, this.y, 30, this.r + 6, 0.35, '#f0e2c0', 4); LF.audio.play('wax'); }
+          if (s.candle) { g.addZone({ kind: 'candle', x: this.x, y: this.y, r: 50, life: s.candle, pulse: 2, fk }); g.addZone({ kind: 'tallow', x: this.x, y: this.y, r: 56, life: s.candle }); }
+          if (s.flareMoth) this.swarmMoths(s.flareMoth, 8);
+          if (s.waxFlood) g.addZone({ kind: 'tallow', x: this.x, y: this.y, r: s.flareRadius * 0.9, life: 4 + 3 * s.waxFlood });
+          if (s.flareFling) this.flingT = 3;
           if (s.flareBolts) for (let i = 0; i < s.flareBolts; i++) g.fireBolt({ x: this.x, y: this.y, angle: i * TAU / s.flareBolts, dmg: s.damage * 0.9 * this.damageMul(), minor: true });
           g.stat('flares');
-        } else { LF.audio.play('noLight'); g.hint('Too little light to flare'); }
+        } else { LF.audio.play('noLight'); g.hint('Too few embers to flare'); }
       } else if (inp.flare && this.flareT > 0) LF.audio.play('noLight');
 
       // fire
@@ -230,21 +306,34 @@
         const tx = this.x + Math.cos(f.a + i * 2.1) * (f.temp ? 52 : 30), ty = this.y + Math.sin(f.a + i * 2.1) * (f.temp ? 38 : 22) - 8;
         f.x += (tx - f.x) * Math.min(1, dt * 9); f.y += (ty - f.y) * Math.min(1, dt * 9);
         if (f.t <= 0) {
-          const e = g.nearestEnemy(f.x, f.y, 300, en => en.lit && !en.intangible);
+          const e = g.nearestEnemy(f.x, f.y, 300, en => (en.lit || s.mothLight) && !en.intangible);
           if (e) {
             f.t = 0.85;
-            g.fireBolt({ x: f.x, y: f.y, angle: Math.atan2(e.y - f.y, e.x - f.x), dmg: s.damage * 0.5 * this.damageMul(), size: 3, color: f.temp ? '#ffe2b0' : '#e4d4ff', minor: true });
+            g.fireBolt({ x: f.x, y: f.y, angle: Math.atan2(e.y - f.y, e.x - f.x), dmg: s.mothBite * (f.temp ? s.swarmMul : s.mothMul) * (s.cloud ? 1 + 0.05 * flock.length : 1), size: 3, color: f.temp ? '#ffe2b0' : '#e4d4ff', minor: true, moth: true });
           } else f.t = 0.2;
         }
       }
+      if (s.wakeful && !g.vows.silence) {
+        this.wakeT = (this.wakeT === undefined ? 7 : this.wakeT) - dt;
+        if (this.wakeT <= 0) {
+          if (g.nearestEnemy(this.x, this.y, s.flareRadius * 0.67, en => en.awake && !en.intangible)) {
+            this.wakeT = 7;
+            g.flareBurst(this.x, this.y, s.flareRadius * 0.67, s.flareDmg * 0.67 * this.damageMul(), s.flareStun * 0.67, 0.6, LF.LOOK[LF.lookOf(g.meta)].flare);
+            if (s.flareMoth) this.swarmMoths(Math.ceil(s.flareMoth / 2), 8);
+            if (s.waxFlood) g.addZone({ kind: 'tallow', x: this.x, y: this.y, r: s.flareRadius * 0.6, life: 4 + 3 * s.waxFlood });
+            if (s.flareFling) this.flingT = 3;
+          } else this.wakeT = 0.25;
+        }
+      }
+      if (s.waxWalk && this.dashing <= 0 && LF.dist2(this.x, this.y, this.wwX || 0, this.wwY || 0) > 30 * 30) { this.wwX = this.x; this.wwY = this.y; g.addZone({ kind: 'tallow', x: this.x, y: this.y, r: 22, life: 3 }); }
       // ember halo
       if (s.orbit) {
-        this.orbitA += dt * 3.3;
+        this.orbitA += dt * 3.3 * (1 + s.haloWide);
         for (let i = 0; i < s.orbit; i++) {
-          const a = this.orbitA + i * TAU / s.orbit, ox = this.x + Math.cos(a) * 46, oy = this.y + Math.sin(a) * 46;
+          const a = this.orbitA + i * TAU / s.orbit, ox = this.x + Math.cos(a) * 46 * (1 + s.haloWide), oy = this.y + Math.sin(a) * 46 * (1 + s.haloWide);
           for (const e of g.enemies) {
             if (e.dead || e.intangible) continue;
-            if (LF.dist2(ox, oy, e.x, e.y) < (e.r + 9) * (e.r + 9)) g.damageEnemy(e, (26 + s.damage * 1.4) * dt, { type: 'burn', quiet: true, noShroud: true });
+            if (LF.dist2(ox, oy, e.x, e.y) < (e.r + 9) * (e.r + 9)) g.damageEnemy(e, 110 * dt, { type: 'burn', of: 'mantle', quiet: true, noShroud: true });
           }
           if (Math.random() < dt * 20) fx.spawn({ x: ox, y: oy, life: 0.3, size: 2, color: '#ff9a50', vx: LF.rand(-10, 10), vy: LF.rand(-10, 10) });
         }
@@ -254,13 +343,45 @@
       if (s.buckler && this.ward < s.buckler) { this.wardT += dt * s.wardRegen; if (this.wardT >= 5) { this.wardT = 0; this.ward++; } }
       // whirling chain: a positional shield that never stops moving
       if (s.chainGuard) {
-        this.guardA -= dt * 2.7;
+        // Chain is whatever swings round the lantern. Each chain is a weight on a length of links: it strikes what it
+        // passes, once a pass. A blow shoves hard and wounds little; only chain relics make it reach farther or
+        // land harder. A dash (with the Flail) or a flare (with Cast Chains) flings the chains wide for a moment.
+        this.flailT = (this.flailT || 0) - dt; this.flingT = (this.flingT || 0) - dt;
+        const flail = s.flail && this.flailT > 0;
+        const reach = LF.CENSER_REACH * (1 + s.chainReach);
+        // (the Flail and Cast Chains swell the censers for a moment: a bigger thing on the same chain, so whatever is leashed to the bearer stays in its path)
+        { const big = (this.flingT > 0 ? 2 : 1) * (flail ? 1.5 : 1); this.guardBig = (this.guardBig || 1) + (big - (this.guardBig || 1)) * Math.min(1, dt * 10); }
+        const fat = this.guardBig;
+        const hard = (1 + s.chainMul) * (flail ? 1 + 2 * s.flail : 1);
+        this.guardR = (this.guardR || reach) + (reach - (this.guardR || reach)) * Math.min(1, dt * 12);
+        const R = this.guardR;
+        // (clockwise, so the chain's arc trails behind the censer it drives)
+        this.guardA += dt * 3.3 * (flail ? 1.6 : 1) * (s.gyre ? 2 : 1);
         for (let i = 0; i < s.chainGuard; i++) {
-          const a = this.guardA + i * TAU / s.chainGuard, gx = this.x + Math.cos(a) * 52, gy = this.y + Math.sin(a) * 52;
-          for (const b of g.ebullets) if (!b.dead && LF.dist2(gx, gy, b.x, b.y) < 16 * 16) { b.dead = true; fx.burst(b.x, b.y, 4, { color: '#d9b070', speed1: 90, life: 0.25 }); }
+          const a = this.guardA + i * TAU / s.chainGuard, ca = Math.cos(a), sa = Math.sin(a), gx = this.x + ca * R, gy = this.y + sa * R;
+          for (const b of g.ebullets) if (!b.dead && LF.dist2(gx, gy, b.x, b.y) < 16 * fat * 16 * fat) { b.dead = true; fx.burst(b.x, b.y, 4, { color: '#d9b070', speed1: 90, life: 0.25 }); }
           for (const e of g.enemies) {
-            if (e.dead || e.intangible || e.spawnT > 0) continue;
-            if (LF.dist2(gx, gy, e.x, e.y) < (e.r + 10) * (e.r + 10)) g.damageEnemy(e, (16 + s.damage * 1.3) * dt, { type: 'thorns', quiet: true, noShroud: true });
+            if (e.dead || e.intangible || e.spawnT > 0 || g.time - (e.chainAt || -9) < 0.35) continue;
+            if (LF.dist2(gx, gy, e.x, e.y) < (e.r + 18 * fat) * (e.r + 18 * fat)) {
+              e.chainAt = g.time;
+              const blow = s.chainDmg * hard * (1 + s.longSwing * 10 * Math.max(0, R / LF.CENSER_REACH - 1)) * (s.chainWax && e.chill > 0 ? 2 : 1);
+              g.damageEnemy(e, blow, { type: 'chain', noShroud: true });
+              if (s.incense) this.addLight(s.incense);
+              if (s.chainWax) g.waxEnemy(e);
+              // the Peal: the blow rings out through whatever stands near
+              // every blow jars whatever stands beside the creature it struck; with the Peal it rings out twice as far and twice as hard
+              { const R = s.peal ? 88 : 44, part = s.peal ? 0.8 : 0.4; if (s.peal) fx.ring(e.x, e.y, 6, R, 0.25, '#d9b070', 2); for (const o of g.enemies) if (o !== e && !o.dead && !o.intangible && o.spawnT <= 0 && LF.dist2(e.x, e.y, o.x, o.y) < (R + o.r) * (R + o.r)) g.damageEnemy(o, blow * part, { type: 'chain', noShroud: true, quiet: true }); }
+              if (e.dead) continue;
+              if (!e.boss && e.def.speed > 0) {
+                // shoved outward; a hooked chain hauls the creature round with it instead
+                const k = 300 * Math.sqrt(hard);
+                if (s.hook) { e.kx += (-sa * 0.9 - ca * 0.3) * k; e.ky += (ca * 0.9 - sa * 0.3) * k; }
+                else { e.kx += ca * k; e.ky += sa * k; }
+              }
+              if (s.drag) g.shackle(e);
+              if (s.chainLight) e.glow = Math.max(e.glow || 0, 3);
+              if (s.chainBurn) g.ignite(e, s.burnBase * 2);
+            }
           }
         }
       }
@@ -283,7 +404,7 @@
             this.stormT = s.stormCd;
             // a cinder of the Sun, falling from where it used to hang
             for (let k = 0; k < 6; k++) fx.spawn({ x: e.x + LF.rand(-3, 3), y: e.y - 30 - k * 26, vy: 620, life: 0.1 + k * 0.03, size: 4.5 - k * 0.5, color: k < 2 ? '#fff2cc' : '#ffb347', drag: 0 });
-            g.damageEnemy(e, s.damage * 3.2 * this.damageMul(), { type: 'storm', crit: true });
+            g.damageEnemy(e, 100, { type: 'cinder', of: 'ground', crit: true });
             g.addFlash(e.x, e.y, 120, 0.3, '#ffb347'); fx.ring(e.x, e.y, 4, 36, 0.25, '#ffb347', 3);
             fx.burst(e.x, e.y, 12, { color: ['#ffb347', '#fff2cc'], speed1: 210, life: 0.4 });
             LF.audio.play('cinder'); g.shake(3);
@@ -292,6 +413,13 @@
       }
       // hearth
       if (s.hearth && g.threat <= 0) this.addLight(1.7 * dt);
+      // Glowing Flare: embers come back while the bearer stands in the light a flare left
+      this.inGlow = false;
+      if (s.flareGlow) for (const z of g.zones) if (z.flare && !z.dead && LF.dist2(this.x, this.y, z.x, z.y) < z.r * z.r) {
+        this.inGlow = true; this.addLight(s.flareGlow * s.linger * dt);
+        if (Math.random() < dt * 7) fx.spawn({ x: this.x + LF.rand(-12, 12), y: this.y + LF.rand(-2, 12), vx: LF.rand(-6, 6), vy: -34, life: 0.7, size: 2.2, color: LF.pick(['#ffe9a8', '#fff6dc']), drag: 1 });
+        break;
+      }
 
       // drain
       if (g.drainActive && !(s.noDrainLow && this.frac() < 0.3)) {
@@ -307,7 +435,7 @@
       // Full light is never universal light: even a brimming lantern leaves most of the screen dark.
       // Light above 100 widens the pool only a little, and nothing pushes it past the cap.
       const base = 44 + 140 * Math.pow(Math.min(this.light, 100) / 100, 0.9) + Math.min(20, Math.max(0, this.light - 100) * 0.25);
-      this.lightRT = Math.min(250, base * s.radiusMul * (this.vigilOn ? 1.15 : 1) * (g.boss && !g.boss.dead ? 1.4 : 1)) * g.snuffMul * g.omenMul('radius') * (1 - 0.2 * this.dim) * (1 - 0.16 * (g.dread || 0));
+      this.lightRT = Math.min(s.radiusCap || 250, base * s.radiusMul * (this.vigilOn ? 1.15 : 1) * (g.boss && !g.boss.dead ? 1.4 : 1)) * (this.noonT > 0 ? 1.5 : 1) * g.snuffMul * g.omenMul('radius') * (1 - 0.2 * this.dim) * (1 - 0.16 * (g.dread || 0));
       this.lightR += (this.lightRT - this.lightR) * Math.min(1, dt * 6);
 
       // low-light heartbeat
@@ -318,18 +446,21 @@
     }
 
     // Rite of the Blade: the main attack as an arc of fire around the aim.
-    // Relics that would have shaped bolts lengthen or widen the blade instead.
+    // Relics that would have shaped bolts lengthen or widen the blade instead, and whatever a bolt does on landing
+    // (a link of flame, a bursting coal, kindling a brazier, breaking an urn or a jar) a blow does too.
     swing() {
       const g = this.g, s = this.stats;
       this.fireT = 1.9 / s.fireRate; this.shots++; this.recoil = 1;
       const charged = this.charge, mul = this.damageMul() * (1 + 0.6 * charged);
       if (charged) { this.charge = 0; fx.ring(this.x, this.y, 6, 30, 0.25, '#fff0b8', 3); }
       // A narrow cut, not a wide sweep: it has to be aimed, and it has to be close. In return it hits very hard.
-      const reach = 104 + s.boltSize * 3 + 12 * (s.pierce + s.bounce + s.chain + s.split + s.homing) + (s.boltSpeed - 560) * 0.03;
+      // what makes bolts carry farther (the Wick, for one) lengthens the blade by as much, within limits
+      const reach = (104 + s.boltSize * 3 + 12 * (s.pierce + s.bounce + s.homing) + (s.boltSpeed - 560) * 0.03) * LF.clamp(s.boltLife / 0.72, 0.85, 1.4);
       const half = Math.min(1.25, 0.5 + 0.14 * (s.multishot - 1));
       this.swingT = 0.16; this.swingA = this.aim; this.swingHalf = half; this.swingReach = reach; this.swingDir = -(this.swingDir || 1);
-      const dmg = s.damage * 4.4 * mul;
-      let hits = 0;
+      const dmg = s.damage * 4.4 * mul * s.bladeMul * (s.melee ? s.fireAll : 1);
+      let hits = 0, first = null, firstD = 1e9;
+      const struck = new Set();
       for (const e of g.enemies) {
         if (e.dead || e.spawnT > 0 || e.intangible) continue;
         const d = LF.dist(this.x, this.y, e.x, e.y);
@@ -338,9 +469,25 @@
         if (d > e.r + 8 && Math.abs(LF.angDiff(this.aim, a)) > half) continue;
         const crit = Math.random() < s.crit;
         g.damageEnemy(e, dmg * (crit ? s.critMul : 1), { type: 'bolt', crit, angle: a, x: e.x, y: e.y });
-        if (s.ignite && !e.dead) { e.burn = 3; e.burnDps = Math.max(e.burnDps || 0, dmg * 0.25 * s.ignite); }
-        if (s.frost && !e.dead) e.chill = 2;
-        hits++;
+        g.boltEffects(e, true);
+        hits++; struck.add(e);
+        if (d < firstD) { firstD = d; first = e; }
+      }
+      // Link of Flame and Bursting Coal: once a blow, from the nearest creature it landed on
+      if (first && s.chain > 0) {
+        let from = first, hops = s.chain;
+        while (hops-- > 0) {
+          const nx = g.nearestEnemy(from.x, from.y, 140, en => !struck.has(en) && !en.intangible && en.spawnT <= 0);
+          if (!nx) break;
+          struck.add(nx);
+          fx.arc(from.x, from.y, nx.x, nx.y, '#ffb070', 0.3, 3, 'chain'); LF.audio.play('chain');
+          g.damageEnemy(nx, dmg * 0.6, { type: 'chain' });
+          from = nx;
+        }
+      }
+      if (first && s.split > 0) {
+        const a = Math.atan2(first.y - this.y, first.x - this.x);
+        for (const off of [-0.5, 0.5]) g.fireBolt({ x: first.x, y: first.y, angle: a + off, dmg: dmg * 0.55, noSplit: true, minor: true, hit: new Set([first]), size: Math.max(2.5, s.boltSize * 0.75) });
       }
       // the blade cuts enemy shots out of the air
       for (const b of g.ebullets) {
@@ -348,6 +495,20 @@
         const d = LF.dist(this.x, this.y, b.x, b.y);
         if (d > reach + 6 || Math.abs(LF.angDiff(this.aim, Math.atan2(b.y - this.y, b.x - this.x))) > half) continue;
         b.dead = true; fx.burst(b.x, b.y, 4, { color: '#ffb070', speed1: 90, life: 0.25 });
+      }
+      // and it does a bolt's work on what stands in the way: it kindles a cold brazier and breaks urns and oil jars
+      for (const pr of g.props) {
+        if (pr.kind === 'brazier' ? pr.lit : pr.kind === 'urn' || pr.kind === 'oiljar' ? pr.broken : true) continue;
+        const d = LF.dist(this.x, this.y, pr.x, pr.y);
+        if (d > reach + 8 || (d > 20 && Math.abs(LF.angDiff(this.aim, Math.atan2(pr.y - this.y, pr.x - this.x))) > half)) continue;
+        if (pr.kind === 'urn') g.breakUrn(pr);
+        else if (pr.kind === 'oiljar') g.delay(0.1, () => g.breakJar(pr));
+        else {
+          // a blow is worth what the bolts it replaces would have been
+          pr.kindle = (pr.kindle || 0) + 1.9 * (s.kindleMul || 1) * 0.95 / Math.max(1.5, s.fireRate); pr.kindleT = 2.5;
+          fx.burst(pr.x, pr.y - 8, 5, { color: ['#ffb347', '#ffe9b8'], speed1: 90, life: 0.35, size: 1.8, grav: -60 });
+          LF.audio.play('sizzle');
+        }
       }
       if (hits) { this.addLight(Math.min(2.4, 0.6 * hits)); g.shake(2); }
       if (s.novaEvery && this.shots % s.novaEvery === 0) {
@@ -362,7 +523,22 @@
     fire() {
       const g = this.g, s = this.stats;
       if (s.melee) { this.swing(); return; }
-      // Rite of the Kiln: one stoked coal instead of a stream of bolts
+      const mx0 = this.x + Math.cos(this.aim) * 15, my0 = this.y + Math.sin(this.aim) * 15;
+      // The Thrown Censer: one censer out on its chain at a time; it comes back before it is thrown again
+      if (s.thrown) {
+        if (this.thrownOut) return;
+        this.thrownOut = true; this.fireT = 0.1; this.shots++; this.recoil = 1;
+        g.fireBolt({ x: mx0, y: my0, angle: this.aim, dmg: (s.damage * this.damageMul() * s.thrown + s.chainDmg * 0.6) * (1 + s.chainMul) * s.chainAll, size: 6.5, speed: 400, life: 9, pierce: 99, ret: 150 * (1 + s.chainReach), color: '#d9b070' });
+        LF.audio.play('chain'); g.stat('shots'); return;
+      }
+      // The Gout: wax lobbed to where the bearer aims
+      if (s.gout) {
+        this.fireT = 1 / (s.fireRate * 0.55); this.shots++; this.recoil = 1;
+        const far = LF.clamp(this.aimDist || 150, 50, 200), sp = 380;
+        g.fireBolt({ x: mx0, y: my0, angle: this.aim, dmg: s.damage * this.damageMul() * s.gout * s.waxAll, size: 6, speed: sp, life: far / sp, pierce: 99, lob: 46, color: '#f0e2c0' });
+        LF.audio.play('heavyShoot'); g.stat('shots'); return;
+      }
+      // The Kiln: one stoked coal instead of a stream of bolts
       const coal = s.kiln ? Math.max(0.15, this.stoke) : 0;
       this.stoke = 0;
       this.fireT = coal ? 0.14 : 1 / s.fireRate; this.shots++; this.recoil = 1;
@@ -372,7 +548,9 @@
       const mx = this.x + Math.cos(this.aim) * 15, my = this.y + Math.sin(this.aim) * 15;
       for (let i = 0; i < n; i++) {
         const a = this.aim + (i - (n - 1) / 2) * s.spread + LF.rand(-0.018, 0.018);
-        if (coal) g.fireBolt({ x: mx, y: my, angle: a, dmg: s.damage * mul * (1.2 + 5.3 * coal), size: s.boltSize * (1.4 + 1.5 * coal), speed: s.boltSpeed * 0.78, coal, color: '#ffb347' });
+        if (coal) g.fireBolt({ x: mx, y: my, angle: a, dmg: s.damage * mul * (1 + 4 * coal) * s.kiln * s.fireAll, size: s.boltSize * (1.4 + 1.5 * coal), speed: s.boltSpeed * 0.78, coal, color: '#ffb347' });
+        // The Ray: at once, through everything, and no farther than the lantern's light
+        else if (s.ray) { const sp = s.boltSpeed * 3.2; g.fireBolt({ x: mx, y: my, angle: a, dmg: s.damage * mul * s.ray * s.lightAll, speed: sp, life: Math.max(70, this.lightR * 0.95) / sp, pierce: 99, ray: true, color: '#fff6dc' }); }
         else g.fireBolt({ x: mx, y: my, angle: a, dmg: s.damage * mul, size: charged ? s.boltSize * (1 + 0.18 * charged) : undefined });
       }
       if (s.novaEvery && this.shots % s.novaEvery === 0) {
@@ -407,14 +585,12 @@
           ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 10, a0 + i * span + 0.06, a0 + (i + 1) * span - 0.06); ctx.stroke();
         }
       }
+      if (this.castN > 0) { ctx.fillStyle = 'rgba(240,226,192,0.28)'; ctx.strokeStyle = 'rgba(240,226,192,0.9)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 7, 0, TAU); ctx.fill(); ctx.stroke(); }
       if (st.waxSkin && this.waxT >= Math.max(2.5, 8 - 2 * st.waxSkin)) { ctx.strokeStyle = 'rgba(240,226,192,0.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 4, 0, TAU); ctx.stroke(); }
       if (st.chainGuard) {
         for (let i = 0; i < st.chainGuard; i++) {
-          const a = this.guardA + i * TAU / st.chainGuard;
-          ctx.fillStyle = '#6b5a40';
-          for (let k = 1; k <= 4; k++) { ctx.beginPath(); ctx.arc(this.x + Math.cos(a - k * 0.16) * (52 - k * 1.5), this.y + Math.sin(a - k * 0.16) * (52 - k * 1.5), 2.6 - k * 0.3, 0, TAU); ctx.fill(); }
-          ctx.fillStyle = '#b89a66'; ctx.beginPath(); ctx.arc(this.x + Math.cos(a) * 52, this.y + Math.sin(a) * 52, 5.5, 0, TAU); ctx.fill();
-          ctx.strokeStyle = '#3a3020'; ctx.lineWidth = 1.5; ctx.stroke();
+          const a = this.guardA + i * TAU / st.chainGuard, GR = this.guardR || LF.CENSER_REACH;
+          drawCenser(ctx, this.x, this.y, this.x + Math.cos(a) * GR, this.y + Math.sin(a) * GR, censerCol(st), 0.42, this.guardBig || 1);
         }
       }
       if (this.shadeT > 0) { ctx.fillStyle = 'rgba(40,20,80,0.55)'; ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 3, 0, TAU); ctx.fill(); }
@@ -451,6 +627,8 @@
         sg.addColorStop(0, `rgba(255,236,190,${0.5 + 0.45 * this.stoke})`); sg.addColorStop(0.5, 'rgba(255,140,50,0.45)'); sg.addColorStop(1, 'rgba(255,90,20,0)');
         ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(this.lx, this.ly, sr, 0, TAU); ctx.fill();
       }
+      // each censer burns: a small light of its own
+      for (let i = 0; i < this.stats.chainGuard; i++) { const a = this.guardA + i * TAU / this.stats.chainGuard, GR = this.guardR || LF.CENSER_REACH; LF.drawGlow(ctx, censerCol(this.stats), this.x + Math.cos(a) * GR, this.y + Math.sin(a) * GR, 17 * (this.guardBig || 1), 0.6); }
       if (this.vigilOn) { ctx.strokeStyle = 'rgba(255,241,193,0.35)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(this.x, this.y, 20 + Math.sin(g.time * 4) * 2, 0, TAU); ctx.stroke(); }
       // familiars, and the Moth's flock (warm, and fading as their time runs out)
       for (const fm of (this.swarm.length ? this.familiars.concat(this.swarm) : this.familiars)) {
@@ -462,7 +640,7 @@
       // halo embers
       const s = this.stats;
       for (let i = 0; i < s.orbit; i++) {
-        const a = this.orbitA + i * TAU / s.orbit, ox = this.x + Math.cos(a) * 46, oy = this.y + Math.sin(a) * 46;
+        const a = this.orbitA + i * TAU / s.orbit, ox = this.x + Math.cos(a) * 46 * (1 + s.haloWide), oy = this.y + Math.sin(a) * 46 * (1 + s.haloWide);
         const g2 = ctx.createRadialGradient(ox, oy, 0, ox, oy, 12);
         g2.addColorStop(0, 'rgba(255,230,180,1)'); g2.addColorStop(0.35, 'rgba(255,140,60,0.7)'); g2.addColorStop(1, 'rgba(255,90,20,0)');
         ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(ox, oy, 12, 0, TAU); ctx.fill();
@@ -486,31 +664,57 @@
       this.chain = o.minor ? 0 : s.chain;
       this.split = o.minor || o.noSplit ? 0 : s.split;
       this.homing = s.homing;
-      this.minor = !!o.minor;
+      this.minor = !!o.minor; this.moth = !!o.moth;
       this.color = o.color || s.boltColor;
       this.hit = o.hit || new Set();
       this.px = this.x; this.py = this.y; this.dead = false; this.dist = 0; this.coal = o.coal || 0;
+      // forms: a ray, a lobbed gout (lob: the radius it lands with), a thrown censer (ret: how far it goes before it is hauled back), a moth
+      this.ray = !!o.ray; this.lob = o.lob || 0; this.ret = o.ret || 0; this.back = false; this.maxLife = this.life; this.own = g.player;
+      this.wing = !o.minor && !o.moth && !this.lob && !this.ret ? s.wing : 0;
+    }
+    // a gout comes down: it strikes everything under it and leaves its wax
+    land(g) {
+      const R = this.lob;
+      fx.ring(this.x, this.y, 6, R, 0.25, '#f0e2c0', 3); fx.burst(this.x, this.y, 10, { color: ['#f0e2c0', '#d8c28a', '#fff'], speed1: 150, life: 0.4, size: 2.4, glow: false }); LF.audio.play('wax');
+      for (const e of g.enemies) { if (e.dead || e.intangible || e.spawnT > 0) continue; if (LF.dist2(this.x, this.y, e.x, e.y) < (R + e.r) * (R + e.r)) this.onHit(g, e); }
+      g.addZone({ kind: 'tallow', x: this.x, y: this.y, r: R, life: 2.2 });
     }
     update(dt, g) {
       this.life -= dt; this.dist += this.speed * dt;
-      if (this.life <= 0) { this.dead = true; return; }
+      if (this.life <= 0) { if (this.lob) this.land(g); this.dead = true; return; }
+      if (this.lob) {
+        // in the air: it meets nothing until it lands (a wall stops it short)
+        this.px = this.x; this.py = this.y;
+        const nx = this.x + this.vx * dt, ny = this.y + this.vy * dt;
+        if (g.map.solidAt(nx, ny)) { this.land(g); this.dead = true; return; }
+        this.x = nx; this.y = ny; return;
+      }
+      if (this.ret) {
+        const p = g.player;
+        if (!this.back && this.dist >= this.ret) { this.back = true; this.hit.clear(); }
+        if (this.back) {
+          const a = Math.atan2(p.y - this.y, p.x - this.x); this.vx = Math.cos(a) * this.speed * 1.2; this.vy = Math.sin(a) * this.speed * 1.2;
+          if (LF.dist2(this.x, this.y, p.x, p.y) < 20 * 20) { this.dead = true; return; }
+        }
+      }
       if (Math.random() < dt * 14) fx.spawn({ x: this.x, y: this.y, vx: -this.vx * 0.12 + LF.rand(-30, 30), vy: -this.vy * 0.12 + LF.rand(-30, 30) - 12, life: 0.3, size: 1.5, color: this.color === '#d6f6ff' || this.color === '#cfeaff' ? '#a8d4ff' : '#ff9a40', drag: 3 });
-      if (this.homing) {
-        const e = g.nearestEnemy(this.x, this.y, 170, en => !en.intangible && !this.hit.has(en));
+      if (this.homing || this.wing) {
+        const e = g.nearestEnemy(this.x, this.y, this.wing ? 230 : 170, en => !en.intangible && !this.hit.has(en));
         if (e) {
           const cur = Math.atan2(this.vy, this.vx), want = Math.atan2(e.y - this.y, e.x - this.x);
-          if (Math.abs(LF.angDiff(cur, want)) < 1.2) {
-            const na = LF.turnToward(cur, want, 3.4 * dt);
+          if (Math.abs(LF.angDiff(cur, want)) < (this.wing ? 1.6 : 1.2)) {
+            const na = LF.turnToward(cur, want, (this.wing ? 6 : 3.4) * dt);
             this.vx = Math.cos(na) * this.speed; this.vy = Math.sin(na) * this.speed;
           }
         }
       }
       this.px = this.x; this.py = this.y;
-      const steps = 2;
+      const steps = this.ray ? 5 : 2;
       for (let i = 0; i < steps && !this.dead; i++) {
         const ox = this.x, oy = this.y;
         this.x += this.vx * dt / steps; this.y += this.vy * dt / steps;
-        if (g.map.solidAt(this.x, this.y)) {
+        if (g.map.solidAt(this.x, this.y) && !(this.ret && this.back)) {
+          if (this.ret) { this.back = true; this.hit.clear(); this.x = ox; this.y = oy; break; } // a thrown censer that meets a wall is hauled back from there
           if (this.bounce > 0) {
             this.bounce--;
             const hitX = g.map.solidAt(this.x, oy), hitY = g.map.solidAt(ox, this.y);
@@ -520,6 +724,7 @@
             fx.burst(this.x, this.y, 3, { color: this.color, speed1: 80, life: 0.2, size: 1.5 });
           } else {
             this.dead = true;
+            if (!this.moth && g.player.stats.boltLight) g.lightPool(ox, oy);
             fx.burst(ox, oy, 4, { color: this.color, speed1: 90, life: 0.22, size: 1.5, angle: Math.atan2(-this.vy, -this.vx), spread: 2 });
             return;
           }
@@ -543,13 +748,23 @@
     }
     onHit(g, e) {
       const s = g.player.stats;
-      const crit = Math.random() < s.crit;
-      const dmg = this.dmg * (crit ? s.critMul : 1) * (s.lodestar ? 1 + Math.min(0.8, this.dist / 420 * 0.8) : 1);
+      const crit = Math.random() < s.crit + s.keen * (e.depth || 0) || !!(s.stunCrit && e.stun > 0 && !this.moth);
+      // each mark the lantern has put on a creature multiplies what a bolt does to it, and the marks multiply each other
+      let up = 1;
+      // (and a mark brings its whole theme to the bolt: what multiplies fire multiplies a bolt on a burning creature, and so on)
+      if (s.stoke && e.burn > 0) up *= (1 + s.stoke) * s.fireAll;
+      if (s.brittle && e.chill > 0) up *= (1 + s.brittle) * s.waxAll;
+      if (s.taut && (e.shackle > 0 || g.time - (e.chainAt || -9) < 2)) up *= (1 + s.taut) * s.chainAll;
+      if (s.harry && g.time - (e.bitten || -9) < 2) up *= (1 + s.harry) * s.mothAll;
+      const dmg = this.dmg * up * (crit ? s.critMul * s.lightAll : 1) * (s.lodestar ? 1 + Math.min(0.8, this.dist / 420 * 0.8) : 1);
       const ang = Math.atan2(this.vy, this.vx);
       this.hit.add(e);
+      // a moth's bite: its own damage, and whatever the moths have been taught to carry
+      if (this.moth) { g.damageEnemy(e, this.dmg, { type: 'moth', angle: ang, x: this.x, y: this.y, noShroud: !!s.mothLight }); g.mothBite(e); this.dead = true; return; }
       g.damageEnemy(e, dmg, { type: 'bolt', crit, angle: ang, x: this.x, y: this.y });
-      if (s.ignite && !e.dead) { e.burn = 3; e.burnDps = Math.max(e.burnDps || 0, this.dmg * 0.4 * s.ignite); }
-      if (s.frost && !e.dead) e.chill = 2;
+      g.boltEffects(e, !this.minor);
+      if (this.ret) g.censerStruck(e, dmg);   // a thrown censer's blow is a censer's blow
+      if (this.wing && !e.dead) { g.damageEnemy(e, s.mothBite * s.mothMul * this.wing, { type: 'moth', quiet: true, noShroud: !!s.mothLight }); g.mothBite(e); } // a winged bolt bites as a moth does
       if (this.chain > 0) {
         let from = e, hops = this.chain;
         const seen = new Set(this.hit);
@@ -566,11 +781,26 @@
         this.split = 0;
         for (const off of [-0.5, 0.5]) g.fireBolt({ x: this.x, y: this.y, angle: ang + off, dmg: this.dmg * 0.55, noSplit: true, minor: true, hit: new Set([e]), size: Math.max(2.5, this.r * 0.75) });
       }
-      if (this.pierce > 0) { this.pierce--; this.dmg *= 0.85; }
+      if (this.pierce > 0) { this.pierce--; if (!this.ray && !this.ret && !this.lob) this.dmg *= 0.85; }
       else this.dead = true;
     }
     draw(ctx) {
-      const a = Math.atan2(this.vy, this.vx), cx = Math.cos(a), cy = Math.sin(a), len = 16 + this.r * 3.2;
+      if (this.lob) {
+        // a gout in the air: its shadow on the floor, and the wax above it
+        const t = 1 - this.life / this.maxLife, h = Math.sin(Math.PI * LF.clamp(t, 0, 1)) * 38;
+        ctx.fillStyle = 'rgba(240,226,192,0.25)'; ctx.beginPath(); ctx.ellipse(this.x, this.y, 7, 4, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#f6ecd0'; ctx.beginPath(); ctx.ellipse(this.x, this.y - h, 6.5, 7.5, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.arc(this.x - 2, this.y - h - 2, 2, 0, TAU); ctx.fill();
+        return;
+      }
+      if (this.ret) {
+        // a thrown censer: the chain back to the hand, and the weight
+        const p = this.own;
+        if (LF.dist2(p.x, p.y, this.x, this.y) > 14 * 14) drawCenser(ctx, p.x, p.y, this.x, this.y, censerCol(p.stats));
+        LF.drawGlow(ctx, censerCol(p.stats), this.x, this.y, 24, 0.6);
+        return;
+      }
+      const a = Math.atan2(this.vy, this.vx), cx = Math.cos(a), cy = Math.sin(a), len = (16 + this.r * 3.2) * (this.ray ? 4 : 1);
       const cool = this.color === '#d6f6ff' || this.color === '#cfeaff';
       ctx.lineCap = 'round';
       // outer flame, licking back along the path
@@ -657,13 +887,18 @@
       this.kind = kind; this.x = x; this.y = y; this.value = value;
       const a = Math.random() * TAU, s = LF.rand(40, 150);
       this.vx = Math.cos(a) * s; this.vy = Math.sin(a) * s;
-      this.life = kind === 'relic' ? 9999 : 22; this.t = 0; this.dead = false; this.r = kind === 'relic' ? 12 : 5;
+      this.life = kind === 'relic' || kind === 'glass' ? 9999 : 22; /* glass is what a lantern is built with: it lies where it fell until it is gathered */ this.t = 0; this.dead = false; this.r = kind === 'relic' ? 12 : 5;
       this.phase = Math.random() * TAU;
       if (extra) Object.assign(this, extra);
     }
     update(dt, g) {
       const p = g.player;
       this.t += dt;
+      // Embers Hatch: an ember nobody gathers becomes a moth, and is gone
+      if (this.kind === 'ember' && p.stats.hatch && this.t > 3 && !p.dead) {
+        p.swarmMoths(1, 9, this.x, this.y); fx.burst(this.x, this.y, 6, { color: ['#ffb36b', '#e4d4ff'], speed1: 90, life: 0.4, size: 1.8 });
+        this.dead = true; return;
+      }
       if (!(this.kind === 'ember' && p.stats.emberKeep)) this.life -= dt;
       if (this.life <= 0) { this.dead = true; return; }
       this.vx *= Math.max(0, 1 - 4 * dt); this.vy *= Math.max(0, 1 - 4 * dt);
@@ -671,8 +906,9 @@
       let want = this.t > 0.35 && !p.dead;
       if (this.kind === 'ember' && p.light >= p.stats.maxLight - 0.5 && !(p.stats.overflow && p.charge < 5)) want = false;
       if (this.kind === 'relic') want = false;
-      if (want && d < p.stats.pickup) {
-        const pull = 900 * (1 - d / p.stats.pickup) + 220;
+      const reach = p.stats.glean ? Math.max(p.stats.pickup, p.lightR) : p.stats.pickup;
+      if (want && d < reach) {
+        const pull = 900 * (1 - d / reach) + 220;
         this.vx += (p.x - this.x) / d * pull * dt; this.vy += (p.y - this.y) / d * pull * dt;
       }
       this.x += this.vx * dt; this.y += this.vy * dt;

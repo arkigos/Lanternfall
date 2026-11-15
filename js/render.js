@@ -405,6 +405,49 @@
         }
       }
 
+      // Wax the lantern has laid on the floor. Every pool goes into one path and is filled once, so pools that
+      // overlap run together into one puddle with one edge, in place of stacking into a white smear.
+      {
+        const pools = g.zones.filter(z => z.kind === 'tallow' && !z.dead && inView(z.x, z.y, z.r + 30));
+        if (pools.length) {
+          // a pool's outline: an uneven ring, the same every frame because it is seeded from where the pool lies.
+          // It spreads as it lands and draws in as it dries.
+          const trace = (z, scale, pad, ox, oy) => {
+            const sd = z.x * 0.731 + z.y * 0.197, n = Math.max(10, Math.min(28, Math.round(z.r / 5) + 8));
+            const s = scale * Math.min(1, 0.5 + (z.t || 0) / 0.3 * 0.5) * (z.life < 0.9 ? 0.55 + 0.45 * z.life / 0.9 : 1);
+            const at = i => {
+              const a = i / n * TAU;
+              const w = 0.86 + 0.13 * Math.sin(a * 2 + sd) + 0.09 * Math.sin(a * 3 + sd * 2.3) + 0.06 * Math.sin(a * 5 + sd * 4.1) + 0.04 * Math.sin(a * 9 + sd * 7.7);
+              const rr = z.r * s * w + pad;
+              return [z.x + ox + Math.cos(a) * rr, z.y + oy + Math.sin(a) * rr * 0.84];
+            };
+            let [px, py] = at(0), [qx, qy] = at(1);
+            ctx.moveTo((px + qx) / 2, (py + qy) / 2);
+            for (let i = 1; i <= n; i++) { [px, py] = at(i); [qx, qy] = at(i + 1); ctx.quadraticCurveTo(px, py, (px + qx) / 2, (py + qy) / 2); }
+            ctx.closePath();
+            // runnels: two or three drops that have crept out past the edge
+            if (z.r >= 18 && scale === 1) for (let k = 0, nk = z.r >= 30 ? 3 : Math.abs(Math.sin(sd * 9.1)) < 0.3 ? 1 : 0; k < nk; k++) {
+              const a = sd * (k + 1.7) % TAU, d = z.r * s * (0.98 + 0.14 * Math.abs(Math.sin(sd * (k + 3)))), dr = Math.max(2.2, z.r * s * (0.09 + 0.07 * Math.abs(Math.sin(sd * (k + 5))))) + pad;
+              const dx = z.x + ox + Math.cos(a) * d, dy = z.y + oy + Math.sin(a) * d * 0.84;
+              ctx.moveTo(dx + dr, dy); ctx.arc(dx, dy, dr, 0, TAU);
+            }
+          };
+          const fillAll = (style, scale, pad, ox, oy) => { ctx.fillStyle = style; ctx.beginPath(); for (const z of pools) trace(z, scale, pad, ox, oy); ctx.fill(); };
+          fillAll('rgba(20,14,10,0.45)', 1, 3.5, 1, 2.5);       // the shadow it throws on the stone
+          fillAll('rgba(104,84,52,0.9)', 1, 1.6, 0, 0);        // the thin dark lip where it has cooled
+          fillAll('rgba(186,168,126,0.84)', 1, 0, 0, 0);       // the body of the wax: the stone still shows through a little
+          fillAll('rgba(214,198,158,0.6)', 0.7, 0, -1, -1.5);  // thicker, paler wax toward the middle
+          // a wet shine on each pool: one soft streak and a bright point
+          for (const z of pools) {
+            if (z.r < 14 || z.life < 0.9) continue;
+            const sd = z.x * 0.731 + z.y * 0.197, hx = z.x - z.r * 0.28 + Math.sin(sd) * z.r * 0.12, hy = z.y - z.r * 0.3 + Math.cos(sd * 1.3) * z.r * 0.08;
+            ctx.strokeStyle = 'rgba(255,250,232,0.55)'; ctx.lineWidth = Math.max(1.2, z.r * 0.05); ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.ellipse(hx, hy, z.r * 0.26, z.r * 0.13, -0.5, Math.PI * 1.05, Math.PI * 1.75); ctx.stroke();
+            ctx.fillStyle = 'rgba(255,253,244,0.8)'; ctx.beginPath(); ctx.arc(hx + z.r * 0.16, hy - z.r * 0.04, Math.max(0.9, z.r * 0.035), 0, TAU); ctx.fill();
+          }
+        }
+      }
+
       // props (bodies)
       for (const pr of g.props) if (inView(pr.x, pr.y, 80)) this.drawProp(ctx, pr, g);
 
@@ -464,6 +507,9 @@
         else if (z.kind === 'fire') { lc.globalAlpha = 0.7 * k; lc.drawImage(white, z.x - 50, z.y - 50, 100, 100); }
         else if (z.kind === 'wax') { lc.globalAlpha = 0.65 * k; lc.drawImage(white, z.x - z.r * 1.8, z.y - z.r * 1.8, z.r * 3.6, z.r * 3.6); }
       }
+      // a creature carrying a light of its own shows in the dark
+      lc.globalAlpha = 0.8;
+      for (const e of g.enemies) if (!e.dead && e.selfGlow && e.spawnT <= 0) lc.drawImage(white, e.x - 58, e.y - 58, 116, 116);
       for (const f of g.flashes) { lc.globalAlpha = f.life / f.max; lc.drawImage(white, f.x - f.r, f.y - f.r, f.r * 2, f.r * 2); }
       lc.globalAlpha = 0.75;
       for (const b of g.bullets) lc.drawImage(white, b.x - 38, b.y - 38, 76, 76);
@@ -517,13 +563,25 @@
           ctx.strokeStyle = `rgba(255,236,190,${0.85 * k})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.stroke();
           ctx.strokeStyle = `rgba(255,190,96,${0.5 * k})`; ctx.lineWidth = 1.5; ctx.setLineDash([10, 9]); ctx.lineDashOffset = -g.time * 40; ctx.beginPath(); ctx.arc(z.x, z.y, z.r - 7, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
         } else if (z.kind === 'beacon') { drawGlow(ctx, '#ffe9a8', z.x, z.y, z.r * 1.1, 0.3 * k); drawGlow(ctx, '#ffffff', z.x, z.y - 6, 16 + Math.sin(g.time * 12) * 3, 0.9 * k); }
+        else if (z.kind === 'candle') {
+          // the Standing Candle: a pale stub and its flame, brightening as the next flare comes
+          const kp = 1 - LF.clamp(z.pulse / 2, 0, 1);
+          ctx.fillStyle = `rgba(240,226,192,${0.9 * k})`; ctx.fillRect(z.x - 4, z.y - 16, 8, 18); ctx.beginPath(); ctx.ellipse(z.x, z.y + 2, 9, 4, 0, 0, TAU); ctx.fill();
+          drawGlow(ctx, '#ffd9a0', z.x, z.y - 22, 14 + 14 * kp + Math.sin(g.time * 11) * 2, (0.55 + 0.4 * kp) * k);
+          ctx.fillStyle = `rgba(255,250,230,${k})`; ctx.beginPath(); ctx.ellipse(z.x, z.y - 21, 2.6, 5, 0, 0, TAU); ctx.fill();
+        }
         else if (z.kind === 'fire') drawGlow(ctx, '#ff7b2e', z.x, z.y, z.r * 1.6, 0.5 * k);
         else if (z.kind === 'wax') {
           drawGlow(ctx, '#ff9a3d', z.x, z.y, z.r * 1.5, 0.45 * k);
           ctx.fillStyle = `rgba(255,214,150,${0.5 * k})`; ctx.beginPath(); ctx.ellipse(z.x, z.y, z.r * 0.8, z.r * 0.62, 0, 0, TAU); ctx.fill();
           ctx.strokeStyle = `rgba(255,120,50,${0.8 * k})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(z.x, z.y, z.r * (0.92 + Math.sin(g.time * 5 + z.x) * 0.04), z.r * 0.74, 0, 0, TAU); ctx.stroke();
         }
-        else if (z.kind === 'light') drawGlow(ctx, '#ffd9a0', z.x, z.y, z.r, 0.10 * Math.min(1, z.life / 2));
+        else if (z.kind === 'light') {
+          drawGlow(ctx, '#ffd9a0', z.x, z.y, z.r, 0.10 * Math.min(1, z.life / 2));
+          // Glowing Flare: the light a flare left is where embers come back, so its edge is shown, fading as it runs out
+          if (z.flare && g.player.stats.flareGlow) { const k2 = Math.min(1, z.life / 1.5); drawGlow(ctx, '#ffe9a8', z.x, z.y, z.r * 0.9, 0.08 * k2); ctx.strokeStyle = `rgba(255,226,150,${0.38 * k2})`; ctx.lineWidth = 1.5; ctx.setLineDash([3, 11]); ctx.lineDashOffset = g.time * 14; ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
+        }
+        // (the lantern's own wax is drawn on the floor itself, with the props: see "Wax the lantern has laid")
       }
       for (const f of g.flashes) drawGlow(ctx, f.color, f.x, f.y, f.r, (g.meta.flash === 0 ? 0.22 : 0.5) * f.life / f.max);
       if (this.glowDecals && this.glowDecals.length) {
@@ -829,6 +887,17 @@
         ctx.fillStyle = '#ffd9a0'; LF.roundRect(ctx, x + 4, y + 3, 13, 12, 3); ctx.fill();
         ctx.fillStyle = '#1a1208'; ctx.fillText(LF.input.mode === 'pad' ? 'X' : LF.input.mode === 'touch' ? '!' : 'E', x + 10.5, y + 9.5);
         ctx.fillStyle = '#f3e9d6'; ctx.textAlign = 'left'; ctx.fillText(txt, x + 22, y + 9.5); ctx.textAlign = 'center';
+        if (pr.kind === 'pedestal' && pr.item && pr.item.type === 'relic') {
+          // what the relic on the pedestal does, set above the prompt
+          const d = LF.RELICS[pr.item.relic], S = LF.SCHOOLS[d.school], W2 = 236;
+          ctx.font = `9px ${LF.FONT_UI}`;
+          const lines = LF.wrapText(ctx, d.desc, W2 - 20), h = 34 + lines.length * 11.5, bx = pr.x - W2 / 2, by0 = y - h - 6;
+          ctx.fillStyle = 'rgba(8,8,14,0.92)'; LF.roundRect(ctx, bx, by0, W2, h, 6); ctx.fill();
+          ctx.strokeStyle = LF.RARITY[d.rarity].color; ctx.lineWidth = 1; LF.roundRect(ctx, bx, by0, W2, h, 6); ctx.stroke();
+          ctx.font = `bold 11px ${LF.FONT_UI}`; ctx.fillStyle = '#fff2d6'; ctx.fillText(d.name, pr.x, by0 + 11);
+          ctx.font = `bold 7.5px ${LF.FONT_UI}`; ctx.fillStyle = S ? S.color : '#ffd9a0'; ctx.fillText(((S ? S.name : '') + (d.pathName ? '  \u00b7  ' + d.pathName : '') + (d.form ? '  \u00b7  ' + d.form + ' form' : '')).toUpperCase(), pr.x, by0 + 23);
+          ctx.font = `9px ${LF.FONT_UI}`; ctx.fillStyle = '#d8cdb8'; lines.forEach((l, j) => ctx.fillText(l, pr.x, by0 + 36 + j * 11.5));
+        }
       }
       if (g.hintT > 0 && !g.player.dead) {
         ctx.globalAlpha = Math.min(1, g.hintT * 2);

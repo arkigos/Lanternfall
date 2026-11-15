@@ -3,11 +3,12 @@
 (function () {
   const fx = LF.fx, TILE = LF.TILE, TAU = LF.TAU;
 
-  LF.EMBER = 2.4;
+  LF.EMBER = 2.5; // one ember, in the units the lantern's stats are kept in: the health bar and every card count in embers
+  LF.embers = v => { const n = Math.round(v / LF.EMBER * 2) / 2; return n || 0.5; };
   // Vows: handicaps sworn before a descent, each paying extra cinders.
   LF.VOWS = [
-    { id: 'glass', name: 'Vow of Glass', desc: 'Your maximum light is halved.', bonus: 0.4 },
-    { id: 'haste', name: 'Vow of Haste', desc: 'Your light drains half again as fast.', bonus: 0.25 },
+    { id: 'glass', name: 'Vow of Glass', desc: 'Your lantern holds half as many embers.', bonus: 0.4 },
+    { id: 'haste', name: 'Vow of Haste', desc: 'Your embers burn down half again as fast.', bonus: 0.25 },
     { id: 'silence', name: 'Vow of Silence', desc: 'You cannot flare.', bonus: 0.25 },
     { id: 'hunted', name: 'Vow of the Hunted', desc: 'A Hunter stalks you on every floor.', bonus: 0.3 },
     { id: 'thrift', name: 'Vow of Thrift', desc: 'The stair offers one relic fewer.', bonus: 0.2 },
@@ -16,7 +17,7 @@
   // Bestiary: shown in the codex once a creature has been unmade at least once.
   LF.BESTIARY = [
     ['skitter', 'Quick, weak and never alone. They zigzag in from the dark.'],
-    ['moth', 'Drawn to flame. Each one that reaches you drinks a little light and dies.'],
+    ['moth', 'Drawn to flame. Each one that reaches you takes an ember or two and dies.'],
     ['lurker', 'Circles at the edge of your light, then lunges. The eyes turn red first.'],
     ['hunter', 'Sent after those who linger, or who are marked. Faster than you. It puts out the fires it passes and lunges three times before it rests.'],
     ['spitter', 'Keeps its distance and spits. Its bolts can be dashed through.'],
@@ -66,13 +67,13 @@
   ];
   LF.TEACH = {
     shroud: ['Shrouded', 'That creature is outside your light, so it shrugs off most of the bolt. Bring it into the glow.'],
-    ember: ['Embers', 'Everyone in Vael carried a little of its light. The creatures down here still do. Embers rekindle your light, and wait on the ground while you are full.'],
-    school: ['Schools', 'Every relic belongs to a school, named on its card. Three of one school attunes your lantern; five and seven attune it further. The deep outscales a lantern that takes a little of everything.'],
+    ember: ['Embers', 'Everyone in Vael carried a little of its light. The creatures down here still do. Embers are your life: gather them. They wait on the ground while you are full.'],
+    school: ['Ranks and Kin', 'Take a relic you already hold and it gains a rank; most have three, and the last counts double. Relics of a theme you hold come round more often. Some relics are kin to another: hold both at rank II and a third power wakes.'],
     brazier: ['Braziers', 'A brazier takes a moment to catch: stay beside it, or put bolts into it. A flare lights it at once. Lit, it refills you and mends you up to half while you rest there.'],
-    low: ['Guttering', 'Your light is low. Find embers or a brazier. A dying lantern does burn hotter, though.'],
+    low: ['Guttering', 'Your embers are low. Find more, or a brazier. A dying lantern does burn hotter, though.'],
     flare: ['Flare', 'Right click (or Q) to flare: it wounds, stuns and reveals everything near you.'],
     gate: ['Ambush', 'Shadow gates seal the room until everything inside is unmade.'],
-    shop: ['The Chandler', 'Glass buys relics and lamp oil here. It is worth nothing once you are dead.'],
+    shop: ['The Chandler', 'Forms for your bolt and your flare, and lamp oil. A lantern holds one form of each.'],
     vault: ['Lightless vault', 'Your light is halved here until both braziers burn. The reliquary opens when they do. A flare lights braziers too.'],
     stair: ['The stair', 'Descend when you are ready. Unmake nearly everything first and it offers one more relic.'],
   };
@@ -82,10 +83,10 @@
   // The Great Lantern broke as it fell. Each cycle of nine depths ends at one of its shards, and a shard, once
   // taken up, is kept for every descent after. The fifth cycle ends at the Lantern itself.
   LF.SHARDS = [
-    { name: 'The Shard of Morning', power: 'Your flame holds 25 more light and burns down 15% slower.' },
-    { name: 'The Shard of the Rites', power: 'Every descent begins with a rite of your choosing.' },
+    { name: 'The Shard of Morning', power: 'Your lantern holds 10 more embers, and they burn down 15% slower.' },
+    { name: 'The Shard of the Works', power: 'Every descent begins with the offer of a great work.' },
     { name: 'The Shard of the Chain', power: 'Two more rerolls each descent, and one more relic to choose from at every stair.' },
-    { name: 'The Shard of the Heart', power: 'Once each descent, when your light would go out, it blazes back to full instead.' },
+    { name: 'The Shard of the Heart', power: 'Once each descent, when your last ember would go out, they blaze back to full instead.' },
     { name: 'The Great Lantern', power: '' },
   ];
   LF.ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -107,21 +108,25 @@
     ['The stone is warm, as if something below were breathing.', 'Your shadow has begun to walk a little ahead of you.', 'No one has seen it since the fall. The dark has, every day.', 'The dark down here is not empty. It is full.', 'There is a glow under the last stair. It is not a kind one yet.'],
   ];
   LF.TIPS = [
-    'Embers wait for you. If your light is full, come back for them later.',
+    'Embers wait for you. If you can hold no more, come back for them later.',
     'A flare lights every brazier it touches.',
     'A flare leaves what it touches kindled: for a few seconds it takes far more damage. Flare first, then fire.',
     'Three relics of one school attune your lantern. Five and seven attune it much further. Reroll for your school.',
     'A lantern that takes a little of everything is outscaled by Level six. Commit to a school.',
-    'Rest beside a lit brazier to recover up to half your light.',
-    'Your light burns down on its own, and it can go all the way out. Beside any fire, it holds.',
+    'Rest beside a lit brazier to recover up to half your embers.',
+    'Your embers burn down on their own, and they can burn all the way out. Beside any fire, they hold.',
     'Linger on a floor and the dark sends hunters after you, up to four. They carry nothing worth taking.',
     'A Hunter is faster than you and puts out the fires it passes. It lunges three times, then it is spent: that is when to hurt it.',
     'A brazier takes a moment to light by hand. Bolts will kindle it from a distance, and a flare lights it at once.',
     'Even a full lantern lights only a pool around you. What you cannot see can still see you.',
     'Great shadows shed embers as you wear them down. Step in and take them.',
     'Shrouded creatures take less than half damage. Fight inside your light.',
-    'Your lantern sears whatever stands in its light. A full flame burns hotter than a guttering one.',
-    'When your light is nearly gone, every kill rekindles it. Do not run: fight.',
+    'Your lantern sears whatever stands in its light, hardest close to the flame. A full flame burns hotter than a guttering one.',
+    'Light shows and sears, wax slows and scalds, chain swings round you, and moths fight for you.',
+    'Fire that catches (Catching Fire) sets alight whatever stands close beside what burns.',
+    'Take a relic you already hold and it gains a rank. Most have three, and the last rank counts double.',
+    'Some relics are kin. Hold both at rank II and a third power wakes that no stair will ever offer you.',
+    'When your embers are nearly gone, every kill gives some back. Do not run: fight.',
     'Enemy shots are black with a red rim. Anything that glows warm is yours to take.',
     'A dash passes straight through bolts, lunges and falling shards.',
     'Bulwarks shrug off bolts from the front. Bait the charge into a wall.',
@@ -133,7 +138,12 @@
     'The Mother of Moths is only truly hurt while something lights her. Relight the braziers she drinks.',
     'Snuffers shrink your light from a distance. Hunt them down.',
     'Cinders are kept even when you die. Spend them at the Hearth.',
-    'Glass does nothing once you are dead. Spend it at the Chandler.',
+    'A relic that builds on a power you lack is never offered. The relic that gives that power comes in its place.',
+    'At each stair the Forge will rank up a relic you carry, for glass: ' + LF.TUNE.forgeII + ' for rank II, ' + LF.TUNE.forgeIII + ' for rank III, and ' + LF.TUNE.forgeMore + ' more for each rank after that. Taking the same relic again from an offer ranks it too, for nothing.',
+    'Ranks do not stop at III. A relic that keeps coming round keeps growing, and what multiplies grows by half again each time.',
+    'What multiplies, multiplies everything else: three relics in each theme make all of that theme do more, and stack on each other. One theme pumped high beats five held low.',
+    'Glass buys rerolls. When an offer holds nothing you need, pay to see another: ' + LF.TUNE.rerollGlass + ' glass, and ' + LF.TUNE.rerollMore + ' more each time after on the same offer.',
+    'Forms are not found. The Chandler sells them, when the Chandler is there and has the one you want: a form changes how your bolt or your flare works. Glass spent on rerolls is glass not saved for one.',
   ];
   // A tip that fits what actually killed you, when there is one.
   LF.CAUSE_TIPS = [
@@ -152,7 +162,7 @@
     ['Hollow Choir', 'Only the singing mask can truly be hurt. Shoot the homing orbs down before they reach you.'],
     ['First Bearer', 'The First Bearer answers each dash and each flare with its own. Dash only when you must, and be ready to sidestep the reply.'],
     ['bolt of shadow', 'A dash passes straight through bolts. Dash into a ring, through it, and out the far side.'],
-    ['the dark', 'Your light burned out on its own. Keep killing to feed it, and stop at braziers and wall lamps: beside a fire it does not burn down.'],
+    ['the dark', 'Your embers burned out on their own. Keep killing to feed them, and stop at braziers and wall lamps: beside a fire they do not burn down.'],
     ['Hunter', 'A Hunter lunges three times, then it is spent for a second: hurt it then. A flare stops it dead, and you cannot outrun it.'],
     ['Champion', 'A champion carries more than twice the health of an elite. Kite it around the pillars.'],
     ['Lamp-breaker', "A Lamp-breaker's slam is marked by a red circle. Step out of it, then strike."],
@@ -185,22 +195,22 @@
   // ---------- persistent save ----------
   const SAVE_KEY = 'lanternfall_save_v1';
   LF.UPGRADES = [
-    { id: 'wick', name: 'Thicker Wick', desc: '+8 maximum light', max: 5, cost: [20, 35, 55, 80, 110], glyph: 'candle', color: '#ffd28a' },
+    { id: 'wick', name: 'Thicker Wick', desc: '+3 maximum embers', max: 5, cost: [20, 35, 55, 80, 110], glyph: 'candle', color: '#ffd28a' },
     { id: 'spark', name: 'Hotter Spark', desc: '+5% damage', max: 5, cost: [25, 40, 60, 90, 130], glyph: 'bolt', color: '#ffb347' },
     { id: 'boots', name: 'Dry Boots', desc: '+3% move speed', max: 3, cost: [20, 40, 70], glyph: 'wing', color: '#d9c9ff' },
-    { id: 'oil', name: 'Refined Oil', desc: 'Light drains 10% slower', max: 3, cost: [25, 45, 75], glyph: 'drop', color: '#c8b56a' },
+    { id: 'oil', name: 'Refined Oil', desc: 'Embers burn down 10% slower', max: 3, cost: [25, 45, 75], glyph: 'drop', color: '#c8b56a' },
     { id: 'ember', name: 'Ember Sense', desc: 'Embers restore 8% more', max: 3, cost: [25, 45, 75], glyph: 'flame', color: '#ff9d5c' },
     { id: 'flare', name: 'Dry Powder', desc: 'Flare recharges 8% faster', max: 3, cost: [20, 40, 70], glyph: 'sun', color: '#ffcf5c' },
     { id: 'purse', name: 'Sewn Purse', desc: 'Start each run with 15 glass', max: 3, cost: [15, 30, 50], glyph: 'glass', color: '#8fe6ff' },
     { id: 'reroll', name: 'Second Glance', desc: '+1 relic reroll per run', max: 3, cost: [30, 60, 100], glyph: 'eye', color: '#9dffcf' },
     { id: 'gift', name: 'Parting Gift', desc: 'Start with a random common relic', max: 1, cost: [90], glyph: 'heart', color: '#ff8fa3' },
     { id: 'choice', name: 'Open Hand', desc: 'One more relic to choose from', max: 1, cost: [160], glyph: 'star', color: '#fff3b0' },
-    { id: 'tinder', name: 'Brazier Lore', desc: 'Braziers restore 3 more light', max: 3, cost: [20, 40, 65], glyph: 'flame', color: '#ffb347' },
+    { id: 'tinder', name: 'Brazier Lore', desc: 'Braziers restore 1 more ember', max: 3, cost: [20, 40, 65], glyph: 'flame', color: '#ffb347' },
     { id: 'pockets', name: 'Deep Pockets', desc: '+8% glass', max: 3, cost: [20, 40, 65], glyph: 'glass', color: '#8fe6ff' },
-    { id: 'banked', name: 'Banked Embers', desc: 'Once per run, survive a fatal blow at 15 light', max: 1, cost: [200], glyph: 'heart', color: '#ff8fa3' },
+    { id: 'banked', name: 'Banked Embers', desc: 'Once per run, survive a fatal blow with 6 embers', max: 1, cost: [200], glyph: 'heart', color: '#ff8fa3' },
   ];
   function loadMeta() {
-    const def = { cinders: 0, up: {}, mastery: {}, lamps: 0, rushWins: 0, feats: {}, wonWith: {}, felled: {}, met: {}, vigilBest: 0, vows: {}, history: [], daily: null, flash: 1, best: 0, runs: 0, wins: 0, kills: 0, bosses: 0, vol: 0.7, mus: 0.6, shake: 1, diff: 1, lantern: 'tin', autofire: false, seenIntro: false, seenFall: false, shards: 0, cycle: -1, look: 'wick', seen: {} };
+    const def = { cinders: 0, up: {}, mastery: {}, lamps: 0, rushWins: 0, feats: {}, wonWith: {}, felled: {}, met: {}, vigilBest: 0, vows: {}, history: [], daily: null, flash: 1, best: 0, runs: 0, wins: 0, kills: 0, bosses: 0, vol: 0.7, mus: 0.6, shake: 1, diff: 1, lantern: 'fire', autofire: false, seenIntro: false, seenFall: false, shards: 0, cycle: -1, look: 'wick', seen: {} };
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (raw) Object.assign(def, JSON.parse(raw));
@@ -247,7 +257,7 @@
       this.seed = seed || ((Math.random() * 2147483647) | 0);
       this.diff = LF.DIFFS[this.meta.diff] || LF.DIFFS[1];
       const lan = LF.LANTERN[this.meta.lantern];
-      this.lanternId = lan && lan.unlocked(this.meta) ? lan.id : 'tin';
+      this.lanternId = lan && lan.unlocked(this.meta) ? lan.id : 'fire';
       this.omen = null;
       this.daily = opts.daily || null;
       this.mode = opts.mode === 'vigil' ? 'vigil' : opts.mode === 'rush' ? 'rush' : 'descent';
@@ -258,6 +268,7 @@
       this.vows = {};
       if ((this.meta.bosses || 0) >= 1 && !opts.noVows && !this.practice) for (const v of LF.VOWS) if (this.meta.vows && this.meta.vows[v.id]) this.vows[v.id] = true;
       this.unlockedAtStart = LF.LANTERNS.filter(l => l.unlocked(this.meta)).map(l => l.id);
+      this.looksAtStart = LF.LOOKS.filter(l => LF.lookOpen(l, this.meta)).map(l => l.id);
       this.felledAtStart = Object.assign({}, this.meta.felled || {});
       this.vowsWereOpen = (this.meta.bosses || 0) >= 1;
       this.rng = new LF.RNG(this.seed);
@@ -274,27 +285,37 @@
       this.player.glass = 15 * (up.purse || 0);
       this.player.rerolls = 2 + (up.reroll || 0) + ((this.meta.shards || 0) >= 3 ? 2 : 0); // enough to fish for the school a build needs
       this.run = { kills: 0, shots: 0, dmg: 0, taken: 0, time: 0, bosses: 0, glass: 0, dashes: 0, flares: 0, braziers: 0, elites: 0, won: false, cause: '' };
-      // A descent begins in the deepest cycle whose shard is still unclaimed, or an earlier one if the player chose it.
-      { const sh = Math.min(4, this.meta.shards || 0);
-        this.startCycle = this.mode === 'descent' && !this.daily ? LF.clamp(this.meta.cycle >= 0 ? this.meta.cycle : sh, 0, sh) : 0; }
+      // Every descent begins at the top, in Depth I. The deeper Depths are reached only by carrying on down in the same run.
+      this.startCycle = 0;
       this.depth = 1 + 9 * this.startCycle; this.startDepth = this.depth; this.carry = 0; this.run.masteryPaid = this.depth - 1;
       if (up.gift) {
-        const commons = LF.RELIC_LIST.filter(r => r.rarity === 'common');
-        this.player.addRelic(this.rng.pick(commons).id);
+        const commons = LF.availRelics(this.player).filter(r => r.rarity === 'common');
+        if (commons.length) this.player.addRelic(this.rng.pick(commons).id);
       }
+      // The lantern carries its theme's first relic from the first step.
+      { const bolt = LF.LANTERN[this.lanternId].carries, pl = this.player; if (bolt && !pl.relics[bolt]) { pl.relics[bolt] = 1; pl.relicOrder.push(bolt); pl.recalc(); this.meta.seen[bolt] = 1; } }
+      // At one tier of each type, chosen afresh each descent, the bolt may be turned to that type.
+      this.boltTier = {}; for (const k in LF.BOLT_OF) this.boltTier[k] = this.rng.int(1, 3);
+      this.pendingBolt = null;
       if (!this.practice) { this.meta.runs++; this.save(); }
       this.loadFloor();
       this.state = 'play';
       this.startFade(1, 0.8);
       if (this.mode === 'rush') { this.rushDraftMax = this.practice ? [2, 5, 8][this.rushFloor(0) / 3 - 1] : 5; this.rushDraft = this.rushDraftMax;
-        // the Gauntlet and rehearsals open with a rite, so the powers that change how you fight can be tried there
+        // the Gauntlet and rehearsals open with a great work, so the largest powers can be tried there
         const rites = LF.rollRelics(this.player, 3, { rng: this.rng, floor: 6, pool: 'brand' });
-        if (rites.length) this.openOffer({ title: 'A Rite Is Offered', sub: 'It changes how you fight. Take one, or walk on.', relics: rites, canSkip: true, dim: true, noReroll: true, onDone: () => this.openRushDraft() });
+        if (rites.length) this.openOffer({ title: 'A Great Work', sub: 'One of each is all a lantern can hold. Take one, or walk on.', relics: rites, canSkip: true, dim: true, noReroll: true, onDone: () => this.openRushDraft() });
         else this.openRushDraft();
-      } else if (this.mode === 'descent' && (this.meta.shards || 0) >= 2) {
-        const rites = LF.rollRelics(this.player, 3, { rng: this.rng, floor: 3, pool: 'brand' });
-        if (rites.length) this.openOffer({ title: 'The Shard of the Rites', sub: 'It remembers how the Lamplighters tended the Lantern. Choose how you will fight, or walk on.', relics: rites, canSkip: true, dim: true, noReroll: true });
+      } else if (this.mode === 'descent') {
+        const rites = (this.meta.shards || 0) >= 2 ? LF.rollRelics(this.player, 3, { rng: this.rng, floor: 3, pool: 'brand' }) : [];
+        if (rites.length) this.openOffer({ title: 'The Shard of the Works', sub: 'It remembers what the Lamplighters made. Take a great work, or walk on.', relics: rites, canSkip: true, dim: true, noReroll: true });
       }
+    }
+    // Reaching the tier of a type that holds the bolt this descent: the bolt may be turned to it (asked once the
+    // lantern is next free to answer, in step()).
+    attuned(type, t0, t1) {
+      const want = LF.BOLT_OF[type], bt = (this.boltTier || {})[type];
+      if (want && bt && t0 < bt && bt <= t1 && !this.player.relics[want]) this.pendingBolt = want;
     }
     // The Gauntlet opens with three relic picks, so there is a build to fight with.
     openRushDraft() {
@@ -325,11 +346,14 @@
       this.biome = LF.BIOMES[Math.floor((this.floor - 1) / 3)];
       const df = this.diff;
       this.enemySpeedMul = 1.06; this.floorT = 0; this.lingerN = 0;
-      this.enemyHpMul = 1.2 * (1 + 0.38 * (this.floor - 1) + (this.floor > 3 ? 0.14 * (this.floor - 3) : 0) + (this.floor > 6 ? 0.22 * (this.floor - 6) : 0)) * (1 + this.loop * 0.25) * (1 + (this.carry || 0) * 0.8) * df.hp;
+      const grow = LF.TUNE.grow;
+      // The dark deepens by multiplying: hpGrow times the health and dmgGrow times the harm on each Level over the last.
+      this.enemyHpMul = 1.2 * LF.curve(LF.TUNE.hpGrow, this.floor) * (1 + this.loop * 0.25) * (1 + (this.carry || 0) * 0.8) * df.hp;
       // hits bite a little harder now that light sears and kills rekindle: losing light has to matter
-      this.enemyDmgMul = 1.24 * (1 + 0.115 * (this.floor - 1)) * (1 + this.loop * 0.12) * (1 + (this.carry || 0) * 0.45) * df.dmg;
-      this.bossDmgMul = this.enemyDmgMul * 1.14 / 1.24; // the great shadows are hard enough: they did not get the latest increase
-      this.bossHpMul = 1.7 * (1 + 0.14 * (this.floor - 3)) * (1 + this.loop * 0.2) * (1 + (this.carry || 0) * 0.75) * df.hp;
+      this.enemyDmgMul = 1.24 * LF.curve(LF.TUNE.dmgGrow, this.floor) * (1 + this.loop * 0.12) * (1 + (this.carry || 0) * 0.45) * df.dmg;
+      this.bossDmgMul = this.enemyDmgMul * 1.14 / 1.24 * (this.floor === 6 ? LF.TUNE.secondHit : this.floor === 9 ? LF.TUNE.thirdHit : 1); // the great shadows are hard enough: they did not get the latest increase
+      this.bossHpMul = 1.7 * (this.floor === 3 ? LF.TUNE.first : this.floor === 6 ? LF.TUNE.second : this.floor === 9 ? LF.TUNE.third : 1) * LF.curve(LF.TUNE.hpGrow, this.floor) / LF.curve(LF.TUNE.hpGrow, 3) * (1 + this.loop * 0.2) * (1 + (this.carry || 0) * 0.75) * df.hp;
+      { const k = Math.max(0, 4 - this.floor) / 3; this.enemyHpMul *= 1 + LF.TUNE.earlyHp * k; this.enemyDmgMul *= 1 + LF.TUNE.early * k; } // the first Levels bite (the great shadow of Level 3 is left as it was)
       if (this.mode === 'rush' && !this.practice) { this.enemyDmgMul *= 0.8; this.bossDmgMul *= 0.8; this.bossHpMul *= 0.62; } // no floors between fights to build on
       this.omen = null;
       this.floorRng = new LF.RNG((this.seed + this.depth * 104729) >>> 0);
@@ -358,9 +382,10 @@
       // stock the shop
       const peds = this.props.filter(pr => pr.kind === 'pedestal');
       if (peds.length) {
-        const offers = LF.rollRelics(p, 2, { rng: this.rng, floor: this.floor });
+        // two forms at random, from those for a slot the lantern has not filled, and lamp oil
+        const offers = this.rng.shuffle(LF.FORMS.filter(d => !LF.formHeld(p, d.form))).slice(0, 2);
         peds.forEach((pd, i) => {
-          if (i < offers.length) { pd.item = { type: 'relic', relic: offers[i].id }; pd.price = Math.round(LF.RARITY[offers[i].rarity].price * (1 + 0.06 * (this.depth - 1))); }
+          if (i < offers.length) { pd.item = { type: 'relic', relic: offers[i].id }; pd.price = LF.TUNE.formPrice; }
           else { pd.item = { type: 'oil' }; pd.price = 16 + this.depth * 2; }
         });
       }
@@ -422,6 +447,78 @@
       return e;
     }
     fireBolt(o) { const b = new LF.Bolt(this, o); this.bullets.push(b); return b; }
+    // ---- the five types: what each does to a creature. Fire harms; the rest set a creature up. ----
+    ignite(e, dps, t) { if (e.dead) return; e.burn = Math.max(e.burn, t || this.player.stats.burnTime); e.burnDps = Math.max(e.burnDps || 0, dps); }
+    // Fire catches. A creature that caught fire this way cannot catch again until a little after that fire is out,
+    // so a pack burns through once and the fire dies unless the lantern lights it again.
+    spreadFire(e) {
+      const cf = this.player.stats.conflag, R = LF.TUNE.catchR * (this.player.stats.catching || 1) * (cf ? 1.5 : 1), t = this.player.stats.burnTime;
+      for (const o of this.enemies) {
+        if (o === e || o.dead || o.intangible || o.spawnT > 0 || o.burn > 0 || (o.noCatch || 0) > this.time) continue;
+        const d = R + e.r + o.r;
+        if (LF.dist2(e.x, e.y, o.x, o.y) > d * d) continue;
+        this.ignite(o, e.burnDps, t); o.noCatch = cf ? 0 : this.time + t + 1; o.catchT = LF.TUNE.catchT * (cf ? 0.5 : 1);
+        // a lick of flame crossing the gap, and a flash where it takes
+        for (let i = 0; i < 4; i++) fx.spawn({ x: e.x + (o.x - e.x) * i / 4, y: e.y + (o.y - e.y) * i / 4, vx: (o.x - e.x) * 2.2, vy: (o.y - e.y) * 2.2 - 20, life: 0.28, size: 2.6, color: LF.pick(['#ff7b2e', '#ffc24d']), drag: 1 });
+        fx.burst(o.x, o.y, 6, { color: ['#ff7b2e', '#ffc24d'], speed1: 90, life: 0.3, size: 2 });
+        if (this.time - (this.catchSnd || 0) > 0.25) { this.catchSnd = this.time; LF.audio.play('ignite'); }
+      }
+    }
+    waxEnemy(e, t) { if (e.dead) return; e.chill = Math.max(e.chill, (t || this.player.stats.waxTime) * (e.boss ? 0.6 : 1)); }
+    // A shackle fastens a creature to the spot where it was caught (or to the player, with the Long Leash). It can
+    // still move and strike inside the chain's reach; it cannot leave. A great shadow is too heavy to hold: the
+    // shackle marks it, for whatever else the chains do, but does not stop it.
+    shackle(e, t) {
+      const s = this.player.stats;
+      if (e.dead || e.spawnT > 0 || e.def.speed === 0) return;
+      const fresh = !(e.shackle > 0);
+      e.shackle = Math.max(e.shackle || 0, t || s.shackleTime);
+      if (!fresh) return;
+      e.anchor = { x: e.x, y: e.y }; e.onLeash = !!s.drag; e.haulL = 0;
+      fx.ring(e.x, e.y, e.r + 16, e.r + 2, 0.25, '#d9b070', 2); LF.audio.play('chain');
+    }
+    // What a censer's blow does beyond its harm, for a censer that was thrown (the swinging ones do the same in Player.update).
+    censerStruck(e, blow) {
+      const p = this.player, s = p.stats;
+      e.chainAt = this.time;
+      if (s.incense) p.addLight(s.incense);
+      if (s.chainWax) this.waxEnemy(e);
+      if (s.peal) { fx.ring(e.x, e.y, 6, 64, 0.25, '#d9b070', 2); for (const o of this.enemies) if (o !== e && !o.dead && !o.intangible && o.spawnT <= 0 && LF.dist2(e.x, e.y, o.x, o.y) < (64 + o.r) * (64 + o.r)) this.damageEnemy(o, blow * 0.5, { type: 'chain', noShroud: true, quiet: true }); }
+      if (e.dead) return;
+      if (s.drag) this.shackle(e);
+      if (s.chainLight) e.glow = Math.max(e.glow || 0, 3);
+      if (s.chainBurn) this.ignite(e, s.burnBase * 2);
+    }
+    lightPool(x, y) {
+      if (this.time - (this.poolT || 0) < 0.3) return;
+      this.poolT = this.time; this.addZone({ kind: 'light', x, y, r: 62, life: 3 * this.player.stats.linger });
+    }
+    // What a bolt (or a blow of the blade) does on landing, beyond its damage. `main` is false for the small bolts
+    // a ring or a split throws.
+    boltEffects(e, main) {
+      const p = this.player, s = p.stats;
+      if (e.dead) return;
+      if (s.spatter && e.chill > 0) {
+        const R = 46 + 22 * s.spatter;
+        for (const o of this.enemies) if (o !== e && !o.dead && o.spawnT <= 0 && !o.intangible && LF.dist2(e.x, e.y, o.x, o.y) < (R + o.r) * (R + o.r)) this.waxEnemy(o, s.waxTime * 0.7);
+        if (Math.random() < 0.5) fx.burst(e.x, e.y, 6, { color: ['#f0e2c0', '#d8c28a'], speed1: 150, life: 0.35, size: 2.2, glow: false });
+      }
+      // a bolt carries everything the lantern has given it, all at once
+      if (s.ignite) this.ignite(e, s.burnBase);
+      if (s.boltWax) this.waxEnemy(e);
+      if (s.boltShackle) this.shackle(e);
+      if (s.boltLight) { e.glow = Math.max(e.glow || 0, 2 + 2 * s.boltLight); this.lightPool(e.x, e.y); }
+      if (s.boltMoth && main && (p.mothShots = (p.mothShots || 0) + 1) % 5 === 0) p.swarmMoths(1, 5, e.x, e.y);
+    }
+    mothBite(e) {
+      const s = this.player.stats;
+      if (e.dead) return;
+      if (s.mothWax) this.waxEnemy(e, s.waxTime * 0.6);
+      if (s.mothChain && Math.random() < 0.25) this.shackle(e, s.shackleTime * 0.6);
+      if (s.mothLight) e.glow = Math.max(e.glow || 0, 4);
+      if (s.mothFire) this.ignite(e, s.burnBase);
+      e.bitten = this.time;
+    }
     // nothing fires once the floor's great shadow is unmade (a boss can die halfway through its own attack)
     fireEnemyBullet(o) { if (this.ebullets.length > 420 || this.bossDead) return null; const b = new LF.EBullet(o); this.ebullets.push(b); return b; }
     nearestEnemy(x, y, maxD, filter) {
@@ -438,18 +535,21 @@
       const p = this.player, map = this.map;
       const pr = p.lightR * 0.94;
       this.litByFire = false; // set when the only light on this spot is a brazier's or a wall lamp's
-      if (LF.dist2(x, y, p.x, p.y) < pr * pr && map.los(p.x, p.y, x, y)) return true;
+      // litDepth: how deep in the light this spot stands, 0 at the rim and 1 at the flame. Searing scales with it.
+      let depth = -1, d2 = LF.dist2(x, y, p.x, p.y);
+      if (d2 < pr * pr && map.los(p.x, p.y, x, y)) depth = 1 - Math.sqrt(d2) / pr;
       for (const z of this.zones) {
-        if ((z.kind === 'light' || z.kind === 'beacon') && LF.dist2(x, y, z.x, z.y) < z.r * z.r) return true;
+        if ((z.kind === 'light' || z.kind === 'beacon') && (d2 = LF.dist2(x, y, z.x, z.y)) < z.r * z.r) depth = Math.max(depth, 1 - Math.sqrt(d2) / z.r);
       }
+      if (depth >= 0) { this.litDepth = depth; return true; }
       // Fires unshroud what stands in them, but they do not burn it unless the Tinderbox is held.
-      this.litByFire = true;
       for (const b of this.litBraziers) {
-        if (LF.dist2(x, y, b.x, b.y) < 150 * 150 && map.los(b.x, b.y, x, y)) return true;
+        if ((d2 = LF.dist2(x, y, b.x, b.y)) < 150 * 150 && map.los(b.x, b.y, x, y)) depth = Math.max(depth, 1 - Math.sqrt(d2) / 150);
       }
-      for (const l of this.litLamps) if (LF.dist2(x, y, l.x, l.y) < 80 * 80) return true;
-      this.litByFire = false;
-      return false;
+      for (const l of this.litLamps) if ((d2 = LF.dist2(x, y, l.x, l.y)) < 80 * 80) depth = Math.max(depth, 1 - Math.sqrt(d2) / 80);
+      this.litDepth = Math.max(0, depth);
+      this.litByFire = depth >= 0;
+      return depth >= 0;
     }
 
     // ---------------------------------------------------------- combat
@@ -465,7 +565,12 @@
         dmg *= s.shroudMul * (e.affix === 'umbral' ? 0.5 : 1);
       }
       if (e.mark > 0) dmg *= 1.6 + s.markBonus;
-      if (s.fireMul !== 1 && (src.type === 'burn' || src.type === 'sear' || src.type === 'cinder' || src.type === 'thorns')) dmg *= s.fireMul;
+      // each type's relics raise that type's damage and nothing else. A flare that burns is fire; searing is light's.
+      // (within fire, each path has its own amplifier: the burn, the fire left on the ground or thrown, and the fire worn)
+      if (src.type === 'burn' || src.type === 'cinder' || src.type === 'thorns' || src.type === 'flare') dmg *= (src.of === 'ground' || src.type === 'flare' ? s.groundMul : src.of === 'mantle' || src.type === 'thorns' ? s.mantleMul : s.fireMul) * (s.pyre ? 1 + 0.01 * (this.player.pyre || 0) : 1);
+      // what multiplies a whole theme: fire, light (searing and the flare), wax, chain, moths
+      { const ty = src.type; dmg *= ty === 'sear' || ty === 'flare' ? s.lightAll : ty === 'wax' ? s.waxAll : ty === 'chain' ? s.chainAll : ty === 'moth' ? s.mothAll : ty === 'burn' || ty === 'cinder' || ty === 'thorns' || ty === 'fire' ? s.fireAll : 1; }
+      if (s.glare && e.stun > 0) dmg *= 1.5;
       if (e.elite && s.eliteDmg) dmg *= 1 + s.eliteDmg;
       if (e.affix === 'warded' && src.type === 'bolt' && !(e.wardBroken > 0)) { dmg *= 0.45; if (Math.random() < 0.15) fx.text(e.x, e.y - e.r - 16, 'WARDED: flare to break', '#9fc7ff', 9, 0.8); }
       if (e.def.modDamage) dmg = e.def.modDamage(e, dmg, src, this);
@@ -542,17 +647,24 @@
         let gl = e.def.glass * mult * s.glassMul * this.omenMul('glass'); gl = Math.floor(gl) + (Math.random() < gl % 1 ? 1 : 0);
         for (let i = 0; i < gl; i++) this.pickups.push(new LF.Pickup('glass', e.x, e.y, 1));
       }
+      if (s.pyre && e.burn > 0 && !self) p.pyre = (p.pyre || 0) + 1;
+      if (s.burnHeal && e.burn > 0 && !self) p.addLight(s.burnHeal);
+      if (s.drip && e.chill > 0 && !self) { p.drips = (p.drips || 0) + 1; if (p.drips % 8 === 0 && p.drips / 8 <= 6 * s.drip) { p.recalc(); p.addLight(2.5); fx.text(p.x, p.y - 30, '+1 ember held', '#f0e2c0', 10, 0.8); } }
+      if (s.melt && e.chill > 0 && !self && this.time - (this.meltAt || 0) > 0.12) { this.meltAt = this.time; this.addZone({ kind: 'tallow', x: e.x, y: e.y, r: 34 + e.r, life: 5 }); }
+      if (s.broodKill && src.type === 'moth' && !self) p.swarmMoths(1, 6, e.x, e.y);
       if (s.wildfire && e.burn > 0 && !self) {
         const R = 78;
         fx.ring(e.x, e.y, 8, R, 0.35, '#ff7b2e', 4); fx.burst(e.x, e.y, 18, { color: ['#ff7b2e', '#ffc24d', '#fff'], speed1: 220, life: 0.45 });
         this.addFlash(e.x, e.y, 140, 0.3, '#ff9a50'); LF.audio.play('explode');
         const dmg = 14 + (e.burnDps || 0) * 2.5;
         for (const o of this.enemies) {
-          if (o === e || o.dead || o.intangible || LF.dist2(e.x, e.y, o.x, o.y) > (R + o.r) * (R + o.r)) continue;
+          if (o === e || o.dead || o.intangible || LF.dist2(e.x, e.y, o.x, o.y) > (R + o.r) * (R + o.r) || !this.map.los(e.x, e.y, o.x, o.y)) continue;
           this.damageEnemy(o, dmg, { type: 'fire', noShroud: true });
-          if (!o.dead) { o.burn = 3; o.burnDps = Math.max(o.burnDps || 0, e.burnDps || 4); }
+          if (!o.dead) this.ignite(o, e.burnDps || 4);
         }
       }
+      // Tar: what dies leaves fire where it fell
+      if (s.tar && !self) this.addZone({ kind: 'fire', x: e.x, y: e.y, r: 26, life: 1 + s.tar, dps: 40 });
       if (e.affix === 'splitting') {
         for (let i = 0; i < 3; i++) { const pos = this.map.nearestOpen(e.x + LF.rand(-20, 20), e.y + LF.rand(-20, 20)); this.spawnEnemy('skitter', pos.x, pos.y, { awake: true, spawnT: 0.35, room: e.room, noDrops: true }); }
       }
@@ -579,7 +691,14 @@
       const p = this.player, s = p.stats;
       if (p.dead || this.state !== 'play') return;
       if (p.invuln > 0 && !src.force) return;
+      if (src.enemy && src.enemy.chill > 0 && s.waxSoft) amt *= 1 - s.waxSoft; // a waxed creature's blow lands softer
       if (!src.force && !src.steal) {
+        // The Wax Cast takes the blow whole; when it breaks it bursts
+        if (p.castN > 0) {
+          p.castN--; p.invuln = 0.4; fx.text(p.x, p.y - 22, 'CAST', '#f0e2c0', 10, 0.6); LF.audio.play('wax');
+          if (p.castN <= 0) { const R = 110, burst = 80 * s.cast * s.waxMul; fx.ring(p.x, p.y, 10, R, 0.35, '#f0e2c0', 5); fx.burst(p.x, p.y, 18, { color: ['#f0e2c0', '#d8c28a', '#fff'], speed1: 220, life: 0.45, size: 2.6, glow: false }); for (const e of this.enemies) { if (e.dead || e.intangible || e.spawnT > 0 || LF.dist2(p.x, p.y, e.x, e.y) > (R + e.r) * (R + e.r)) continue; this.damageEnemy(e, burst, { type: 'wax', noShroud: true }); if (!e.dead) this.waxEnemy(e); } }
+          return;
+        }
         // shadow: a blow may simply pass through a lantern that is nearly out
         if (s.mantle && p.frac() < 0.4 && Math.random() < Math.min(0.66, s.mantle)) { p.invuln = 0.3; fx.text(p.x, p.y - 22, 'PASSED THROUGH', '#b9a0ff', 10, 0.6); LF.audio.play('shroud'); return; }
         // wax buckler: stops what comes from where you are aiming, like a Bulwark's plate
@@ -591,10 +710,21 @@
           return;
         }
         // wax skin: the coat takes one hit whole, then has to set again
-        if (s.waxSkin && p.waxT >= Math.max(2.5, 8 - 2 * s.waxSkin)) { p.waxT = 0; p.invuln = 0.45; fx.text(p.x, p.y - 22, 'WAX', '#f0e2c0', 10, 0.6); fx.burst(p.x, p.y, 10, { color: '#f0e2c0', speed1: 110, life: 0.35 }); LF.audio.play('wax'); return; }
+        if (s.waxSkin && p.waxT >= Math.max(2.5, 8 - 2 * s.waxSkin)) {
+          // Second Skin: the coat takes more than one blow before it has to set again. Shed Skin: it bursts when struck.
+          if ((p.skinUsed || 0) < s.skinExtra) p.skinUsed = (p.skinUsed || 0) + 1; else { p.waxT = 0; p.skinUsed = 0; }
+          if (s.shed) { fx.ring(p.x, p.y, 10, 90, 0.3, '#f0e2c0', 4); for (const e of this.enemies) { if (e.dead || e.intangible || e.spawnT > 0 || LF.dist2(p.x, p.y, e.x, e.y) > (90 + e.r) * (90 + e.r)) continue; this.damageEnemy(e, 75 * s.shed * s.waxMul, { type: 'wax', noShroud: true }); if (!e.dead) this.waxEnemy(e); } }
+          p.invuln = 0.45; fx.text(p.x, p.y - 22, 'WAX', '#f0e2c0', 10, 0.6); fx.burst(p.x, p.y, 10, { color: '#f0e2c0', speed1: 110, life: 0.35 }); LF.audio.play('wax'); return; }
       }
-      p.waxT = 0;
+      p.waxT = 0; p.skinUsed = 0;
       amt *= s.dmgTaken;
+      if (!src.steal) amt /= s.ward; // the strongest theme the lantern has built divides the blow
+      if (!src.force && !src.steal) {
+        // Wax Underfoot: a bearer standing in wax of their own takes a softer blow
+        if (s.waxFoot && this.zones.some(z => z.kind === 'tallow' && !z.dead && LF.dist2(z.x, z.y, p.x, p.y) < z.r * z.r)) amt *= 1 - s.waxFoot;
+        // Decoy Wings: one of the loosed moths takes part of the blow, and dies of it
+        if (s.decoy && p.swarm.length) { const m = p.swarm.shift(); amt *= 1 - s.decoy; fx.burst(m.x, m.y, 9, { color: ['#e4d4ff', '#ffe2b0'], speed1: 120, life: 0.4, size: 2 }); fx.text(p.x, p.y - 36, 'A MOTH TOOK IT', '#e4d4ff', 10, 0.8); }
+      }
       if (s.lowDef < 1 && p.frac() < 0.5) amt *= s.lowDef;
       if (s.lastLight && p.frac() < 0.25) amt *= 0.75;
       p.light -= amt; this.run.taken += amt;
@@ -615,7 +745,7 @@
         fx.ring(p.x, p.y, 10, R, 0.3, '#ff7b54', 4); LF.audio.play('explode');
         for (const e of this.enemies) {
           if (e.dead || e.intangible || LF.dist2(p.x, p.y, e.x, e.y) > (R + e.r) * (R + e.r)) continue;
-          this.damageEnemy(e, 28 * s.cinderSkin + s.damage, { type: 'cinder', noShroud: true });
+          this.damageEnemy(e, 100 * s.cinderSkin, { type: 'cinder', of: 'mantle', noShroud: true });
           const a = Math.atan2(e.y - p.y, e.x - p.x); if (!e.boss) { e.kx += Math.cos(a) * 320; e.ky += Math.sin(a) * 320; }
         }
       }
@@ -625,7 +755,7 @@
           LF.audio.play('revive'); this.flareBurst(p.x, p.y, 260, 140, 2.2, 1.6);
           fx.text(p.x, p.y - 36, 'THE HEART-SHARD BLAZES', '#ffe2a6', 15, 2);
         } else if (s.lifeline && !p.lifelineUsed) {
-          p.lifelineUsed = true; p.light = 1; p.invuln = 1.2;
+          p.lifelineUsed = true; p.light = LF.EMBER; p.invuln = 1.2;
           fx.text(p.x, p.y - 34, 'LIFELINE', '#ff8fa3', 14, 1.2);
         } else if (this.meta.up.banked && !p.bankedUsed) {
           p.bankedUsed = true; p.light = 15; p.invuln = 1.6;
@@ -636,7 +766,7 @@
           LF.audio.play('revive');
           this.flareBurst(p.x, p.y, 220, 60, 2, 1.4);
           fx.text(p.x, p.y - 34, 'REKINDLED', '#ff9140', 16, 1.6);
-          this.toast('Phoenix Feather', 'Your light rekindles.', '#ff9140', 'feather', '#ff9140');
+          this.toast('Phoenix Feather', 'Your embers rekindle.', '#ff9140', 'feather', '#ff9140');
         } else this.die();
       }
     }
@@ -688,10 +818,11 @@
       }
       // what this descent unlocked
       r.unlocks = LF.LANTERNS.filter(l => l.unlocked(this.meta) && !this.unlockedAtStart.includes(l.id)).map(l => 'New lantern kindled: ' + l.name);
+      for (const l of LF.LOOKS) if (LF.lookOpen(l, this.meta) && !(this.looksAtStart || []).includes(l.id)) r.unlocks.push('A Lightbearer answers: ' + l.name);
       const felled = this.meta.felled || {};
       for (const [a, b] of [['bell', 'warden'], ['warden', 'angler'], ['mother', 'king'], ['king', 'sexton'], ['eclipse', 'choir'], ['choir', 'bearer']]) if (felled[a] && !this.felledAtStart[a]) r.unlocks.push('A new shadow stirs below: ' + LF.ENEMY_DEFS[b].name);
       if ((this.meta.bosses || 0) >= 1 && !this.vowsWereOpen) r.unlocks.push('Vows can now be sworn before a descent');
-      if (r.masteryUp) r.unlocks.push(LF.LANTERN[this.lanternId].name + ' mastery ' + ['', 'I', 'II', 'III'][r.masteryUp] + ': +4% damage and +5 light with it');
+      if (r.masteryUp) r.unlocks.push(LF.LANTERN[this.lanternId].name + ' mastery ' + ['', 'I', 'II', 'III'][r.masteryUp] + ': +4% damage and +2 embers with it');
       if (!this.meta.feats) this.meta.feats = {};
       for (const f of LF.FEATS) {
         if (this.meta.feats[f.id]) continue;
@@ -712,15 +843,19 @@
       this.addFlash(x, y, R * 2.4, wax ? 0.9 : 0.55, tint);
       fx.ring(x, y, 10, R, 0.35, tint, 6); fx.ring(x, y, 4, R * 0.7, 0.5, wax ? '#d8c28a' : '#ffb347', 3);
       fx.burst(x, y, 30, { color: wax ? ['#f0e2c0', '#d8c28a', '#fff'] : ['#fff2cc', '#ffb347', '#fff'], speed0: wax ? 60 : 120, speed1: wax ? 260 : 420, life: wax ? 0.8 : 0.5, size: wax ? 3 : 2.4, drag: 4 });
+      let touched = 0;
       for (const e of this.enemies) {
         if (e.dead || e.spawnT > 0) continue;
         if (LF.dist2(x, y, e.x, e.y) > (R + e.r) * (R + e.r)) continue;
+        touched += e.boss ? 8 : 1;
         if (e.type === 'wraith') { e.solid = 1; e.intangible = false; }
         if (e.affix === 'warded') { e.wardBroken = 7; fx.text(e.x, e.y - e.r - 16, 'WARD BROKEN', '#ffe08a', 10, 0.9); }
         if (e.type === 'weaver') { e.intangible = false; }
-        if (dmg > 0) this.damageEnemy(e, dmg, { type: 'flare', noShroud: true, force: true });
+        if (dmg > 0) this.damageEnemy(e, dmg * (1 + this.player.stats.farFlare * LF.dist(x, y, e.x, e.y) / this.player.stats.flareRadius), { type: 'flare', noShroud: true, force: true });
         if (e.dead) continue;
         if (wax) e.chill = Math.max(e.chill, e.boss ? 3 : 5.5);
+        else if (this.player.stats.flareWax) this.waxEnemy(e);
+        if (!kind || this.player.stats.flareBurn) this.ignite(e, this.player.stats.burnBase);
         e.mark = Math.max(e.mark, 3 + this.player.stats.markTime);
         if (!e.boss) {
           e.stun = Math.max(e.stun, stun);
@@ -737,7 +872,9 @@
         if (pr.kind === 'oiljar' && !pr.broken && LF.dist2(x, y, pr.x, pr.y) < R * R * 0.6) this.delay(0.1, () => this.breakJar(pr));
         if (pr.kind === 'trap' && pr.sub === 'grasp' && LF.dist2(x, y, pr.x, pr.y) < R * R) { pr.calm = 7; pr.state = 0; fx.burst(pr.x, pr.y, 8, { color: ['#12081e', '#2a2540'], speed1: 90, life: 0.5, size: 4, glow: false }); }
       }
-      this.addZone({ kind: 'light', x, y, r: R * (wax ? 1.6 : 1.3), life: wax ? 10 : 4 });
+      // Flare of Memory: every creature the flare touched gives a little back
+      { const pl = this.player, fh = pl.stats.flareHeal; if (fh && touched && !pl.dead) { pl.addLight(fh * touched); fx.text(pl.x, pl.y - 34, '+' + Math.round(fh * touched / 2.5 * 10) / 10 + ' embers', '#fff0b8', 11, 0.9); fx.ring(pl.x, pl.y, R * 0.5, 12, 0.35, '#fff0b8', 2); } }
+      this.addZone({ kind: 'light', x, y, r: R * (wax ? 1.6 : 1.3), life: (wax ? 10 : 4) * this.player.stats.linger, flare: true });
       if (ward) this.addZone({ kind: 'beacon', x, y, r: R, life: 2.8, dps: Math.max(6, dmg * 0.5), ward: true });
       if (moths) this.player.swarmMoths(Math.round(5 * power), 5);
     }
@@ -749,18 +886,23 @@
       LF.audio.play('flare'); LF.audio.play('beam'); this.shake(9 * power);
       fx.arc(x, y, x2, y2, '#ffb347', 0.55, 20 * power, 'beam'); fx.arc(x, y, x2, y2, '#fff2cc', 0.4, 9 * power, 'beam');
       const near = (px, py, r) => { const t = LF.clamp((px - x) * cx + (py - y) * cy, 0, L); return LF.dist2(px, py, x + cx * t, y + cy * t) < (W + r) * (W + r); };
-      for (let d = 0; d <= L; d += 90) { this.addFlash(x + cx * d, y + cy * d, 150, 0.45, '#fff2cc'); this.addZone({ kind: 'light', x: x + cx * d, y: y + cy * d, r: 95, life: 4 }); }
+      for (let d = 0; d <= L; d += 90) { this.addFlash(x + cx * d, y + cy * d, 150, 0.45, '#fff2cc'); this.addZone({ kind: 'light', x: x + cx * d, y: y + cy * d, r: 95, life: 4 * this.player.stats.linger, flare: true }); }
+      let touched = 0; const ps = this.player.stats;
       fx.burst(x2, y2, 16, { color: ['#fff2cc', '#ffb347'], speed1: 260, life: 0.45 });
       for (const e of this.enemies) {
         if (e.dead || e.spawnT > 0 || !near(e.x, e.y, e.r)) continue;
         if (e.type === 'wraith') { e.solid = 1; e.intangible = false; }
         if (e.affix === 'warded') { e.wardBroken = 7; fx.text(e.x, e.y - e.r - 16, 'WARD BROKEN', '#ffe08a', 10, 0.9); }
         if (e.type === 'weaver') { e.intangible = false; }
-        this.damageEnemy(e, dmg, { type: 'flare', noShroud: true, force: true });
+        touched += e.boss ? 8 : 1;
+        this.damageEnemy(e, dmg * (1 + ps.farFlare * LF.dist(x, y, e.x, e.y) / ps.flareRadius), { type: 'flare', noShroud: true, force: true });
         if (e.dead) continue;
+        if (ps.flareWax) this.waxEnemy(e);
+        if (ps.flareBurn) this.ignite(e, ps.burnBase);
         e.mark = Math.max(e.mark, 3 + this.player.stats.markTime);
         if (!e.boss) { e.stun = Math.max(e.stun, stun); e.kx += cx * 300; e.ky += cy * 300; if (e.def.onStun) e.def.onStun(e, this); }
       }
+      if (ps.flareHeal && touched && !this.player.dead) { this.player.addLight(ps.flareHeal * touched); fx.text(this.player.x, this.player.y - 34, '+' + Math.round(ps.flareHeal * touched / 2.5 * 10) / 10 + ' embers', '#fff0b8', 11, 0.9); }
       for (const b of this.ebullets) if (!b.dead && near(b.x, b.y, 6)) { b.dead = true; fx.burst(b.x, b.y, 4, { color: '#ffb347', speed1: 80, life: 0.3 }); }
       for (const pr of this.props) {
         if (!near(pr.x, pr.y, 16)) continue;
@@ -813,7 +955,7 @@
       this.litBraziers = this.props.filter(q => q.kind === 'brazier' && q.lit);
       if (silent) return;
       const p = this.player;
-      if (p.stats.brazierMax && !pr.oathed) { pr.oathed = true; p.bonusMax += p.stats.brazierMax; p.recalc(); fx.text(pr.x, pr.y - 46, '+' + p.stats.brazierMax + ' max light', '#ffe2a6', 11, 1.2); }
+      if (p.stats.brazierMax && !pr.oathed) { pr.oathed = true; p.bonusMax += p.stats.brazierMax; p.recalc(); fx.text(pr.x, pr.y - 46, '+' + LF.embers(p.stats.brazierMax) + ' max embers', '#ffe2a6', 11, 1.2); }
       // the first lighting pays in full; a brazier that was smothered pays a little twice more, then nothing
       pr.payouts = (pr.payouts || 0) + 1;
       const first = pr.payouts === 1 && !pr.snuffed;
@@ -823,7 +965,7 @@
       fx.burst(pr.x, pr.y - 8, 24, { color: ['#ffb347', '#ffe9b8', '#ff7b2e'], speed1: 180, life: 0.8, grav: -80 });
       fx.ring(pr.x, pr.y, 8, 150, 0.6, '#ffb347', 3);
       this.addFlash(pr.x, pr.y, 260, 0.5, '#ffcf8a');
-      fx.text(pr.x, pr.y - 30, gain > 0 ? '+' + Math.round(gain) + ' light' : 'relit', '#ffd28a', 12, 1);
+      fx.text(pr.x, pr.y - 30, gain > 0 ? '+' + LF.embers(gain) + ' embers' : 'relit', '#ffd28a', 12, 1);
     }
     breakUrn(pr) {
       pr.broken = true;
@@ -866,10 +1008,13 @@
             fx.burst(pr.x, pr.y, 18, { color: ['#4a3320', '#120a20'], glow: false, speed1: 200, life: 0.6, size: 5 });
             break;
           }
-          // Three things, rolled once and kept: walk away and the same three are there when you come back. No rerolls.
+          // Three things, rolled once and kept: walk away and the same three are there when you come back. They can be
+          // rerolled. The reliquary a trial leaves holds great works, for as long as there is one the lantern could take.
           // A plain reliquary leans common; a sealed vault's or a trial's still holds something rare.
+          const fill = () => LF.rollRelics(p, 3, { rng: this.rng, floor: this.floor, low: !pr.rare && !pr.prize, minRarity: pr.rare ? 'rare' : undefined });
           if (!pr.loot) {
-            pr.loot = LF.rollRelics(p, 3, { rng: this.rng, floor: this.floor, low: !pr.rare && !pr.prize, minRarity: pr.rare ? 'rare' : undefined });
+            pr.loot = pr.rite ? LF.rollRelics(p, 3, { rng: this.rng, floor: this.floor, pool: 'brand' }) : [];
+            if (!pr.loot.length) { pr.rite = false; pr.loot = fill(); }
             LF.audio.play('chest');
             for (let i = 0; i < 5 + this.floor; i++) this.pickups.push(new LF.Pickup('glass', pr.x, pr.y, 1));
             fx.burst(pr.x, pr.y, 20, { color: ['#ffe08a', '#fff'], speed1: 180, life: 0.6 });
@@ -877,8 +1022,10 @@
           }
           pr.loot = pr.loot.filter(d => (p.relics[d.id] || 0) < d.max);
           if (!pr.loot.length) { pr.opened = true; this.hint('Nothing left in it that you can carry'); break; }
-          this.openOffer({ title: pr.rare ? 'A Sealed Reliquary' : 'A Reliquary', sub: 'Three things were left in it. Take one; the others stay behind.', relics: pr.loot, canSkip: true, noReroll: true,
-            onDone: picked => { if (picked) pr.opened = true; } });
+          this.openOffer(pr.rite
+            ? { title: 'A Great Work', sub: 'The trial was the making of it. A lantern can hold one of each. Take one, or walk on.', relics: pr.loot, canSkip: true, noReroll: true, onDone: picked => { if (picked) pr.opened = true; } }
+            : { title: pr.rare ? 'A Sealed Reliquary' : 'A Reliquary', sub: 'Three things were left in it. Take one; the others stay behind.', relics: pr.loot, canSkip: true, minRarity: pr.rare ? 'rare' : undefined,
+              reroll: () => (pr.loot = fill()), onDone: picked => { if (picked) pr.opened = true; } });
           break;
         }
         case 'shrine': {
@@ -890,17 +1037,24 @@
         }
         case 'pedestal': {
           if (pr.sold) break;
+          if (pr.item.type === 'relic' && LF.RELICS[pr.item.relic].form && LF.formHeld(p, LF.RELICS[pr.item.relic].form)) { LF.audio.play('deny'); this.hint('Your ' + LF.RELICS[pr.item.relic].form + ' already has a form'); break; }
+          if (pr.item.type === 'relic' && LF.RELICS[pr.item.relic].form) {
+            // a Legendary Form is shown in full, with its price, and bought or left from there
+            const d = LF.RELICS[pr.item.relic];
+            this.openOffer({ title: 'A Legendary Form', sub: 'It changes how your ' + d.form + ' works for the rest of this descent. It ranks up like any relic, and you may hold only one form for your ' + d.form + '.', relics: [d], canSkip: true, dim: true, noReroll: true, buy: { pr, price: this.price(pr) } });
+            break;
+          }
           if (p.glass < this.price(pr)) { LF.audio.play('deny'); this.hint('Not enough glass'); break; }
           p.glass -= this.price(pr); pr.sold = true; LF.audio.play('buy');
           if (pr.item.type === 'relic') this.gainRelic(pr.item.relic, pr.x, pr.y);
-          else { p.addLight(45); fx.text(pr.x, pr.y - 24, '+45 light', '#ffd28a', 12, 1); fx.burst(pr.x, pr.y, 14, { color: '#ffb347', speed1: 120, life: 0.6 }); }
+          else { p.addLight(45); fx.text(pr.x, pr.y - 24, '+18 embers', '#ffd28a', 12, 1); fx.burst(pr.x, pr.y, 14, { color: '#ffb347', speed1: 120, life: 0.6 }); }
           break;
         }
         case 'font': {
           if (pr.used) break;
           pr.used = true; p.addLight(p.stats.maxLight); LF.audio.play('brazier');
           fx.burst(pr.x, pr.y, 26, { color: ['#fff2cc', '#ffb347'], speed1: 160, life: 0.9, grav: -60 });
-          fx.text(pr.x, pr.y - 28, 'Light restored', '#ffd28a', 12, 1.2);
+          fx.text(pr.x, pr.y - 28, 'Embers restored', '#ffd28a', 12, 1.2);
           break;
         }
         case 'statue': {
@@ -931,7 +1085,8 @@
         case 'shrine': return pr.used ? null : 'Kneel at the Altar of Wax';
         case 'pedestal': {
           if (pr.sold) return null;
-          const nm = pr.item.type === 'relic' ? LF.RELICS[pr.item.relic].name : 'Lamp Oil (+45 light)';
+          const nm = pr.item.type === 'relic' ? LF.RELICS[pr.item.relic].name : 'Lamp Oil (+18 embers)';
+          if (pr.item.type === 'relic' && LF.RELICS[pr.item.relic].form) return 'Look at ' + nm + ', a Legendary Form  ·  ' + this.price(pr) + ' glass';
           return 'Buy ' + nm + '  ·  ' + this.price(pr) + ' glass' + (p.glass < this.price(pr) ? '  (too few)' : '');
         }
         case 'font': return pr.used ? null : 'Drink from the Font of Light';
@@ -954,16 +1109,37 @@
       const o = this.offer;
       if (!o) return;
       const d = i >= 0 ? o.relics[i] : null;
+      // a Legendary Form bought from the Chandler: the glass is taken here, and the form is announced
+      if (o.buy && d) {
+        if (this.player.glass < o.buy.price) { LF.audio.play('deny'); return; }
+        this.player.glass -= o.buy.price; o.buy.pr.sold = true; LF.audio.play('buy'); LF.audio.play('rare');
+        this.banner = { text: d.name, sub: 'A Legendary Form: your ' + d.form + ' is changed', t: 0, dur: 3.2 };
+      }
+      // the Forge stays open: a pick spends the glass, gives the rank, and the screen is still there for the next
+      if (o.forge && d) {
+        const cost = this.forgeCost(d);
+        if (this.player.glass < cost) { LF.audio.play('deny'); return; }
+        this.player.glass -= cost; this.gainRelic(d.id, this.player.x, this.player.y); LF.audio.play('buy');
+        o.relics = o.held(); o.forged = (o.forged || 0) + 1;
+        if (o.relics.length) return;
+      }
       this.state = 'play'; this.offer = null; this.bufInteract = 0; this.bufDash = 0; this.bufFlare = 0;
-      if (d) this.gainRelic(d.id, this.player.x, this.player.y);
+      if (d && !d.pseudo) this.gainRelic(d.id, this.player.x, this.player.y); // a category card is a choice, not a relic
       else LF.audio.play('uiBack');
       if (o.onDone) o.onDone(d);
     }
+    // what the Forge asks to give this relic its next rank
+    forgeCost(d) { const to = (this.player.relics[d.id] || 0) + 1; return to <= 2 ? LF.TUNE.forgeII : LF.TUNE.forgeIII + LF.TUNE.forgeMore * (to - 3); }
+    // what the next reroll of this offer costs in glass, once the lantern's own rerolls are spent: it doubles each time
+    rerollPrice(o) { return LF.TUNE.rerollGlass + LF.TUNE.rerollMore * ((o && o.paid) || 0); }
+    canReroll(o) { const p = this.player; return !!o && !o.cursed && !o.noReroll && (p.rerolls > 0 || p.glass >= this.rerollPrice(o)); }
     rerollOffer() {
       const o = this.offer, p = this.player;
-      if (!o || o.cursed || o.noReroll || p.rerolls <= 0) { LF.audio.play('deny'); return; }
-      p.rerolls--;
-      o.relics = LF.rollRelics(p, o.relics.length, { rng: this.rng, floor: this.floor, minRarity: o.minRarity });
+      // a mend's pages turn for nothing: it is showing what the lantern holds, not rolling anything new
+      if (o && o.free && o.reroll && !o.noReroll) { o.relics = o.reroll(); o.t = 0; o.sel = 0; LF.audio.play('uiSelect'); return; }
+      if (!this.canReroll(o)) { LF.audio.play('deny'); return; }
+      if (p.rerolls > 0) p.rerolls--; else { p.glass -= this.rerollPrice(o); o.paid = (o.paid || 0) + 1; }
+      o.relics = o.reroll ? o.reroll() : LF.rollRelics(p, o.relics.length, { rng: this.rng, floor: this.floor, minRarity: o.minRarity });
       o.t = 0; LF.audio.play('uiSelect');
     }
     descend() {
@@ -977,16 +1153,57 @@
       this.startFade(-1, 0.7, () => {
         const p = this.player;
         if (p.dead) return;
-        const n = Math.max(2, 3 + p.stats.extraChoice + (cleared >= 0.85 && !boss ? 1 : 0) - (this.vows.thrift ? 1 : 0));
+        const next = () => { this.depth++; p.rerolls += LF.TUNE.rerollStair; this.loadFloor(); this.state = 'play'; this.startFade(1, 0.8); };
+        const cards = Math.max(2, 3 + p.stats.extraChoice - (this.vows.thrift ? 1 : 0));
+        if (this.mode === 'descent') {
+          const glass = Math.round((16 + this.depth * 4) * LF.TUNE.glassYield), clean = cleared >= 0.85 && !boss;
+          const take = () => { p.glass += glass; this.run.glass += glass; next(); };
+          const stair = () => {
+            // a lantern that arrives nearly out finds something the dark has left among the choices
+            // a lantern that arrives nearly out is shown one thing more, and a rare one
+            const dusk = !boss && p.frac() < 0.35;
+            const roll = () => { const r = LF.rollRelics(p, cards + (clean ? 1 : 0), { rng: this.rng, floor: this.floor }); return dusk ? r.concat(LF.rollRelics(p, 1, { rng: this.rng, floor: this.floor, minRarity: 'rare', filter: d => !r.includes(d) })) : r; };
+            const relics = roll(), sh = dusk ? [1] : [];
+            if (!relics.length) { take(); return; }
+            this.openOffer({
+              title: 'The Stair Offers a Gift', relics, canSkip: false, dim: true, reroll: roll, altGlass: glass,
+              sub: sh.length ? 'Your flame is nearly out. The stair shows a failing lantern one thing more.' : clean ? 'You left nothing alive behind you: one more to choose from.' : 'Take one with you into the dark below.',
+              onDone: picked => { if (!picked) take(); else next(); },
+            });
+          };
+          // after a great shadow the shard is the stair's gift: one offer, with one more to choose from, not two in a row
+          const shard = boss ? LF.rollRelics(p, cards + 1, { rng: this.rng, floor: this.floor, minRarity: 'rare' }) : [];
+          // Glass runs together at the stair: every sixty held is a rank for one of three relics the lantern already
+          // holds, the bearer's choice. The deeper a relic's rank, the likelier it is among the three.
+          // One screen for all of it: a pick forges a rank and the screen stays, on the same page, until the glass
+          // runs short or the bearer is done (`at0` is the page to stay on; the cards do not fly in again).
+          // The Forge: everything the lantern carries that can still grow, on one screen, each with its price in glass.
+          const forge = then => {
+            const held = () => p.relicOrder.map(id => LF.RELICS[id]).filter(d => d && d.rarity !== 'boon' && p.relics[d.id] < d.max);
+            const list = held();
+            if (!list.some(d => p.glass >= this.forgeCost(d))) { then(); return; }
+            this.openOffer({ title: 'The Forge', sub: 'Glass forges a rank into a relic you carry.', relics: list, held, forge: true, canSkip: true, dim: true, noReroll: true, onDone: () => then() });
+          };
+          const mend = (then, at0) => {
+            if (LF.TUNE.forging) { forge(then); return; }
+            const held = p.relicOrder.map(id => LF.RELICS[id]).filter(d => d && d.rarity !== 'boon' && p.relics[d.id] < d.max);
+            if (!LF.TUNE.glassRanks || p.glass < LF.TUNE.melt || !held.length) { then(); return; }
+            // everything the lantern holds that can still grow, four to a page, in the order it was taken
+            const per = 4, pages = Math.ceil(held.length / per); let at = Math.min(at0 || 0, pages - 1);
+            const page = () => { at = (at + 1) % pages; return held.slice(at * per, at * per + per); };
+            const left = Math.floor(p.glass / LF.TUNE.melt);
+            this.openOffer({ title: 'The Glass Runs Together', sub: LF.TUNE.melt + ' glass forges a rank for a relic you hold, and only here is a third rank forged. You hold enough for ' + left + '.', relics: held.slice(at * per, at * per + per), t: at0 === undefined ? 0 : 1, canSkip: false, dim: true, mend: true, free: pages > 1, pages, noReroll: pages <= 1, reroll: page,
+              onDone: picked => { if (!picked) { then(); return; } p.glass -= LF.TUNE.melt; mend(then, at); } });
+          };
+          if (shard.length) this.openOffer({ title: 'A Shard of the Lantern', minRarity: 'rare', sub: 'The shadow had closed around this. It is yours now.', relics: shard, canSkip: false, dim: true, onDone: () => mend(next) });
+          else mend(stair);
+          return;
+        }
+        // the Gauntlet and the Vigil keep the plain offer: a handful of relics, take one
+        const n = Math.max(2, 3 + p.stats.extraChoice - (this.vows.thrift ? 1 : 0));
         const alt = boss ? 0 : 16 + this.depth * 4;
         const relics = LF.rollRelics(p, n, { rng: this.rng, floor: this.floor, minRarity: boss ? 'rare' : undefined });
-        let dusk = false;
-        if (!boss && this.mode === 'descent' && p.frac() < 0.35 && relics.length) {
-          const sh = LF.rollRelics(p, 1, { rng: this.rng, pool: 'shadow' });
-          if (sh.length) { relics[relics.length - 1] = sh[0]; dusk = true; }
-        }
-        const next = () => { this.depth++; this.loadFloor(); this.state = 'play'; this.startFade(1, 0.8); };
-        const rites = boss && this.mode === 'descent' ? LF.rollRelics(p, 3, { rng: this.rng, floor: this.floor, pool: 'brand' }) : [];
+        const dusk = false, rites = [];
         const spoils = () => {
         if (!relics.length) { if (alt) { p.glass += alt; this.run.glass += alt; } next(); return; }
         this.openOffer({
@@ -1112,6 +1329,7 @@
         this.meta.bosses = (this.meta.bosses || 0) + 1;
         if (!this.meta.felled) this.meta.felled = {};
         this.meta.felled[e.type] = (this.meta.felled[e.type] || 0) + 1; this.save();
+        for (const l of LF.LOOKS) if (l.by === e.type && this.meta.felled[e.type] === 1) this.toast('A Lightbearer answers', l.name + ' can carry the light on your next descent.', '#ffe2a6', 'flame', '#ffb347', 7);
       }
       const room = this.map.rooms[0];
       this.map.sealRoom(room, false); room.cleared = true;
@@ -1128,7 +1346,7 @@
         if (pr.kind === 'brazier' && !pr.lit) this.lightBrazier(pr, true);
       }
       if (this.mode === 'rush' ? this.depth >= this.rushLen() : this.floor === 9) this.victoryReady = true;
-      if (this.mode === 'rush') { const pl = this.player; pl.bonusMax += 15; pl.recalc(); pl.addLight(pl.stats.maxLight); fx.text(pl.x, pl.y - 44, '+15 max light', '#ffe2a6', 13, 1.6); }
+      if (this.mode === 'rush') { const pl = this.player; pl.bonusMax += 15; pl.recalc(); pl.addLight(pl.stats.maxLight); fx.text(pl.x, pl.y - 44, '+6 max embers', '#ffe2a6', 13, 1.6); }
       this.banner = { text: e.def.name + ' is unmade', sub: this.floor === 9 ? (this.mode === 'descent' ? (this.loop >= 4 ? 'Beneath it, the Great Lantern. It has gone out' : 'Beneath it, a shard of the Lantern') : 'A stair of pale light rises') : 'The way down lies open', t: 0, dur: 4, small: true };
       LF.audio.play('gateOpen');
     }
@@ -1182,12 +1400,24 @@
     }
     step(dt, inp) {
       const p = this.player, map = this.map;
+      // with no Chandler to spend it on, glass runs together into rerolls
+      if (this.mode !== 'descent' && p.glass >= LF.TUNE.melt && !p.dead && this.state === 'play' && !this.fade) {
+        const up = Object.keys(p.relics).filter(id => { const d = LF.RELICS[id]; return d && d.rarity !== 'boon' && p.relics[id] < d.max; });
+        if (up.length) { p.glass -= LF.TUNE.melt; const id = up[(Math.random() * up.length) | 0]; this.toast('Glass Runs Together', 'It mends into your lantern, and ' + LF.RELICS[id].name + ' gains a rank.', '#7fffd4', 'glass', '#7fffd4', 5); this.gainRelic(id, p.x, p.y); }
+      }
+      if (this.pendingBolt && !this.fade && !p.dead && this.state === 'play') {
+        const d = LF.RELICS[this.pendingBolt], S = LF.SCHOOLS[d.school]; this.pendingBolt = null;
+        if (!p.relics[d.id]) { this.openOffer({ title: 'Your Bolt Could Turn', sub: 'You hold enough of ' + S.name.toLowerCase() + ' that your bolt would carry it. It would let go of what it carries now.', relics: [d], canSkip: true, dim: true, noReroll: true, bolt: true }); return; }
+      }
       this.time += dt; this.run.time += p.dead ? 0 : dt;
       // Lingering is not safe: stay too long on a floor and the dark sends hunters, again and again.
       if (this.mode === 'descent' && !this.map.boss && !p.dead && this.run.kills > 0) {
         this.floorT += dt;
-        const due = Math.min(4, Math.floor((this.floorT - 85) / 42) + 1); // four at most: a punishment, not a siege
-        if (this.floorT > 85 && due > this.lingerN) {
+        // how long a bearer may take before the first Hunter: longer where the first Levels are fuller and tougher than
+        // the old curve made them, and longer on a Level with the Chandler's room to visit
+        if (this.lingerAt === undefined || this.lingerFor !== this.map) { this.lingerFor = this.map; this.lingerAt = 85 * (1 + 0.6 * (LF.TUNE.earlyHp + LF.TUNE.pack) * Math.max(0, 4 - this.floor) / 3) + (this.map.rooms.some(r => r.type === 'shop') ? 25 : 0); }
+        const due = Math.min(4, Math.floor((this.floorT - this.lingerAt) / 42) + 1); // four at most: a punishment, not a siege
+        if (this.floorT > this.lingerAt && due > this.lingerN) {
           this.lingerN = due;
           let alive = 0; for (const e of this.enemies) if (!e.dead && e.hunter) alive++;
           const far = this.map.rooms.filter(r => r.type !== 'shop').sort((a, b) => LF.dist(b.cx, b.cy, p.x / TILE, p.y / TILE) - LF.dist(a.cx, a.cy, p.x / TILE, p.y / TILE))[0];
@@ -1215,13 +1445,25 @@
         if (z.kind === 'fire' || z.kind === 'beacon') {
           for (const e of this.enemies) {
             if (e.dead || e.intangible || e.spawnT > 0) continue;
-            if (LF.dist2(z.x, z.y, e.x, e.y) < (z.r + e.r) * (z.r + e.r)) this.damageEnemy(e, z.dps * dt, { type: 'burn', quiet: true, noShroud: true });
+            if (LF.dist2(z.x, z.y, e.x, e.y) < (z.r + e.r) * (z.r + e.r)) { this.damageEnemy(e, z.dps * dt, { type: 'burn', of: 'ground', quiet: true, noShroud: true }); if (z.kind === 'fire' && !e.dead && !(e.burn > 0)) this.ignite(e, this.player.stats.burnBase, 1.5); }
           }
           if (z.kind === 'fire' && Math.random() < dt * 9) fx.spawn({ x: z.x + LF.rand(-z.r, z.r) * 0.6, y: z.y + LF.rand(-z.r, z.r) * 0.6, vy: -50, life: 0.5, size: 3, color: LF.pick(['#ff7b2e', '#ffc24d', '#ff4d1f']) });
         } else if (z.kind === 'wax') {
           z.tick = (z.tick || 0) - dt;
           if (!p.dead && z.tick <= 0 && p.dashing <= 0 && LF.dist2(z.x, z.y, p.x, p.y) < z.r * z.r) { z.tick = 0.5; this.hurtPlayer(z.dmg, { steal: true, name: 'burning wax' }); }
           if (Math.random() < dt * 5) fx.spawn({ x: z.x + LF.rand(-z.r, z.r) * 0.6, y: z.y + LF.rand(-z.r, z.r) * 0.6, vy: -40, life: 0.5, size: 2.4, color: LF.pick(['#ff9a3d', '#ffd28a']) });
+        } else if (z.kind === 'tallow') {
+          // the player's own spilt wax: whatever stands in it is waxed
+          for (const e of this.enemies) { if (e.dead || e.intangible || e.spawnT > 0) continue; if (LF.dist2(z.x, z.y, e.x, e.y) < (z.r + e.r) * (z.r + e.r)) { this.waxEnemy(e, 1.2); e.pooled = this.time; } }
+          // and it slows their shots: a bolt of shadow that crosses wax loses most of its speed, once
+          for (const sh of this.ebullets) if (!sh.dead && !sh.waxed && LF.dist2(z.x, z.y, sh.x, sh.y) < z.r * z.r) { sh.waxed = true; sh.vx *= 0.4; sh.vy *= 0.4; sh.speed *= 0.4; }
+        } else if (z.kind === 'mothcloud') {
+          z.tick -= dt;
+          if (z.tick <= 0) { z.tick = 0.4; const s2 = p.stats, bite = s2.mothBite * s2.swarmMul * 1.5; for (const e of this.enemies) { if (e.dead || e.intangible || e.spawnT > 0 || LF.dist2(z.x, z.y, e.x, e.y) > (z.r + e.r) * (z.r + e.r)) continue; this.damageEnemy(e, bite, { type: 'moth', quiet: true, noShroud: true }); if (!e.dead) this.mothBite(e); } }
+          if (Math.random() < dt * 30) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * z.r; fx.spawn({ x: z.x + Math.cos(a) * d, y: z.y + Math.sin(a) * d, vx: LF.rand(-40, 40), vy: LF.rand(-40, 40), life: 0.5, size: 2.2, color: LF.pick(['#e4d4ff', '#ffe2b0']), drag: 1 }); }
+        } else if (z.kind === 'candle') {
+          z.pulse -= dt;
+          if (z.pulse <= 0 && !p.dead) { z.pulse = 2; const s2 = p.stats; this.flareBurst(z.x, z.y, s2.flareRadius * 0.6, s2.flareDmg * 0.35 * p.damageMul(), s2.flareStun * 0.35, 0.3, z.fk); }
         } else if (z.kind === 'gloom') {
           if (!p.dead && LF.dist2(z.x, z.y, p.x, p.y) < z.r * z.r) { gloomed = true; p.light = Math.max(1, p.light - 6.5 * dt); }
           if (Math.random() < dt * 16) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * z.r; fx.spawn({ x: z.x + Math.cos(a) * d, y: z.y + Math.sin(a) * d, vx: LF.rand(-12, 12), vy: LF.rand(-12, 12), life: 1.2, size: 11, color: LF.pick(['#150a26', '#1d0f33', '#0d0718']), glow: false, shrink: false, alpha: 0.5, drag: 0.5 }); }
@@ -1248,7 +1490,9 @@
       // No drain beside any fire (brazier or relit wall lamp), in the Chandler's shop, or before the first kill of a descent.
       this.drainActive = !nearFire && !nearLamp && !(room && (room.type === 'shop')) && !p.dead && !(this.depth === 1 && this.run.kills === 0);
       this.nearLamp = nearLamp;
-      if (nearFire && this.threat <= 0 && !p.dead && p.light < p.stats.maxLight * 0.5) p.addLight(3 * dt);
+      // with nothing near, a brazier mends a share of your embers a second (6%, so half in about eight seconds),
+      // up to half of them; the Hearthstone mends faster, the Last Coat all the way
+      { const to = p.stats.maxLight * p.stats.restTo; if (nearFire && this.threat <= 0 && !p.dead && p.light < to) p.addLight(Math.min(to - p.light, p.stats.maxLight * 0.06 * p.stats.restRate * dt)); }
       this.nearFire = nearFire;
       if (p.stats.brazierBurn) {
         for (const b of this.litBraziers) for (const e of this.enemies) {
@@ -1310,7 +1554,7 @@
               fx.ring(c.x, c.y, 10, 120, 0.6, '#ffe08a', 3);
               if (trial) {
                 const spot = map.nearestOpen(c.x, c.y + 46);
-                this.props.push({ kind: 'chest', x: spot.x, y: spot.y, room: r.id, opened: false, rare: true });
+                this.props.push({ kind: 'chest', x: spot.x, y: spot.y, room: r.id, opened: false, rare: true, rite: true });
                 LF.audio.play('rare'); this.stat('trials');
               }
               this.banner = { text: trial ? 'Trial complete' : 'The dark recoils', sub: trial ? 'A reliquary answers' : '', t: 0, dur: trial ? 2.4 : 1.6, small: true };
@@ -1335,7 +1579,7 @@
       for (const b of this.bullets) {
         if (b.dead) continue;
         b.update(dt, this);
-        if (b.dead && b.coal) { const k = b.coal; b.coal = 0; this.explode(b.x, b.y, 44 + 56 * k, b.dmg * 0.55); }
+        if (b.dead && b.coal) { const k = b.coal; b.coal = 0; this.explode(b.x, b.y, 44 + 56 * k, b.dmg * 0.4); }
       }
       LF.compact(this.bullets);
       for (const b of this.ebullets) if (!b.dead) b.update(dt, this);

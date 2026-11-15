@@ -7,18 +7,23 @@
   const LF = window.LF, TAU = Math.PI * 2;
 
   LF.LOOKS = [
-    { id: 'wick', name: 'The Wick', perk: 'The lamplighter. Braziers catch twice as fast, and bolts carry 15% farther. Flare: the plain blinding flash.',
+    { id: 'wick', name: 'The Wick', perk: 'The lamplighter. Braziers catch twice as fast, and bolts carry 15% farther. Flare: a blinding flash that leaves what it touches burning.',
       stats(s) { s.kindleMul *= 2; s.boltLife *= 1.15; } },
-    { id: 'keeper', name: 'The Keeper', perk: 'Heavy. Takes 15% less harm and holds 20 more light, but walks 7% slower. Flare: smaller, and leaves a ring of light that burns and stops shots for a moment.', flare: 'ward',
-      stats(s) { s.dmgTaken *= 0.85; s.maxLight += 20; s.speed *= 0.93; } },
-    { id: 'candle', name: 'The Candle', perk: 'Small and hard to hit. Holds 15 less light. Flare: returns 25% sooner and hits softer, but wax slows all it touches and the light lingers.', r: 8, flare: 'wax',
+    { id: 'keeper', name: 'The Keeper', by: 'warden', unlockText: 'Kept by the dark. Unmake the Chain Warden and the Keeper answers', perk: 'Heavy. Its light reaches 25% farther and sears 50% harder, and it takes 15% less harm, but it walks 7% slower. Flare: smaller, and leaves a ring of light that burns and stops shots for a moment.', flare: 'ward',
+      stats(s) { s.dmgTaken *= 0.85; s.sear *= 1.5; s.radiusMul *= 1.25; s.radiusCap = 290; s.speed *= 0.93; } },
+    { id: 'candle', name: 'The Candle', by: 'king', unlockText: 'Kept by the dark. Unmake the Candle King and the Candle answers', perk: 'Small and hard to hit. Holds 15 less light. Flare: returns 25% sooner and hits softer, but wax slows all it touches and the light lingers.', r: 8, flare: 'wax',
       stats(s) { s.flareCd *= 0.75; s.maxLight -= 15; } },
-    { id: 'moth', name: 'The Moth', perk: 'Quick. 8% faster, the dash returns 20% sooner and embers come from farther. Takes 10% more harm. Flare: does no harm, and looses a flock of moths that fight for you.', flare: 'moths',
-      stats(s) { s.speed *= 1.08; s.dashCd *= 0.8; s.pickup *= 1.4; s.dmgTaken *= 1.1; } },
+    { id: 'moth', name: 'The Moth', by: 'mother', unlockText: 'Kept by the dark. Unmake the Mother of Moths and the Moth answers', perk: 'It flies, and no water slows it. The dash returns 35% sooner and embers come from farther. Takes 10% more harm. Flare: does no harm, and looses a flock of moths that fight for you.', flare: 'moths',
+      stats(s) { s.hover = true; s.dashCd *= 0.65; s.pickup *= 1.4; s.dmgTaken *= 1.1; } },
   ];
   LF.LOOK = {};
   for (const l of LF.LOOKS) LF.LOOK[l.id] = l;
-  LF.lookOf = meta => (meta && LF.LOOK[meta.look]) ? meta.look : 'wick';
+  // A Lightbearer answers once the great shadow that mirrors them has been unmade (`by` is that shadow's id).
+  // For testing: on the dev page (served from this machine) every Lightbearer answers, and nothing is written to the
+  // save. Add ?gates to the address to see the gates there. The published game and the bot runs always keep them.
+  const TEST_OPEN = (() => { try { return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && !/[?&]gates\b/.test(location.search); } catch (e) { return false; } })();
+  LF.lookOpen = (l, meta) => TEST_OPEN || !l.by || !!(meta && meta.felled && meta.felled[l.by]);
+  LF.lookOf = meta => { const l = meta && LF.LOOK[meta.look]; return l && LF.lookOpen(l, meta) ? l.id : 'wick'; };
   LF.nextLook = id => LF.LOOKS[(LF.LOOKS.findIndex(l => l.id === id) + 1) % LF.LOOKS.length].id;
 
   const PAL = {
@@ -58,9 +63,10 @@
 
     ctx.save();
     ctx.translate(o.x, o.y); ctx.scale(sc, sc);
-    if (!o.noShadow) { ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(0, 8, 9.5, 4, 0, 0, TAU); ctx.fill(); }
+    const fly = look === 'moth';   // the Moth does not walk: it hangs a little above its own shadow
+    if (!o.noShadow) { ctx.fillStyle = fly ? 'rgba(0,0,0,0.26)' : 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(0, fly ? 9.5 : 8, fly ? 7.5 : 9.5, fly ? 3.2 : 4, 0, 0, TAU); ctx.fill(); }
     // the walk bobs twice a stride; a blow knocks the figure back from where it is aiming; a dash stretches it
-    const ox = -C(aim) * 2.4 * hurt, oy = -S(aim) * 2.4 * hurt + (moving ? Math.sin((o.bob || 0) * 2) * 0.9 : Math.sin(t * 2.2) * 0.35);
+    const ox = -C(aim) * 2.4 * hurt, oy = -S(aim) * 2.4 * hurt + (fly ? -4 + Math.sin(t * 3.1) * 0.9 : moving ? Math.sin((o.bob || 0) * 2) * 0.9 : Math.sin(t * 2.2) * 0.35);
     let kx = 1, ky = 1, rot = 0;
     if (dash) { kx = 1.24; ky = 0.82; rot = mv; } else if (hurt > 0) { kx = ky = 1 - 0.1 * hurt; }
     ctx.translate(ox, oy);
@@ -160,8 +166,7 @@
       ctx.beginPath(); ctx.arc(lx, ly, fr, 0, TAU); ctx.fill();
     } else if (look === 'moth') {
       // ---------------------------------------------------------------- a small body under a great pale cloak like wings
-      feet(2.8, 6.5);
-      const spread = dash ? 0.3 : moving ? 0.98 + S(t * 13) * 0.16 : 0.6 + S(t * 2.4) * 0.05;
+      const spread = dash ? 0.3 : moving ? 0.98 + S(t * 13) * 0.16 : 0.8 + S(t * 8) * 0.13;   // the wings never rest: it has no feet to stand on
       const len = 26 + Math.min(6, sp * 0.02) + dash * 6;
       const wingCol = pal.wing || pal.deep, vein = pal.vein || pal.dark;
       for (let i = -1; i <= 1; i += 2) {

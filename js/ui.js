@@ -24,6 +24,7 @@
         case 'hearth': hearth(g); break;
         case 'help': help(g); break;
         case 'lantern': lanternSelect(g); break;
+        case 'bearer': bearerSelect(g); break;
         case 'codex': codex(g); break;
         case 'descents': descents(g); break;
         case 'shadows': shadows(g); break;
@@ -295,7 +296,7 @@
     lg.addColorStop(0, '#ff8a3d'); lg.addColorStop(1, '#ffe08a');
     ctx.fillStyle = frac < 0.25 && Math.floor(g.realTime * 6) % 2 ? '#ff5d4a' : lg; ctx.fillRect(bx, by, bw * frac, bh);
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(bx, by, bw * frac, bh * 0.35);
-    txt(Math.ceil(p.light) + ' / ' + Math.round(s.maxLight), bx + bw / 2, by + bh / 2 + 1 * u, 11, '#1a1208', 'center', LF.FONT_UI, 'bold');
+    txt(Math.ceil(p.light / LF.EMBER) + ' / ' + Math.round(s.maxLight / LF.EMBER), bx + bw / 2, by + bh / 2 + 1 * u, 11, '#1a1208', 'center', LF.FONT_UI, 'bold');
     // abilities
     const ay = by + bh + 12 * u;
     const md = LF.input.mode;
@@ -369,7 +370,7 @@
       const lines = LF.input.mode === 'touch' ? ['Left thumb moves  ·  Right thumb aims and fires  ·  DASH and FLARE on the right']
         : LF.input.mode === 'pad' ? ['Left stick move · Right stick aim and fire · A dash · B flare · X interact']
         : ['WASD move  ·  Mouse aim  ·  Hold LEFT CLICK to fire  ·  SPACE dash  ·  RIGHT CLICK flare  ·  E interact  ·  TAB map'];
-      lines.push('Your light is your life. Creatures outside it are shrouded and shrug off your bolts.');
+      lines.push('Your embers are your life and your light. Creatures outside that light are shrouded and shrug off your bolts.');
       const w = Math.min(760 * u, W - 20 * u), ph = (NAR ? 96 : 56) * u, py = H - (NAR ? 250 : 150) * u;
       panel((W - w) / 2, py, w, ph, 8, 'rgba(8,8,14,0.75)', 'rgba(255,217,160,0.18)');
       const lb = wtxt(lines[0], W / 2, py + 18 * u, NAR ? 12 : 13, '#f3e9d6', w - 24 * u, 16);
@@ -590,23 +591,23 @@
     const w = Math.min(860 * u, W - 32 * u), x = (W - w) / 2, y = 104 * u;
     const touch = LF.input.mode === 'touch';
     const rows = ui.helpPage ? [
-      ['Omens', 'Some floors carry an omen that bends the rules there: thicker dark, hungrier light, a hunter on your trail. The banner and the pause screen say which.'],
+      ['Omens', 'Some floors carry an omen that bends the rules there: thicker dark, embers that burn faster, a hunter on your trail. The banner and the pause screen say which.'],
       ['Vows', 'Once you have felled a great shadow you can swear handicaps on the lantern screen. Each pays extra cinders when the descent ends.'],
-      ['Schools', 'Every relic belongs to one of six schools. Three of a school attunes your lantern to it; five and seven attune it further. The deep outscales a lantern that takes a little of everything, so pick a school and reroll for it. Some pairs also form named synergies.'],
-      ['Trials, vaults, statues, altars', 'A trial is three sealed waves for a rare relic. A vault halves your light until its braziers burn. A statue of the Weeping Lamplighter gives one lasting blessing, freely. An altar offers a cursed bargain.'],
+      ['Ranks and kin', 'A relic you already hold can be taken again: it gains a rank, and most have three. Ranks do not stop at III: a relic can be taken or forged on to rank X, and what multiplies grows by half again with each. A form changes how your bolt or your flare works; a lantern holds one of each, and only the Chandler sells them. A relic that builds on a power you do not have is never offered: the relic that gives that power is offered in its place. Three relics in every theme multiply all that theme does, and multiply each other: a lantern that pours itself into one theme leaves a lantern of mixed themes far behind. Inside a theme there are paths, named on the card: a relic feeds its own path, and an amplifier of one does nothing for another. Every relic is of a theme (light, fire, wax, chain, moth), and every rank you hold of a theme draws more of it. Some relics name another as kin: hold both at rank II and a third power wakes that is never offered. Some grow with others, and say which: a longer flare light feeds a relic that pays you for standing in it.'],
+      ['Trials, vaults, statues, altars', 'A trial is three sealed waves for a great work. A vault halves your light until its braziers burn. A statue of the Weeping Lamplighter gives one lasting blessing, freely. An altar offers a bargain: a gift, and its price.'],
       ['The Long Vigil and the Gauntlet', 'The Vigil is one hall and endless waves, with a relic every second wave. The Gauntlet is six great shadows back to back, and opens once you have felled three. Any great shadow can be rehearsed alone from the Shadows page of the Codex.'],
       ['Daily Descent', 'One seed each day: the same floors, omens and bosses on every try.'],
-      ['Rites, lanterns, feats', 'When a great shadow falls you are offered a rite, a power that changes how you fight: a blade in place of bolts, a flare thrown as a lance. New lanterns unlock as you go deeper, and feats in the Codex pay cinders.'],
+      ['Great works, lanterns, feats', 'Stand through a Trial of Embers and you are offered a great work, the largest power a theme has: fire that never goes out, a lantern that flares of its own accord. New lanterns unlock as you go deeper, and feats in the Codex pay cinders.'],
       ['Controls', touch ? 'Left thumb moves, right thumb aims and fires. DASH, FLARE and USE are buttons. Tap the minimap for the full map.' : 'WASD move, mouse aim, hold left click to fire, Space dash, right click or Q flare, E interact, Tab map, Esc pause. Gamepad and touch also work.'],
     ] : [
-      ['Your light is your life', 'The bar is both health and how far you can see. It burns down on its own, and every hit gutters it further. At zero, you are snuffed: the dark alone can do it.'],
-      ['Light burns them', 'Anything standing in the light of your lantern smoulders, and the brighter your flame the hotter it burns. Creatures outside the light shrug off most of a bolt.'],
+      ['Your embers are your life', 'The bar counts the embers in your lantern. They are your health, and the fewer you hold the less far you see. They burn down on their own, and every hit knocks some out. At none, you are snuffed: the dark alone can do it.'],
+      ['Light burns them', 'Anything standing in the light of your lantern smoulders: faintly at the rim, fiercely close to the flame, and hotter the brighter you burn. Creatures outside the light shrug off most of a bolt.'],
       ['Fight to rekindle', 'Every kill feeds the flame, and kills made while it gutters feed it most. Slain creatures also drop embers, which wait on the ground while you are full.'],
-      [touch ? 'Flare' : 'Flare (right click, or Q)', 'A burst that wounds, stuns and throws back everything near you, shatters enemy shots and lights braziers. What it touches stays kindled for a few seconds and takes far more damage. When the crowd closes in, this is the way out.'],
-      [touch ? 'Dash' : 'Dash (space)', 'A short burst of speed that passes through attacks. Costs a little light.'],
-      ['Fires hold the dark off', 'Beside a lit brazier or a relit wall lamp your light stops burning down. A brazier also refills you when lit, and slowly mends you up to half while you rest there.'],
-      ['Relics', 'Each stair down offers a relic. Unmake nearly everything on a floor for an extra choice. Altars and trials offer more, at a price. A reliquary holds three humbler things and lets you take one; a statue gives a blessing.'],
-      ['Glass and cinders', 'Glass buys relics from the Chandler during a run. Cinders are earned at the end and spent at the Hearth.'],
+      [touch ? 'Flare' : 'Flare (right click, or Q)', 'A burst of light that stuns and throws back everything near you, shatters enemy shots and lights braziers. It does no harm by itself, but what it touches stays kindled for a few seconds and takes far more damage. When the crowd closes in, this is the way out.'],
+      [touch ? 'Dash' : 'Dash (space)', 'A short burst of speed that passes through attacks. Costs about an ember.'],
+      ['Fires hold the dark off', 'Beside a lit brazier or a relit wall lamp your embers stop burning down. A brazier also refills you when lit, and, with nothing near, mends you up to half while you rest there.'],
+      ['Relics', 'Your lantern carries the first relic of its theme from the first step. Every stair offers three, and you may reroll them. Unmake nearly everything on a floor for one more to choose from. A reliquary holds three humbler things; a statue gives a blessing; a Trial of Embers leaves a great work; an altar offers a bargain.'],
+      ['Glass and cinders', 'At each stair the Forge ranks up a relic you carry for glass (' + LF.TUNE.forgeII + ' for rank II, ' + LF.TUNE.forgeIII + ' for rank III). Glass also buys rerolls: when an offer holds nothing you need, pay ' + LF.TUNE.rerollGlass + ' glass to see another, and ' + LF.TUNE.rerollMore + ' more each time after on the same offer. Offers are dealt from the whole deck, so some will hold nothing for you. Glass also buys forms from the Chandler, and a form is dear. Cinders are earned at the end and spent at the Hearth.'],
     ];
     ctx.font = `${Math.round(13 * u)}px ${LF.FONT_UI}`;
     const wrapped = rows.map(r => LF.wrapText(ctx, r[1], w - 44 * u).slice(0, 4));
@@ -762,7 +763,69 @@
   }
   function lookButton(g, x, y, w, h, size) {
     const lk = LF.lookOf(g.meta);
-    if (button('Look: ' + LF.LOOK[lk].name, x, y, w, h, { size })) { g.meta.look = LF.nextLook(lk); g.save(); if (g.player && g.state === 'pause') { g.player.recalc(); } }
+    if (button('Lightbearer: ' + LF.LOOK[lk].name, x, y, w, h, { size })) { g.state = 'bearer'; ui.enter(g, 'bearer'); ui.focus = Math.max(0, LF.LOOKS.findIndex(l => l.id === lk)); return true; }
+    return false;
+  }
+  // ---- Lightbearers: who carries the light down. One is free; the rest are earned from the shadows that mirror them.
+  function toLantern(g) {
+    g.state = 'lantern'; ui.enter(g, 'lantern');
+    ui.focus = Math.max(0, LF.LANTERNS.findIndex(l => l.id === g.meta.lantern && l.unlocked(g.meta)));
+  }
+  function bearerSelect(g) {
+    backdrop('#12101a');
+    const L = LF.LOOKS, n = L.length, cur = LF.lookOf(g.meta);
+    bigTitle('Choose Your Lightbearer', NAR ? 58 * u : H * 0.13, NAR ? 28 : 44);
+    txt('Each carries the light differently, and flares differently.', W / 2, NAR ? 90 * u : H * 0.13 + 44 * u, NAR ? 13 : 15, '#c9bfae', 'center', LF.FONT_UI, 'italic');
+    const gap = (NAR ? 8 : 14) * u;
+    const cw = NAR ? W - 32 * u : Math.min(262 * u, (W - 40 * u - (n - 1) * gap) / n);
+    const y0 = NAR ? 112 * u : H * 0.25;
+    const ch = NAR ? Math.min(128 * u, (H - y0 - 74 * u) / n - gap) : 372 * u;
+    const x0 = NAR ? 16 * u : (W - n * cw - (n - 1) * gap) / 2;
+    if (!ui.figs) ui.figs = {};
+    let pick = null;
+    L.forEach((d, i) => {
+      const idx = ui.count++;
+      const bx = NAR ? x0 : x0 + i * (cw + gap), by0 = NAR ? y0 + i * (ch + gap) : y0, open = LF.lookOpen(d, g.meta);
+      const over = hit(bx, by0, cw, ch);
+      if (over && inp.mouseMoved && ui.focus !== idx) { ui.focus = idx; LF.audio.play('uiMove'); }
+      const foc = ui.focus === idx, chosen = cur === d.id;
+      const x = bx, y = by0 + (foc && open && !NAR ? -8 * u : 0);
+      LF.roundRect(ctx, x, y, cw, ch, 12 * u);
+      const cg = ctx.createLinearGradient(0, y, 0, y + ch);
+      cg.addColorStop(0, foc && open ? 'rgba(46,34,22,0.98)' : 'rgba(18,18,28,0.96)'); cg.addColorStop(1, 'rgba(8,8,14,0.98)');
+      ctx.fillStyle = cg; ctx.fill();
+      ctx.strokeStyle = !open ? 'rgba(120,120,130,0.35)' : foc ? '#ffd28a' : chosen ? '#ffb347' : 'rgba(255,217,160,0.3)'; ctx.lineWidth = (foc ? 2.6 : 1.3) * u; ctx.stroke();
+      // the figure itself, walking on the spot; a locked one is only a shape in the dark
+      const fx0 = NAR ? x + 52 * u : x + cw / 2, fy0 = NAR ? y + ch / 2 : y + 84 * u, fsc = (NAR ? 1.7 : 2.6) * u, t = g.realTime;
+      const a = Math.sin(t * 0.6 + i * 1.3) * 1.0 + 0.5;
+      ctx.globalAlpha = open ? 1 : 0.22;
+      const lp = LF.drawFigure(ctx, d.id, { x: fx0, y: fy0, sc: fsc, aim: a, mv: a, sp: open && foc ? 150 : 0, bob: t * 11, t, frac: 1, st: ui.figs[d.id] || (ui.figs[d.id] = {}) });
+      ctx.globalAlpha = 1;
+      if (open) { ctx.globalCompositeOperation = 'lighter'; LF.drawGlow(ctx, '#ffb347', lp.x, lp.y, (foc ? 15 : 12) * fsc, foc ? 0.85 : 0.6); ctx.globalCompositeOperation = 'source-over'; }
+      if (!NAR) {
+        txt(d.name, x + cw / 2, y + 198 * u, 18, open ? '#fff2d6' : '#77747e', 'center', LF.FONT_TITLE, '700');
+        ctx.font = `${Math.round(12.5 * u)}px ${LF.FONT_UI}`;
+        if (open) LF.wrapText(ctx, d.perk, cw - 28 * u).forEach((l, j) => txt(l, x + cw / 2, y + 226 * u + j * 17 * u, 12.5, '#d8cdb8', 'center'));
+        else {
+          LF.drawIcon(ctx, 'shield', x + cw / 2, y + 238 * u, 22 * u, '#5d5a66');
+          txt('NOT YET ANSWERED', x + cw / 2, y + 266 * u, 11, '#8f8a80', 'center', LF.FONT_UI, 'bold');
+          LF.wrapText(ctx, d.unlockText, cw - 28 * u).forEach((l, j) => txt(l, x + cw / 2, y + 284 * u + j * 16 * u, 12.5, '#c9a36a', 'center'));
+        }
+        if (chosen && open) txt('CARRYING THE LIGHT', x + cw / 2, y + ch - 18 * u, 10, '#ffb347', 'center', LF.FONT_UI, 'bold');
+      } else {
+        const tx = x + 104 * u;
+        txt(d.name, tx, y + 22 * u, 16, open ? '#fff2d6' : '#77747e', 'left', LF.FONT_TITLE, '700');
+        if (chosen && open) txt('CHOSEN', x + cw - 14 * u, y + 22 * u, 9.5, '#ffb347', 'right', LF.FONT_UI, 'bold');
+        ctx.font = `${Math.round(11.5 * u)}px ${LF.FONT_UI}`;
+        const maxLines = Math.max(1, Math.floor((ch - 38 * u) / (14 * u)));
+        LF.wrapText(ctx, open ? d.perk : 'Not yet answered. ' + d.unlockText + '.', cw - 118 * u).slice(0, maxLines).forEach((l, j) => txt(l, tx, y + 42 * u + j * 14 * u, 11.5, open ? '#d8cdb8' : '#c9a36a'));
+      }
+      if (ui.t > 0.25 && !g.fade && ((over && inp.click) || (foc && inp.confirm))) { if (open) pick = d; else LF.audio.play('deny'); }
+    });
+    if (pick) { g.meta.look = pick.id; g.save(); LF.audio.play('uiSelect'); toLantern(g); return; }
+    const bw = 240 * u, by = NAR ? y0 + n * (ch + gap) + 4 * u : y0 + ch + 26 * u;
+    if (button('Back', (W - bw) / 2, by, bw, 42 * u, { back: true }) || inp.back) { toLantern(g); return; }
+    tooltip();
   }
   function lanternSelect(g) {
     backdrop('#12101a');
@@ -837,11 +900,7 @@
     if (NAR) { bby = y0 + n * (ch + gap) + 4 * u; bw2 = (W - 32 * u - 10 * u) / 2; bx2 = 16 * u; }
     else { bby = y0 + ch + 26 * u; bw2 = 240 * u; bx2 = W / 2 - 250 * u; }
     if (button((NAR ? '' : 'Difficulty: ') + LF.DIFFS[g.meta.diff].name, bx2, bby, bw2, 42 * u, { size: 14 })) { g.meta.diff = (g.meta.diff + 1) % LF.DIFFS.length; g.save(); }
-    if (ui.mode === 'descent' && !ui.daily && (g.meta.shards || 0) >= 1) {
-      const sh = Math.min(4, g.meta.shards), cur = LF.clamp(g.meta.cycle >= 0 ? g.meta.cycle : sh, 0, sh), cwid = (NAR ? 132 : 170) * u;
-      if (button('Depth ' + LF.ROMAN[cur] + ' of ' + LF.ROMAN[sh], W - cwid - 16 * u, 16 * u, cwid, 36 * u, { size: 13 })) { g.meta.cycle = (cur + 1) % (sh + 1); g.save(); }
-    }
-    { const lw = (NAR ? 138 : 190) * u; lookButton(g, 16 * u, 16 * u, lw, 36 * u, 13); figurePreview(g, 16 * u + lw + (NAR ? 26 : 52) * u, (NAR ? 36 : 44) * u, (NAR ? 1.3 : 2.4) * u);
+    { const lw = (NAR ? 168 : 230) * u; if (lookButton(g, 16 * u, 16 * u, lw, 36 * u, 13)) return; figurePreview(g, 16 * u + lw + (NAR ? 26 : 52) * u, (NAR ? 36 : 44) * u, (NAR ? 1.3 : 2.4) * u);
       if (!NAR) wtxt(LF.LOOK[LF.lookOf(g.meta)].perk, 16 * u, 72 * u, 12, '#c9bfae', 250 * u, 15, 'italic', 'left'); }
     if (button('Back', bx2 + bw2 + (NAR ? 10 : 20) * u, bby, bw2, 42 * u, { back: true }) || inp.back) { ui.daily = null; g.state = 'title'; ui.enter(g, 'title'); return; }
     // vows
@@ -875,8 +934,6 @@
     y += bh + 10 * u;
     if (button('Settings', x, y, bw, bh, { size: 15 })) { ui.settingsFrom = 'pause'; g.state = 'settings'; ui.enter(g, 'settings'); return; }
     y += bh + 10 * u;
-    lookButton(g, x, y, bw, bh, 15); figurePreview(g, x + 34 * u, y + bh / 2, 1.3 * u);
-    y = wtxt(LF.LOOK[LF.lookOf(g.meta)].perk, NAR ? W / 2 : x, y + bh + 14 * u, 11, '#c9bfae', bw, 14, 'italic', NAR ? 'center' : 'left') + 12 * u;
     const armed = ui.abandonAt && g.realTime - ui.abandonAt < 3;
     if (button(armed ? 'Press again to abandon' : 'Abandon this descent', x, y, bw, bh, { size: 14, back: true })) {
       if (armed) { ui.abandonAt = 0; g.endRun(false); g.state = 'title'; ui.enter(g, 'title'); LF.audio.intensity = 0; return; }
@@ -884,7 +941,7 @@
     }
     y += bh + 20 * u;
     const nv = Object.keys(g.vows).length;
-    const head = (g.mode === 'vigil' ? 'Vigil  ·  ' : g.mode === 'rush' ? (g.practice ? 'Rehearsal  ·  ' : 'Gauntlet  ·  ') : '') + LF.LANTERN[g.lanternId].name + '  ·  ' + g.diff.name + (nv ? '  ·  ' + nv + (nv > 1 ? ' vows' : ' vow') : '') + (g.daily ? '  ·  Daily' : '') + (g.omen ? '  ·  Omen: ' + g.omen.name : '');
+    const head = LF.LOOK[LF.lookOf(g.meta)].name + '  ·  ' + (g.mode === 'vigil' ? 'Vigil  ·  ' : g.mode === 'rush' ? (g.practice ? 'Rehearsal  ·  ' : 'Gauntlet  ·  ') : '') + LF.LANTERN[g.lanternId].name + '  ·  ' + g.diff.name + (nv ? '  ·  ' + nv + (nv > 1 ? ' vows' : ' vow') : '') + (g.daily ? '  ·  Daily' : '') + (g.omen ? '  ·  Omen: ' + g.omen.name : '');
     txt(head, NAR ? W / 2 : x, y, 12, '#c9a36a', NAR ? 'center' : 'left', LF.FONT_UI, 'bold');
     if (g.omen) { y += 17 * u; txt(g.omen.desc, NAR ? W / 2 : x, y, 11, '#b9a7d8', NAR ? 'center' : 'left', LF.FONT_UI, 'italic'); }
     const info = [`Damage ${s.damage.toFixed(1)}`, `Fire rate ${s.fireRate.toFixed(1)}/s`, `Crit ${Math.round(s.crit * 100)}%`, `Speed ${Math.round(s.speed)}`, `Kills ${g.run.kills}`, `Time ${LF.fmtTime(g.run.time)}`];
@@ -896,7 +953,7 @@
     const lh = NAR ? Math.max(80 * u, H - ly - 16 * u) : H * 0.6;
     panel(lx, ly, lw, lh, 10);
     txt('Relics', lx + 20 * u, ly + 22 * u, 15, '#ffd28a', 'left', LF.FONT_UI, 'bold');
-    if (p.synergies && p.synergies.length) txt('Synergies: ' + p.synergies.map(sy => sy.name).join(', '), lx + lw - 16 * u, ly + 22 * u, 11, '#9dffcf', 'right', LF.FONT_UI, 'bold');
+    if (p.synergies && p.synergies.length) txt('Kindred: ' + p.synergies.map(sy => sy.name).join(', '), lx + lw - 16 * u, ly + 22 * u, 11, '#9dffcf', 'right', LF.FONT_UI, 'bold');
     if (!p.relicOrder.length) txt('None yet. The first stair will offer one.', lx + 20 * u, ly + 50 * u, 13, '#8f8a80');
     {
       // schools held, strongest first: three of a school attunes the lantern, five and seven attune it further
@@ -918,9 +975,53 @@
       if (rowH > 30 * u) { ctx.font = `${Math.round(11 * u)}px ${LF.FONT_UI}`; txt(LF.wrapText(ctx, d.desc, lw - 70 * u)[0], lx + 52 * u, yy + 9 * u, 11, '#b9ad96'); }
     });
   }
+  // The Forge: small tiles, one for each relic that can still grow, with its rank and its price; what the one under
+  // the hand does is written out below them.
+  function forgeScreen(g, o) {
+    const p = g.player, ROM = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+    ctx.fillStyle = 'rgba(2,3,8,0.94)'; ctx.fillRect(0, 0, W, H);
+    const ty = NAR ? 50 * u : H * 0.11;
+    bigTitle(o.title, ty, NAR ? 26 : 38, '#ffe2b0');
+    txt('Glass forges a rank into a relic you carry: ' + LF.TUNE.forgeII + ' for rank II, ' + LF.TUNE.forgeIII + ' for rank III, ' + LF.TUNE.forgeMore + ' more each rank after.', W / 2, ty + (NAR ? 30 : 40) * u, NAR ? 12 : 14, '#c9bfae', 'center', LF.FONT_UI, 'italic');
+    txt('\u25c6 ' + Math.floor(p.glass) + ' glass', W / 2, ty + (NAR ? 50 : 64) * u, NAR ? 14 : 17, '#8fe6ff', 'center', LF.FONT_UI, 'bold');
+    const n = o.relics.length, cols = NAR ? 1 : n > 14 ? 4 : n > 6 ? 3 : 2, rows = Math.ceil(n / cols);
+    const y0 = ty + (NAR ? 70 : 92) * u, room = H - y0 - (NAR ? 150 : 170) * u, gap = 8 * u;
+    const th = Math.max(30 * u, Math.min(54 * u, room / rows - gap)), tw = Math.min(250 * u, (W - 40 * u - (cols - 1) * gap) / cols);
+    const x0 = (W - cols * tw - (cols - 1) * gap) / 2;
+    let chosen = -2, shown = null;
+    o.relics.forEach((d, i) => {
+      const idx = ui.count++, x = x0 + (i % cols) * (tw + gap), y = y0 + Math.floor(i / cols) * (th + gap);
+      const over = hit(x, y, tw, th);
+      if (over && inp.mouseMoved && ui.focus !== idx) { ui.focus = idx; LF.audio.play('uiMove'); }
+      const foc = ui.focus === idx, have = p.relics[d.id] || 0, cost = g.forgeCost(d), can = p.glass >= cost, S = LF.SCHOOLS[d.school];
+      if (foc) shown = d;
+      LF.roundRect(ctx, x, y, tw, th, 8 * u);
+      ctx.fillStyle = foc ? 'rgba(46,34,22,0.98)' : 'rgba(18,18,28,0.96)'; ctx.fill();
+      ctx.strokeStyle = foc ? '#ffe2b0' : can ? (S ? S.color : '#c9c2b0') : 'rgba(140,134,120,0.35)'; ctx.lineWidth = (foc ? 2.2 : 1) * u; ctx.stroke();
+      ctx.globalAlpha = can ? 1 : 0.5;
+      LF.drawIcon(ctx, d.glyph, x + th * 0.5, y + th / 2, Math.min(30 * u, th * 0.62), d.color);
+      const tx = x + th + 2 * u, small = th < 44 * u;
+      txt(d.name, tx, y + (small ? th / 2 - 5 * u : 17 * u), small ? 12 : 13.5, '#fff2d6', 'left', LF.FONT_UI, 'bold');
+      txt('RANK ' + ROM[have] + '  \u2192  ' + ROM[have + 1], tx, y + (small ? th / 2 + 8 * u : 35 * u), small ? 9 : 10, S ? S.color : '#ffd9a0', 'left', LF.FONT_UI, 'bold');
+      ctx.globalAlpha = 1;
+      txt('\u25c6 ' + cost, x + tw - 12 * u, y + th / 2, 13, can ? '#8fe6ff' : '#ff8a8a', 'right', LF.FONT_UI, 'bold');
+      if (o.t > 0.25 && !g.fade && ((over && inp.click) || (foc && inp.confirm))) chosen = i;
+    });
+    // what the relic under the hand does
+    const py = y0 + rows * (th + gap) + 6 * u;
+    if (shown) {
+      const S = LF.SCHOOLS[shown.school];
+      txt(shown.name + (S ? '   \u00b7   ' + S.name + (shown.pathName ? ', ' + shown.pathName : '') : ''), W / 2, py + 8 * u, 12, S ? S.color : '#ffd9a0', 'center', LF.FONT_UI, 'bold');
+      wtxt(shown.desc, W / 2, py + 26 * u, NAR ? 11.5 : 12.5, '#d8cdb8', Math.min(W - 40 * u, 640 * u), 16, '');
+    }
+    const bw = Math.min(240 * u, W - 40 * u);
+    if ((button(o.forged ? 'Done' : 'Leave the forge cold', (W - bw) / 2, H - 62 * u, bw, 44 * u, { back: true }) || inp.back) && o.t > 0.25) chosen = -1;
+    if (chosen > -2) { if (chosen >= 0) g.pickOffer(chosen); else { LF.audio.play('uiSelect'); g.pickOffer(-1); } }
+  }
   function offer(g) {
     const o = g.offer; if (!o) return;
     o.t += 1 / 60;
+    if (o.forge) { forgeScreen(g, o); return; }
     ctx.fillStyle = o.dim ? 'rgba(2,3,8,0.94)' : 'rgba(2,3,8,0.82)'; ctx.fillRect(0, 0, W, H);
     const ty = NAR ? 62 * u : H * 0.15;
     bigTitle(o.title, ty, NAR ? 28 : 42, o.cursed ? '#e2c9ff' : '#ffe2b0');
@@ -932,9 +1033,10 @@
     const x0 = NAR ? 16 * u : (W - n * cw - (n - 1) * gap) / 2;
     let chosen = -2;
     const schoolLine = d => {
-      if (!d.school) return null;
-      const S = LF.SCHOOLS[d.school], c = (g.player.schools || {})[d.school] || 0, up = LF.tierOf(c + 1) > LF.tierOf(c);
-      return { text: S.name.toUpperCase() + '  ' + c + ' \u2192 ' + (c + 1) + (up ? '   ATTUNES' : ''), color: S.color, up };
+      // a relic already held is a rank; and a pick that would wake a kindred says so
+      const S = d.school && LF.SCHOOLS[d.school], have = g.player.relics[d.id] || 0, ROM = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+      if (have && d.max > 1 && d.rarity !== 'boon') return { text: 'RANK ' + ROM[have] + ' \u2192 ' + ROM[have + 1], color: S ? S.color : '#ffd9a0', up: true };
+      return S ? { text: S.name.toUpperCase() + (d.pathName ? '  \u00b7  ' + d.pathName.toUpperCase() : '') + (d.form ? '  \u00b7  ' + (d.form === 'bolt' ? 'BOLT' : 'FLARE') + ' FORM' : ''), color: S.color } : null;
     };
     o.relics.forEach((d, i) => {
       const idx = ui.count++;
@@ -961,10 +1063,15 @@
         const sl = schoolLine(d);
         if (sl) txt(sl.text, x + cw / 2, y + 200 * u, 10.5, sl.color, 'center', LF.FONT_UI, 'bold');
         ctx.font = `${Math.round(13 * u)}px ${LF.FONT_UI}`;
-        LF.wrapText(ctx, d.desc, cw - 30 * u).forEach((l, j) => txt(l, x + cw / 2, y + 224 * u + j * 17 * u, 13, '#d8cdb8', 'center'));
-        if (have) txt('You hold ' + have + ' of ' + d.max, x + cw / 2, y + ch - 20 * u, 11, '#8f8a80', 'center');
+        { // a long card is set a little smaller, so its last lines do not run into what is written under them
+          let fsz = 13, lines = LF.wrapText(ctx, d.desc, cw - 30 * u);
+          if (lines.length > 5) { fsz = 11.5; ctx.font = `${Math.round(fsz * u)}px ${LF.FONT_UI}`; lines = LF.wrapText(ctx, d.desc, cw - 24 * u); }
+          const lh = fsz === 13 ? 17 : 14.5;
+          lines.forEach((l, j) => txt(l, x + cw / 2, y + 222 * u + j * lh * u, fsz, '#d8cdb8', 'center')); }
+        if (have) txt(d.base === 3 ? (have >= 3 ? 'Past rank III, each rank is half as much again' : 'You hold rank ' + ['', 'I', 'II'][have]) : 'You hold ' + have + ' of ' + d.max, x + cw / 2, y + ch - 20 * u, 11, '#8f8a80', 'center');
         const cmp = LF.completes(g.player, d.id);
-        if (cmp.length) txt('Completes ' + cmp[0].name, x + cw / 2, y + ch - 38 * u, 11.5, '#9dffcf', 'center', LF.FONT_UI, 'bold');
+        if (cmp.length) txt('Wakes ' + cmp[0].name, x + cw / 2, y + ch - 38 * u, 11.5, '#9dffcf', 'center', LF.FONT_UI, 'bold');
+        else { const gl = o.buy ? '\u25c6 ' + o.buy.price + ' glass   (you hold ' + Math.floor(g.player.glass) + ')' : LF.growsLine(g.player, d.id); if (gl) txt(gl, x + cw / 2, y + ch - 38 * u, o.buy ? 13 : 11.5, o.buy ? (g.player.glass >= o.buy.price ? '#8fe6ff' : '#ff8a8a') : '#ffd9a0', 'center', LF.FONT_UI, 'bold'); }
       } else {
         const ix = x + 46 * u, iy = y + ch / 2, isz = Math.min(48 * u, ch * 0.5);
         ctx.globalCompositeOperation = 'lighter';
@@ -975,7 +1082,7 @@
         txt(d.name, tx, y + 22 * u, 16, '#fff2d6', 'left', LF.FONT_TITLE, '700');
         const cmp = LF.completes(g.player, d.id);
         const sl = schoolLine(d);
-        txt(cmp.length ? 'COMPLETES ' + cmp[0].name.toUpperCase() : sl ? sl.text : LF.RARITY[d.rarity].name.toUpperCase() + (have ? '   ·   you hold ' + have + ' of ' + d.max : ''), x + cw - 14 * u, y + 22 * u, 9.5, cmp.length ? '#9dffcf' : sl ? sl.color : col, 'right', LF.FONT_UI, 'bold');
+        txt(cmp.length ? 'COMPLETES ' + cmp[0].name.toUpperCase() : sl ? sl.text : LF.RARITY[d.rarity].name.toUpperCase() + (have ? '   ·   you hold ' + have + (d.base === 3 ? '' : ' of ' + d.max) : ''), x + cw - 14 * u, y + 22 * u, 9.5, cmp.length ? '#9dffcf' : sl ? sl.color : col, 'right', LF.FONT_UI, 'bold');
         ctx.font = `${Math.round(12.5 * u)}px ${LF.FONT_UI}`;
         const maxLines = Math.max(1, Math.floor((ch - 38 * u) / (16 * u)));
         LF.wrapText(ctx, d.desc, cw - 106 * u).slice(0, maxLines).forEach((l, j) => txt(l, tx, y + 44 * u + j * 16 * u, 12.5, '#d8cdb8'));
@@ -984,16 +1091,24 @@
       if (o.t > 0.35 && !g.fade && ((over && inp.click) || (foc && inp.confirm))) chosen = i;
     });
     const by = NAR ? y0 + n * (ch + gap) + 6 * u : y0 + ch + 30 * u;
-    if (o.canSkip) { if (button('Walk away', (W - 220 * u) / 2, by, 220 * u, 44 * u, { back: true }) && o.t > 0.35) chosen = -1; }
+    if (o.canSkip) {
+      const rr = !o.cursed && !o.noReroll, bw1 = Math.min(220 * u, (W - 44 * u) / 2);
+      let bx = (W - (rr ? bw1 * 2 + 12 * u : bw1)) / 2;
+      if (rr) { if (button(rerollLabel(g, o), bx, by, bw1, 44 * u, { size: 14 }) || inp.reroll) { g.rerollOffer(); return; } bx += bw1 + 12 * u; }
+      if (button(o.buy ? 'Leave it on the pedestal' : 'Walk away', bx, by, bw1, 44 * u, o.buy ? { back: true, size: 13 } : { back: true }) && o.t > 0.35) chosen = -1;
+    }
     else {
-      const rr = g.player.rerolls > 0 && !o.noReroll, alt = o.altGlass > 0, cnt = (rr ? 1 : 0) + (alt ? 1 : 0);
+      const rr = !o.noReroll && !o.cursed, alt = o.altGlass > 0, keep = !!o.mend, cnt = (rr ? 1 : 0) + (alt ? 1 : 0) + (keep ? 1 : 0);
       const bw2 = Math.min(250 * u, (W - 32 * u - (cnt - 1) * 12 * u) / Math.max(1, cnt));
       const total = cnt * bw2 + (cnt - 1) * 12 * u; let bx = (W - total) / 2;
-      if (rr) { if (button('Reroll  (' + g.player.rerolls + ' left)', bx, by, bw2, 44 * u, { size: 14 }) || inp.reroll) { g.rerollOffer(); return; } bx += bw2 + 12 * u; }
+      if (rr) { if (button(o.free ? 'Show the others' : rerollLabel(g, o), bx, by, bw2, 44 * u, { size: 14 }) || inp.reroll) { g.rerollOffer(); return; } bx += bw2 + 12 * u; }
       if (alt && button('Leave them: take ' + o.altGlass + ' glass', bx, by, bw2, 44 * u, { size: NAR ? 13 : 14, back: true }) && o.t > 0.35) chosen = -1;
+      if (keep && button('Done: keep the glass', bx, by, bw2, 44 * u, { size: NAR ? 13 : 14, back: true }) && o.t > 0.35) chosen = -1;
     }
     if (chosen > -2) { LF.audio.play('uiSelect'); g.pickOffer(chosen); }
   }
+  // the lantern's own rerolls go first; after them a reroll is bought with glass
+  function rerollLabel(g, o) { return g.player.rerolls > 0 ? 'Reroll  (' + g.player.rerolls + ' left)' : 'Reroll  \u00b7  ' + g.rerollPrice(o) + ' of ' + Math.floor(g.player.glass) + ' glass'; }
   function statRows(g, y0) {
     const r = g.run;
     const rows = [g.mode === 'vigil' ? ['Waves survived', String(r.wave || 0)] : g.mode === 'rush' ? ['Shadows faced', (r.depth || g.depth) + ' of ' + g.rushLen()] : ['Reached', LF.place(r.depth || g.depth, ', ')], ['Creatures unmade', String(r.kills)], ['Elites', String(r.elites || 0)], ['Great shadows felled', String(r.bosses)], ['Time in the dark', LF.fmtTime(r.time)], g.mode === 'descent' ? ['Lamps relit', String(r.lamps || 0)] : ['Glass gathered', String(Math.floor(r.glass))]];

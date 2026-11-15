@@ -257,7 +257,7 @@
 
   DEFS.king = {
     name: 'The Candle King', title: 'Crowned in wax, and still melting', boss: true, selfLit: true,
-    hp: 2150, speed: 26, r: 32, dmg: 9.5, embers: 0, glass: 0, phases: [0.66, 0.33],
+    hp: 1950, speed: 26, r: 32, dmg: 9.5, embers: 0, glass: 0, phases: [0.66, 0.33],
     eyes: [[10, -6, 2.4], [10, 6, 2.4]], eyeColor: '255,200,110',
     init(e) { B.bossInit(e); e.candles = []; e.candleT = 2.5; e.breathA = 0; },
     // warded while any of his candles still burns
@@ -303,7 +303,7 @@
           e.red = 1;
           if (e.t <= 0) {
             const n = 2 + ph;
-            for (let i = 0; i < n; i++) { const pt = B.arenaPoint(g, 4); e.candles.push(g.spawnEnemy('candle', pt.x, pt.y, { awake: true, spawnT: 0.6, room: 0, noDrops: true })); }
+            for (let i = 0; i < n; i++) { const pt = B.arenaPoint(g, 4); e.candles.push(g.spawnEnemy('candle', pt.x, pt.y, { awake: true, spawnT: 0.6, room: 0, noDrops: true, hpMul: 0.6 })); }
             e.candleT = 16 - ph * 2;
             LF.audio.play('brazier'); fx.ring(e.x, e.y, e.r, 200, 0.6, '#ffcf8a', 4);
             g.banner = { text: 'His candles ward him', sub: 'Snuff them', t: 0, dur: 1.8, small: true, boss: true };
@@ -328,7 +328,7 @@
             e.dropT -= dt;
             if (e.dropT <= 0) {
               e.dropT = 0.055;
-              for (let k = 0; k < 2; k++) g.fireEnemyBullet({ x: e.x + Math.cos(e.breathA) * e.r, y: e.y + Math.sin(e.breathA) * e.r, angle: e.breathA + LF.rand(-0.3, 0.3), speed: LF.rand(280, 350), dmg: e.dmg * 0.7, color: '#ff8a3d', life: 0.95, size: 5 });
+              for (let k = 0; k < 2; k++) g.fireEnemyBullet({ x: e.x + Math.cos(e.breathA) * e.r, y: e.y + Math.sin(e.breathA) * e.r, angle: e.breathA + LF.rand(-0.3, 0.3), speed: LF.rand(280, 350), dmg: e.dmg * 0.55, color: '#ff8a3d', life: 0.95, size: 5 });
             }
             if (e.t <= 0) { e.state = 'idle'; e.t = 1.6; }
           }
@@ -412,7 +412,7 @@
     { kind: 'hymn', color: '#9dffcf', rgb: '157,255,207' },
   ];
   DEFS.choirhead = {
-    name: 'Hollow Mask', hp: 1150, speed: 0, r: 24, dmg: 13, embers: 0, glass: 0, contact: true, ghost: true, flies: true, noBar: true,
+    name: 'Hollow Mask', hp: 1150, speed: 0, r: 24, dmg: 13, embers: 0, glass: 0, contact: true, ghost: true, flies: true, noBar: true, noStun: true,
     eyes: null,
     init(e) { e.sing = 0; e.warn = 0; e.voice = VOICES[0]; e.acts = []; },
     modDamage(e, dmg, src) {

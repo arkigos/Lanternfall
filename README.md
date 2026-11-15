@@ -9,9 +9,9 @@ the Vigil, the one flame held back to relight it, following its shards down to w
 
 **Five Depths.** Nine Levels make a Depth, and each of the first four ends at a shard of the Lantern. A shard is kept for
 every descent after: Morning (+25 light, slower burn), the Rites (start with a rite), the Chain (two more
-rerolls and one more choice at every stair), the Heart (one free rekindling per descent). Once you hold a
-shard, a descent can begin in the next Depth (chosen on the lantern screen), or you can carry on down in the
-same run. The fifth Depth ends at the Great Lantern, and you become the ember that lights it.
+rerolls and one more choice at every stair), the Heart (one free rekindling per descent). Every descent
+begins at the top of the first Depth; the deeper ones are reached by carrying on down in the same run. The fifth
+Depth ends at the Great Lantern, and you become the ember that lights it.
 
 Nine Levels to a Depth, three biomes, nine bosses, 70 relics, five starting lanterns, vows, a daily seed,
 and an endless wave-survival mode (The Long Vigil).

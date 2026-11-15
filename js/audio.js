@@ -135,6 +135,7 @@
     beam() { A.tone({ type: 'sawtooth', f0: 110, f1: 440, dur: 0.5, vol: 0.12, lp: 2000, echo: 0.4 }); },
     howl() { A.tone({ type: 'sawtooth', f0: 260, f1: 620, dur: 0.5, vol: 0.14, lp: 1800, echo: 0.6 }); A.tone({ type: 'sawtooth', f0: 268, f1: 470, dur: 0.7, vol: 0.1, lp: 1400, echo: 0.6 }); A.noise({ type: 'bandpass', f0: 700, f1: 1600, q: 3, dur: 0.6, vol: 0.08, attack: 0.1 }); },
     step() { A.noise({ type: 'lowpass', f0: r(260, 420), dur: 0.05, vol: 0.035 }); },
+    flutter() { A.noise({ type: 'bandpass', f0: r(420, 640), q: 0.9, dur: 0.08, vol: 0.02, attack: 0.025 }); },
     splash() { A.noise({ type: 'bandpass', f0: r(900, 1500), q: 1.2, dur: 0.1, vol: 0.05, attack: 0.01 }); },
     drip() { const f = r(900, 1700); A.tone({ type: 'sine', f0: f, f1: f * 1.6, dur: 0.07, vol: 0.035, echo: 0.7 }); },
     charge() { A.tone({ type: 'sine', f0: 200, f1: 1200, dur: 0.7, vol: 0.07, attack: 0.4 }); },

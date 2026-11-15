@@ -327,7 +327,7 @@
   function populateRoom(map, room, rng, floor, mult, loop) {
     const area = room.w * room.h, om = GEN.omen;
     // rooms hold enough that a crowd can close around you: the flare is how you break out
-    let budget = 1.34 * (3.1 + floor * 1.2 + loop * 6) * (area / 100) * rng.range(0.85, 1.2) * mult;
+    let budget = 1.34 * (3.1 + floor * 1.2 + loop * 6) * (area / 100) * rng.range(0.85, 1.2) * mult * (1 + (loop ? 0 : LF.TUNE.pack * Math.max(0, 4 - floor) / 3)); // the first Levels are fuller than the old curve made them
     if (om === 'swarm') budget *= 1.35; else if (om === 'still') budget *= 0.4;
     budget = Math.max(budget, om === 'still' ? 1 : 2);
     let options = ROSTER.filter(r => r.min <= floor + loop * 9);
@@ -418,7 +418,8 @@
     free.sort((a, b) => a.links.length - b.links.length); // dead ends first for special rooms
     const take = () => free.shift();
     if (free.length) take().type = 'treasure';
-    if (floor !== 1 && free.length) take().type = 'shop';
+    // the Chandler: on some Levels past the first, never on a great shadow's
+    if (floor >= 2 && floor % 3 !== 0 && !loop && free.length > 3 && rng.chance(LF.TUNE.chandler)) take().type = 'shop'; // (only a Level with rooms to spare: that keeps the Chandler, and so a form, rare)
     if (free.length > 3 && rng.chance(0.75)) take().type = 'shrine';
     if (floor >= 2 && free.length > 4 && rng.chance(0.5)) take().type = 'trial';
     if (floor >= 2 && free.length > 4 && rng.chance(0.38)) take().type = 'statue';

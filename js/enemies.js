@@ -22,7 +22,7 @@
       this.speed = d.speed * (this.affix === 'swift' ? 1.35 : 1) * (this.boss ? 1 : (g.enemySpeedMul || 1));
       this.state = 'idle'; this.t = 0; this.cd = LF.rand(0.6, 1.6);
       this.awake = !!opts.awake; this.lit = false; this.stun = 0; this.burn = 0; this.burnDps = 0;
-      this.chill = 0; this.mark = 0; this.flash = 0; this.kx = 0; this.ky = 0; this.contactCd = 0;
+      this.chill = 0; this.shackle = 0; this.glow = 0; this.waxedT = 0; this.setCd = 0; this.mark = 0; this.flash = 0; this.kx = 0; this.ky = 0; this.contactCd = 0;
       this.spawnT = opts.spawnT || 0; this.spawnMax = this.spawnT || 1;
       this.wob = Math.random() * TAU; this.face = Math.random() * TAU; this.dir = LF.chance(0.5) ? 1 : -1;
       this.room = opts.room === undefined ? null : opts.room; this.wave = opts.wave || 0;
@@ -40,13 +40,13 @@
     }
     // slows that apply even to scripted dashes
     slowMul(g) {
-      let m = this.chill > 0 ? 0.7 : 1;
+      let m = this.chill > 0 ? 1 - g.player.stats.waxSlow * (this.boss ? 0.5 : 1) : 1;
       if (g.player.stats.lastLight && g.player.frac() < 0.25) m *= 0.65;
       return m;
     }
     speedMod(g) {
       let m = this.lit ? 0.9 : 1.1;
-      if (this.chill > 0) m *= 0.7;
+      if (this.chill > 0) m *= 1 - g.player.stats.waxSlow * (this.boss ? 0.5 : 1);
       if (this.frenzy > 0) m *= 1.35;
       if (g.player.stats.lastLight && g.player.frac() < 0.25) m *= 0.65;
       return m;
@@ -55,8 +55,17 @@
       const p = g.player, d = this.def;
       this.age += dt;
       if (this.spawnT > 0) { this.spawnT -= dt; return; }
-      this.lit = !!d.selfLit || g.isLit(this.x, this.y);
+      // lit by the lantern, a fire or a flare; or carrying a light of its own (a bolt of light, a moth's bite, glowing wax, a lamp chain)
+      const ps = p.stats;
+      let lit = g.isLit(this.x, this.y);
+      this.selfGlow = false;
+      if (lit) { if (ps.glowKeep) this.glow = Math.max(this.glow, ps.glowKeep); }
+      else if (this.glow > 0 || (ps.waxGlow && this.chill > 0) || (ps.chainLight && this.shackle > 0)) { lit = true; this.selfGlow = true; g.litDepth = 0.35; g.litByFire = false; }
+      this.lit = !!d.selfLit || lit;
+      this.depth = lit ? (g.litDepth || 0) : 0; // how deep in the bearer's light it stands (Keen Light)
       const fireOnly = g.litByFire;
+      // Half strength at the rim of the light, about 1.6 times at the flame itself.
+      const searDepth = 0.5 + 1.1 * (g.litDepth || 0);
       if (!this.awake) {
         const dist = LF.dist(this.x, this.y, p.x, p.y);
         const hush = p.stats.stealth || 1; // a hooded lantern is noticed from half as far
@@ -67,22 +76,38 @@
       // Light sears: anything standing in the lantern's glow or a flare's afterlight smoulders.
       // A brazier or wall lamp on its own only does so with the Tinderbox.
       // The glow is weaker as the flame runs low, so losing light makes every fight slower.
-      if (this.lit && !d.selfLit && !this.intangible && p.stats.sear > 0 && !p.dead && (!fireOnly || p.stats.brazierBurn)) {
-        g.damageEnemy(this, p.stats.damage * p.stats.sear * (0.4 + 0.6 * Math.min(1, p.frac())) * (this.boss ? 0.5 : 1) * dt, { type: 'sear', quiet: true, sear: true, noShroud: true });
+      if (this.lit && !d.selfLit && !this.intangible && p.stats.sear > 0 && !p.dead && (fireOnly ? p.stats.brazierBurn : p.stats.searOn)) {
+        g.damageEnemy(this, 10 * p.stats.sear * (p.noonT > 0 ? 3 : 1) * (1 + p.stats.searFlat / 4) * (p.stats.waxGlow && this.chill > 0 ? 2 : 1) * searDepth * (0.4 + 0.6 * Math.min(1, p.frac())) * dt, { type: 'sear', quiet: true, sear: true, noShroud: true });
         if (this.dead) return;
+        if (p.stats.noon && searDepth > 0.95 && !(this.burn > 0)) g.ignite(this, p.stats.burnBase);
         if (Math.random() < dt * 1.3) LF.audio.play('sizzle');
-        if (Math.random() < dt * 5) fx.spawn({ x: this.x + LF.rand(-this.r, this.r) * 0.7, y: this.y + LF.rand(-this.r, this.r) * 0.7, vx: LF.rand(-10, 10), vy: -34, life: 0.45, size: 1.6, color: '#ff9a40', drag: 1 });
+        if (Math.random() < dt * 5 * searDepth) fx.spawn({ x: this.x + LF.rand(-this.r, this.r) * 0.7, y: this.y + LF.rand(-this.r, this.r) * 0.7, vx: LF.rand(-10, 10), vy: -34, life: 0.45, size: 1.6, color: '#ff9a40', drag: 1 });
       }
-      this.flash = Math.max(0, this.flash - dt * 6); this.mark -= dt; this.chill -= dt; this.contactCd -= dt;
+      this.flash = Math.max(0, this.flash - dt * 6); this.mark -= dt; this.chill -= dt; this.glow -= dt; this.setCd -= dt; this.contactCd -= dt;
+      // wax scalds while it holds; the rest here are the rare relics that carry wax and chain into chain, and into fire
+      if (this.chill > 0) {
+        this.waxedT += dt;
+        g.damageEnemy(this, ps.waxDmg * ps.waxMul * (ps.cure ? 1 + ps.cure * Math.min(this.waxedT, ps.waxTime, 12) : 1) * (ps.poolMul > 1 && g.time - (this.pooled || -9) < 0.25 ? ps.poolMul : 1) * dt, { type: 'wax', quiet: true, noShroud: true }); // (Slow Set: hotter for every second it has held) if (this.dead) return;
+        if (ps.waxBurn) { g.damageEnemy(this, 7 * ps.waxBurn * dt, { type: 'burn', quiet: true, noShroud: true }); if (this.dead) return; if (Math.random() < dt * 8) fx.spawn({ x: this.x + LF.rand(-this.r, this.r) * 0.6, y: this.y - this.r, vy: -36, life: 0.4, size: 2, color: LF.pick(['#ff9a3d', '#ffd28a']) }); }
+        if (ps.waxSet && this.waxedT > 2 && this.setCd <= 0) { this.setCd = 7; g.shackle(this, 2.5); }
+      } else this.waxedT = 0;
+      if (this.shackle > 0) {
+        this.shackle -= dt;
+        if (ps.chainBurn) { g.damageEnemy(this, 7 * dt, { type: 'burn', quiet: true, noShroud: true }); if (this.dead) return; if (Math.random() < dt * 8) fx.spawn({ x: this.x + LF.rand(-this.r, this.r) * 0.6, y: this.y + LF.rand(-this.r, this.r) * 0.6, vy: -36, life: 0.4, size: 2, color: '#ff7b2e' }); }
+      }
       this.red = Math.max(0, this.red - dt * 2); this.frenzy -= dt;
       if (this.affix === 'frenzied') this.frenzy = 1;
       if (this.wardBroken > 0) this.wardBroken -= dt;
       if (this.burn > 0) {
-        this.burn -= dt;
-        g.damageEnemy(this, this.burnDps * dt, { type: 'burn', quiet: true, noShroud: true });
+        this.burn -= dt; this.burnAge = (this.burnAge || 0) + dt;
+        // Slow Burn: a burn is hotter for every second it has burned, up to as long as the lantern's burns last
+        g.damageEnemy(this, this.burnDps * (ps.slowBurn ? 1 + ps.slowBurn * Math.min(this.burnAge, ps.burnTime, 12) : 1) * dt, { type: 'burn', quiet: true, noShroud: true });
+        // fire catches (with Catching Fire, or Conflagration): every so often a burning creature sets alight whatever stands close beside it
+        this.catchT = (this.catchT || 0) - dt;
+        if (this.catchT <= 0 && !this.dead && (ps.catching || ps.conflag)) { this.catchT = LF.TUNE.catchT / (ps.catchFast || 1); g.spreadFire(this); }
         if (Math.random() < dt * 18) fx.spawn({ x: this.x + LF.rand(-this.r, this.r), y: this.y + LF.rand(-this.r, this.r), vy: -40, life: 0.4, size: 2.4, color: LF.pick(['#ff7b2e', '#ffc24d']) });
         if (this.dead) return;
-      }
+      } else this.burnAge = 0;
       if (this.dotT > 0) { this.dotT -= dt; if (this.dotT <= 0 && this.dotAcc >= 1) { fx.text(this.x + LF.rand(-6, 6), this.y - this.r - 6, String(Math.round(this.dotAcc)), '#ffb36b', 10, 0.6); this.dotAcc = 0; } }
       // knockback
       if (this.kx || this.ky) {
@@ -91,9 +116,11 @@
         if (Math.abs(this.kx) + Math.abs(this.ky) < 4) { this.kx = 0; this.ky = 0; }
         if (!d.ghost) g.map.resolveCircle(this, this.r);
       }
-      if (this.stun > 0) { this.stun -= dt; return; }
+      if (this.stun > 0 && d.noStun) this.stun = 0; // part of a great shadow: nothing stuns it
+      if (this.stun > 0) { this.stun -= dt; this.holdShackle(g); return; }
       d.update(this, g, dt);
       if (this.dead) return;
+      this.holdShackle(g);
       // touching the player
       if (d.contact !== false && !this.intangible && !p.dead) {
         const rr = this.r + p.r - 2, d2 = LF.dist2(this.x, this.y, p.x, p.y);
@@ -116,6 +143,14 @@
           }
         }
       }
+    }
+    // A shackled creature cannot go farther than its chain allows: from the stake where it was caught, or from the
+    // player when the chains are fastened to the lantern.
+    holdShackle(g) {
+      if (!(this.shackle > 0) || this.boss || !this.anchor) return;
+      const p = g.player, ax = this.onLeash ? p.x : this.anchor.x, ay = this.onLeash ? p.y : this.anchor.y;
+      const L = this.onLeash ? (this.haulL || (p.stats.chainGuard && p.guardR) || 110) : p.stats.leash, dx = this.x - ax, dy = this.y - ay, dd = Math.hypot(dx, dy);
+      if (dd > L) { this.x = ax + dx / dd * L; this.y = ay + dy / dd * L; if (!this.def.ghost) g.map.resolveCircle(this, this.r); }
     }
     draw(ctx, g) {
       const d = this.def;
@@ -143,6 +178,15 @@
         for (let i = 0; i < 3; i++) { const a = g.time * 6 + i * 2.1; ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 4, a, a + 0.7); ctx.stroke(); }
       }
       if (this.chill > 0) { ctx.fillStyle = 'rgba(240,226,192,0.32)'; ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 2, 0, TAU); ctx.fill(); }
+      if (this.shackle > 0) {
+        ctx.strokeStyle = 'rgba(217,176,112,0.9)'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+        if (!this.boss && this.anchor) {
+          const pl = g.player, ax = this.onLeash ? pl.x : this.anchor.x, ay = this.onLeash ? pl.y : this.anchor.y;
+          ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(this.x, this.y); ctx.stroke();
+          if (!this.onLeash) { ctx.setLineDash([]); ctx.fillStyle = 'rgba(217,176,112,0.9)'; ctx.fillRect(ax - 2.5, ay - 2.5, 5, 5); ctx.setLineDash([5, 4]); }
+        }
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 3, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+      }
       if (this.elite) {
         ctx.strokeStyle = 'rgba(255,90,90,0.5)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]);
         ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 7, -g.time, -g.time + TAU); ctx.stroke(); ctx.setLineDash([]);
