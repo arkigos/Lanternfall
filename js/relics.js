@@ -22,7 +22,8 @@
   // times the harm by Level 9. (Earlier trials, kept for the record: Nine Levels at 1.6 and 1.3 is 43 times the health and 8 times the harm (at 2 and 1.5, which is 256 and 26, no bot lantern passed Level 6: they hold about seven ranks by Level 4, not the nine or twelve the ideal build assumes).) Only a lantern
   // that multiplies keeps pace: see what the rank tables below and the three theme multipliers come to.
   // early, earlyHp, pack: how much harder the creatures of Level 1 hit, how much more health they have, and how many
-  // more of them a room holds, than the old curve gave (two thirds of each on Level 2, a third on Level 3, none after). again: how much likelier a relic already held is to be offered
+  // more of them a room holds, than the old curve gave (two thirds of each on Level 2, a third on Level 3, none after).
+  // early is kept low: the first Levels bite through numbers and toughness, not through blows that take half your light. again: how much likelier a relic already held is to be offered
   // again. rerollStair: rerolls handed over at every stair.
   // src, amp, mark: what a source's own strength, an amplifier and a mark are worth at rank I, II and III. glass: the
   // same for Burning Glass. white: what White Light adds to searing a rank.
@@ -45,7 +46,7 @@
   // seek: how much likelier a theme's sources are offered to a lantern that holds that theme with nothing to start it.
   // their blows do. They have a great deal of health and hit softer than they did: the fight is long, and what decides
   // it is how fast the lantern kills, which is what a build changes. burn: a burn's damage a second before any relic.
-  LF.TUNE = { bolt: 13, grow: 0.65, typeStair: 0.45, first: 2, second: 1, secondHit: 0.8, third: 1, thirdHit: 0.85, late: 0, deep: 0, hpGrow: [1.8, 2.2, 3.5], dmgGrow: [1.4, 1.6, 2.2], bite: 25, wax: 22, link: 50, burn: 30, catchR: 46, catchT: 0.35, slow: 0.3, draw: 0, melt: 45, seek: 1, glassRanks: 0, forging: 1, forgeII: 30, forgeIII: 50, rerollGlass: 10, rerollMore: 5, formPrice: 150, chandler: 0.6, glassYield: 2, swap: 0.35, deepen: 1.08, maxRank: 10, past: 1.5, forgeMore: 30, early: 2.2, earlyHp: 0.8, pack: 0.6, again: 3, rerollStair: 1, forge: 0, src: [1, 1.6, 2.5], amp: [1.5, 2.25, 3.4], mark: [1.5, 2.25, 3.4], glass: [1.8, 2.9, 4.5], white: 2 };
+  LF.TUNE = { bolt: 13, grow: 0.65, typeStair: 0.45, first: 2, second: 1, secondHit: 0.8, third: 1, thirdHit: 0.85, late: 0, deep: 0, hpGrow: [1.8, 2.2, 3.5], dmgGrow: [1.4, 1.6, 2.2], bite: 25, wax: 22, link: 50, burn: 30, catchR: 46, catchT: 0.35, slow: 0.3, draw: 0, melt: 45, seek: 1, glassRanks: 0, forging: 1, forgeII: 30, forgeIII: 50, rerollGlass: 10, rerollMore: 5, formPrice: 150, chandler: 0.6, glassYield: 2, swap: 0.35, deepen: 1.08, maxRank: 10, past: 1.5, forgeMore: 30, early: 0.8, earlyHp: 0.8, pack: 0.6, again: 3, rerollStair: 1, forge: 0, src: [1, 1.6, 2.5], amp: [1.5, 2.25, 3.4], mark: [1.5, 2.25, 3.4], glass: [1.8, 2.9, 4.5], white: 2 };
   // how much the dark has multiplied by a Level: the product of each step's growth (`by` is hpGrow or dmgGrow, one figure a Depth)
   LF.curve = (by, floor) => { let m = 1; for (let k = 2; k <= floor; k++) m *= by[Math.min(by.length - 1, Math.floor((k - 1) / 3))]; return m; };
   LF.baseStats = () => ({
@@ -80,6 +81,9 @@
     groundMul: 1, mantleMul: 1, flareAmp: 1, markAll: 1, haloWide: 0, poolMul: 1, swarmMul: 1, skinExtra: 0, shed: 0,
     // what multiplies everything a theme does: every one of these multiplies the others and every amplifier on a path
     fireAll: 1, lightAll: 1, waxAll: 1, chainAll: 1, mothAll: 1, waxFoot: 0, longSwing: 0, incense: 0, decoy: 0,
+    // what each theme defends with beside the ward: Heartwood (fire) multiplies the embers held; the Slow Dusk (light)
+    // stretches the second over which a blow burns through, and lets the flare burn away what is left of it
+    maxMul: 1, hurtTime: 1, flareMend: 0,
     flareBurn: 0, boltWax: 0, boltShackle: 0, boltLight: 0, boltMoth: 0, pyre: 0, glare: 0, broodKill: 0, noon: 0, chainWax: 0,
     searFlat: 0, waxDmg: LF.TUNE.wax, waxMul: 1, chainDmg: LF.TUNE.link, mothBite: LF.TUNE.bite,
     waxSlow: LF.TUNE.slow, waxTime: 2.5, spatter: 0, waxTrail: 0, waxFlood: 0, waxSoft: 0, waxSet: 0, waxGlow: 0, waxBurn: 0,
@@ -155,6 +159,7 @@
     R('stoke', 'Stoke', C, 3, 'flame', FI, 'Your bolts do more to burning creatures: ' + SAY(MARK) + '. All that multiplies your fire multiplies this too.', (s, n) => { s.stoke = (1 + s.stoke) * RK(n, LF.TUNE.mark) - 1; }),
     R('slowburn', 'Slow Burn', U, 3, 'flame', FI, 'A burn grows hotter the longer it has burned, for as long as your burns last: 8% hotter every second at rank I, 16% at rank II, 32% at rank III.', (s, n) => { s.slowBurn += 0.08 * n; }),
     R('hearthstone', 'Hearthstone', C, 3, 'flame', FI, 'Resting by a lit brazier with nothing near mends you faster: twice as fast at rank I, three times at rank II, five times at rank III.', (s, n) => { s.restRate *= RK(n, [2, 3, 5]); }),
+    R('heartwood', 'Heartwood', U, 3, 'flame', FI, 'You hold more embers: half again as many at rank I, twice as many at rank II, three times as many at rank III. The new room comes filled.', (s, n) => { s.maxMul *= RK(n, [1.5, 2, 3]); }),
     R('bankedcoals', 'Banked Coals', C, 3, 'flame', FI, 'Whatever dies burning gives back half an ember a rank.', (s, n) => { s.burnHeal += 1.25 * n; }),
     R('fireblade', 'The Blade of Fire', F, 3, 'flame', FI, 'You throw no bolts. You swing a blade of fire across your aim: a heavy close blow that sets alight what it strikes, cuts shots out of the air, and feeds your flame for every creature it lands on. Half again as hard at rank II, twice as hard at rank III.', (s, n) => { s.melee = 1; s.ignite += 1; s.bladeMul = RK(n, [1, 1.5, 2]); }, { form: 'bolt' }),
     R('ringfire', 'The Ring of Fire', F, 3, 'flame', FI, 'Your flare leaves a ring of fire at its edge, where it throws what it strikes. The ring burns for 3 seconds: 5 at rank II, 8 at rank III.', (s, n) => { s.ringFire = RK(n, [3, 5, 8]); }, { form: 'flare' }),
@@ -211,6 +216,7 @@
     R('whiteflash', 'White Flash', C, 3, 'sun', LI, 'Your flare does more harm: ' + SAY(AMP) + '.', (s, n) => { s.flareAmp *= RK(n, LF.TUNE.amp); }),
     R('glowingflare', 'Glowing Flare', U, 3, 'sun', LI, 'While you stand in the light your flare leaves, embers come back to you: one every 4 seconds at rank I, every 2 at rank II, one a second at rank III. They come faster by as much as that light lasts longer.', (s, n) => { s.flareGlow += 0.625 * n; }),
     R('flarememory', 'Flare of Memory', U, 3, 'heart', LI, 'Your flare gives back a quarter of an ember for every creature it touches: half an ember at rank II, a whole one at rank III. A great shadow counts as eight.', (s, n) => { s.flareHeal += 0.625 * n; }),
+    R('slowdusk', 'The Slow Dusk', U, 3, 'sun', LI, 'A blow burns through your light over a second. Yours take longer: 2 seconds at rank I, 3 at rank II, 5 at rank III. Your flare burns away whatever a blow has yet to take.', (s, n) => { s.hurtTime = Math.max(s.hurtTime, RK(n, [2, 3, 5])); s.flareMend = 1; }),
     R('keenlight', 'Keen Light', C, 3, 'lens', LI, 'Your bolts strike critically more often the deeper a creature stands in your light: up to 20% more often at rank I, 40% at rank II, 80% at rank III.', (s, n) => { s.keen += 0.2 * n; }),
     R('hardlight', 'Hard Light', U, 3, 'star', LI, 'A critical strike does twice a bolt\'s harm. Yours do more: 2.5 times at rank I, 3.25 times at rank II, 5 times at rank III.', (s, n) => { s.critMul = RK(n, [2.5, 3.25, 5]); }),
 
@@ -222,7 +228,7 @@
     R('castchains', 'Cast Chains', U, 1, 'chain', CH, 'Your flare swells your censers: for 3 seconds they are twice their size.', (s) => { s.flareFling += 1; }),
     R('heavycenser', 'Heavy Censer', C, 3, 'chain', CH, 'Your censers strike harder: ' + SAY(AMP) + '.', (s, n) => { s.chainMul = (1 + s.chainMul) * RK(n, LF.TUNE.amp) - 1; }),
     R('longchain', 'Long Chain', C, 3, 'chain', CH, 'Your censers swing 8% wider a rank.', (s, n) => { s.chainReach += 0.08 * n; }),
-    R('counterweight', 'Counterweight', C, 3, 'shield', CH, 'For each censer you swing you take 3% less from every blow, a rank. Half at most.', (s, n) => { s.counterweight += n; }),
+    R('counterweight', 'Counterweight', C, 3, 'shield', CH, 'Each censer you swing takes a share of every blow, each share on top of the last: 7% a censer at rank I, 12% at rank II, 20% at rank III. Three censers at rank III take half of every blow.', (s, n) => { s.counterweight = RK(n, [0.07, 0.12, 0.2]); }),
     R('tautchain', 'Taut Chain', C, 3, 'chain', CH, 'Your bolts do more to a shackled creature, or one a censer struck in the last 2 seconds: ' + SAY(MARK) + '. All that multiplies your chain multiplies this too.', (s, n) => { s.taut = (1 + s.taut) * RK(n, LF.TUNE.mark) - 1; }),
     R('longswing', 'The Long Swing', U, 3, 'ring', CH, 'The wider your censers swing, the harder they strike: every tenth of reach beyond their first adds 5% at rank I, 10% at rank II, 20% at rank III.', (s, n) => { s.longSwing += 0.05 * n; }),
     R('incense', 'Incense', U, 3, 'ring', CH, 'Every blow of a censer gives back 0.15 of an ember: 0.3 at rank II, 0.6 at rank III.', (s, n) => { s.incense += 0.375 * n; }),
@@ -249,7 +255,7 @@
     R('flit', 'Flit', C, 3, 'wing', MO, 'Your dash returns 15% sooner and you move 4% faster, a rank.', (s, n) => { s.dashCd *= Math.pow(0.85, n); s.speed *= 1 + 0.04 * n; }),
     R('mothcloud', 'The Moth Cloud', F, 3, 'moth', MO, 'Your flare leaves a cloud of moths where it burst. Everything in the cloud is bitten again and again, and carries whatever your moths carry. It hangs 4 seconds: 6 at rank II, 9 at rank III.', (s, n) => { s.mothCloud = RK(n, [4, 6, 9]); }, { form: 'flare' }),
     R('wingedbolts', 'Winged Bolts', F, 3, 'wing', MO, 'Your bolts are moths. They curve toward what you aim at and strike a fifth softer than a bolt, and each one bites, carrying whatever your moths carry. It bites half as hard as a moth; as hard at rank II; twice as hard at rank III.', (s, n) => { s.wing = RK(n, [0.5, 1, 2]); s.damage *= 0.8; s.boltColor = '#e4d4ff'; }, { form: 'bolt' }),
-    R('decoywings', 'Decoy Wings', U, 3, 'moth', MO, 'When a blow lands, one of the moths you have loosed takes part of it and dies: a third of the blow at rank I, half at rank II, three quarters at rank III.', (s, n) => { s.decoy = Math.min(0.9, RK(n, [0.33, 0.5, 0.75])); }),
+    R('decoywings', 'Decoy Wings', U, 3, 'moth', MO, 'Every moth beside you, tame or loosed, takes a share of every blow, each share on top of the last: 6% a moth at rank I, 10% at rank II, 16% at rank III. Four moths at rank III take half. A loosed moth dies of it.', (s, n) => { s.decoy = RK(n, [0.06, 0.1, 0.16]); }),
     R('hatch', 'Embers Hatch', X, 1, 'moth', MO, 'An ember left on the ground for 3 seconds hatches into a moth that fights for 9 seconds. The ember is gone.', (s) => { s.hatch += 1; }),
     R('brood', 'The Brood', X, 1, 'moth', MO, 'Whatever dies to a moth\'s bite hatches another moth, for 6 seconds.', (s) => { s.broodKill += 1; }),
 
@@ -327,9 +333,9 @@
     moth: { name: 'Moth', color: '#e4d4ff', glyph: 'moth', tiers: [] },
   };
   const SCHOOL_OF = {
-    fire: 'catching kindle cindertrail burningflash emberhalo cinderskin tar pitch scorchedearth whitecoals widehalo stoke slowburn kiln fireblade ringfire drywood draught heartfire bankedcoals hearthstone cinderfall wildfire pyre conflagration undying burntoffering',
+    fire: 'catching kindle cindertrail burningflash emberhalo cinderskin tar pitch scorchedearth whitecoals widehalo stoke slowburn kiln fireblade ringfire drywood draught heartfire bankedcoals hearthstone heartwood cinderfall wildfire pyre conflagration undying burntoffering',
     wax: 'tallowbolt spiltwax candlefall waxskin lastcoat tallow scald brittle slowset drippings waxunderfoot gout standingcandle waxcast spatter secondskin shedskin deepwax beeswax doubleboiler royalwax softwax sethard themelt twicedipped melting',
-    light: 'whiteflash lens whitelight flash quickfuse burningglass shutter afterlight litwick beacon brand dazzle gleaning glare solarcrown glowingflare flarememory keenlight hardlight ray lance highnoon longlight cleanglass trimmedwick seconddawn wakeful sunstruck nakedflame',
+    light: 'whiteflash lens whitelight flash quickfuse burningglass shutter afterlight litwick beacon brand dazzle gleaning glare solarcrown glowingflare flarememory slowdusk keenlight hardlight ray lance highnoon longlight cleanglass trimmedwick seconddawn wakeful sunstruck nakedflame',
     chain: 'censer flail castchains heavycenser longchain counterweight tautchain longswing incense throwncenser haul scattershot temperedlinks momentum ironlaw hook leash leapinglink shackleshot peal gyre ballandchain',
     moth: 'lampmoth startled flock mothshot mothdust longwings harry flit frenzy decoywings wingedbolts mothcloud hunger nightbloom greatmoth hatch brood cloud lampcalls feedmoths',
   };
@@ -337,9 +343,9 @@
   for (const r of list) if (!r.school) throw new Error(r.id + ' has no theme');
   // Paths: the builds inside a theme. Every relic in the deck walks one, and says so on its card.
   LF.PATHS = {
-    fire: { burn: ['The Burn', 'kindle catching pitch stoke slowburn bankedcoals wildfire pyre conflagration undying kiln'], ground: ['Scorched Ground', 'cindertrail tar cinderfall burningflash scorchedearth ringfire'], mantle: ['The Mantle', 'emberhalo cinderskin whitecoals widehalo burntoffering fireblade hearthstone'], whole: ['All Fire', 'drywood draught heartfire'] },
+    fire: { burn: ['The Burn', 'kindle catching pitch stoke slowburn bankedcoals wildfire pyre conflagration undying kiln'], ground: ['Scorched Ground', 'cindertrail tar cinderfall burningflash scorchedearth ringfire'], mantle: ['The Mantle', 'emberhalo cinderskin whitecoals widehalo burntoffering fireblade hearthstone heartwood'], whole: ['All Fire', 'drywood draught heartfire'] },
     wax: { scald: ['The Scald', 'tallowbolt scald brittle slowset tallow spatter sethard drippings twicedipped'], pool: ['The Pool', 'spiltwax candlefall themelt waxunderfoot gout standingcandle deepwax melting'], shell: ['The Shell', 'waxskin softwax secondskin shedskin waxcast lastcoat'], whole: ['All Wax', 'beeswax doubleboiler royalwax'] },
-    light: { sear: ['The Searing', 'burningglass lens whitelight shutter gleaning litwick nakedflame highnoon'], flare: ['The Flare', 'whiteflash flash quickfuse afterlight beacon brand glowingflare flarememory solarcrown sunstruck wakeful lance longlight'], eye: ['The Eye', 'dazzle glare keenlight hardlight ray'], whole: ['All Light', 'cleanglass trimmedwick seconddawn'] },
+    light: { sear: ['The Searing', 'burningglass lens whitelight shutter gleaning litwick nakedflame highnoon'], flare: ['The Flare', 'whiteflash flash quickfuse afterlight beacon brand glowingflare flarememory slowdusk solarcrown sunstruck wakeful lance longlight'], eye: ['The Eye', 'dazzle glare keenlight hardlight ray'], whole: ['All Light', 'cleanglass trimmedwick seconddawn'] },
     chain: { censer: ['The Censer', 'censer heavycenser longchain longswing flail castchains counterweight incense hook peal gyre ballandchain throwncenser'], shackle: ['The Shackle', 'shackleshot tautchain leash haul leapinglink scattershot'], whole: ['All Chain', 'temperedlinks momentum ironlaw'] },
     moth: { tame: ['The Tame', 'lampmoth mothdust cloud feedmoths'], swarm: ['The Swarm', 'startled flock mothshot longwings brood hatch decoywings lampcalls frenzy mothcloud'], wing: ['The Wing', 'flit harry wingedbolts'], whole: ['All Moths', 'hunger nightbloom greatmoth'] },
   };
@@ -380,7 +386,7 @@
     keenlight: ['shutter'], hardlight: ['keenlight', 'dazzle'], slowburn: ['tar', 'undying'],
     waxunderfoot: ['candlefall', 'spiltwax', 'themelt'], slowset: ['tallow', 'twicedipped'], softwax: ['tallow'], sethard: ['tallow'],
     longswing: ['longchain'], incense: ['censer', 'gyre'], counterweight: ['censer'],
-    decoywings: ['flock', 'startled', 'longwings'], cloud: ['lampmoth', 'flock'],
+    decoywings: ['lampmoth', 'flock', 'startled', 'longwings'], cloud: ['lampmoth', 'flock'],
     kiln: ['slowburn', 'tar', 'stoke'], fireblade: ['whitecoals', 'emberhalo', 'drywood'], ringfire: ['scorchedearth', 'quickfuse', 'drywood'],
     highnoon: ['burningglass', 'lens', 'quickfuse'], waxcast: ['shedskin', 'secondskin', 'beeswax'], mothcloud: ['frenzy', 'harry', 'hunger'], ray: ['shutter', 'keenlight'], gout: ['slowset', 'waxunderfoot', 'tallow'], throwncenser: ['longchain', 'heavycenser', 'incense'], wingedbolts: ['mothdust', 'harry'],
     lance: ['longlight', 'quickfuse'], haul: ['censer', 'tautchain'], standingcandle: ['afterlight', 'glowingflare', 'candlefall'],

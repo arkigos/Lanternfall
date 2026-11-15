@@ -13,7 +13,7 @@ rerolls and one more choice at every stair), the Heart (one free rekindling per 
 begins at the top of the first Depth; the deeper ones are reached by carrying on down in the same run. The fifth
 Depth ends at the Great Lantern, and you become the ember that lights it.
 
-Nine Levels to a Depth, three biomes, nine bosses, 132 relics, five starting lanterns, vows, a daily seed,
+Nine Levels to a Depth, three biomes, nine bosses, 134 relics, five starting lanterns, vows, a daily seed,
 and an endless wave-survival mode (The Long Vigil).
 
 Play it in the browser: https://arkigos.github.io/Lanternfall/

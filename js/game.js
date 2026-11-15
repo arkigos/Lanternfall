@@ -722,12 +722,19 @@
       if (!src.force && !src.steal) {
         // Wax Underfoot: a bearer standing in wax of their own takes a softer blow
         if (s.waxFoot && this.zones.some(z => z.kind === 'tallow' && !z.dead && LF.dist2(z.x, z.y, p.x, p.y) < z.r * z.r)) amt *= 1 - s.waxFoot;
-        // Decoy Wings: one of the loosed moths takes part of the blow, and dies of it
-        if (s.decoy && p.swarm.length) { const m = p.swarm.shift(); amt *= 1 - s.decoy; fx.burst(m.x, m.y, 9, { color: ['#e4d4ff', '#ffe2b0'], speed1: 120, life: 0.4, size: 2 }); fx.text(p.x, p.y - 36, 'A MOTH TOOK IT', '#e4d4ff', 10, 0.8); }
+        // Decoy Wings: every moth beside the bearer, tame or loosed, takes its share (each on top of the last, never
+        // more than 85% in all); one loosed moth dies of it
+        { const nm = Math.min(12, p.familiars.length + p.swarm.length);
+          if (s.decoy && nm) { amt *= Math.max(0.15, Math.pow(1 - Math.min(0.9, s.decoy), nm)); const m = p.swarm.shift() || p.familiars[0];
+            fx.burst(m.x, m.y, 9, { color: ['#e4d4ff', '#ffe2b0'], speed1: 120, life: 0.4, size: 2 }); fx.text(p.x, p.y - 36, nm > 1 ? nm + ' MOTHS TOOK IT' : 'A MOTH TOOK IT', '#e4d4ff', 10, 0.8); } }
       }
       if (s.lowDef < 1 && p.frac() < 0.5) amt *= s.lowDef;
       if (s.lastLight && p.frac() < 0.25) amt *= 0.75;
-      p.light -= amt; this.run.taken += amt;
+      // A blow does not take its light at once: it burns through over a second (longer with the Slow Dusk), so no
+      // single blow puts the lantern out before the bearer can answer it. A creature's leech and the dark's own
+      // drain still take at once.
+      if (src.steal) p.light -= amt; else p.hurts.push({ left: amt, rate: amt / (s.hurtTime || 1), name: this.hitName(src), heartless: src.heartless });
+      this.run.taken += amt;
       p.dim = 1; p.lightR *= src.steal ? 0.9 : 0.76; // the flame gutters: the dark jumps inward, then eases back to its new edge
       p.invuln = src.steal ? Math.max(p.invuln, 0.2) : 0.75;
       p.hurtFlash = 1; this.hurtVig = 1; if (s.secondWind) p.windT = 2.6; this.shake(src.steal ? 3 : 8); this.hitstop(src.steal ? 0 : 0.05);
@@ -739,7 +746,7 @@
         const a = Math.atan2(p.y - src.y, p.x - src.x);
         p.vx += Math.cos(a) * 220; p.vy += Math.sin(a) * 220;
       }
-      if (src.enemy) this.run.lastHit = src.enemy.name; else if (src.name) this.run.lastHit = src.name; else if (src.bullet) this.run.lastHit = 'a bolt of shadow'; else this.run.lastHit = 'the gloom';
+      this.run.lastHit = this.hitName(src);
       if (s.cinderSkin) {
         const R = 95;
         fx.ring(p.x, p.y, 10, R, 0.3, '#ff7b54', 4); LF.audio.play('explode');
@@ -749,7 +756,16 @@
           const a = Math.atan2(e.y - p.y, e.x - p.x); if (!e.boss) { e.kx += Math.cos(a) * 320; e.ky += Math.sin(a) * 320; }
         }
       }
-      if (p.light <= 0) {
+      if (p.light <= 0) this.outOfLight(src);
+    }
+    hitName(src) { return src.enemy ? src.enemy.name : src.name ? src.name : src.bullet ? 'a bolt of shadow' : 'the gloom'; }
+    // the lantern has gone out: a heart-shard, a lifeline, banked embers or a phoenix feather may light it again.
+    // Whatever blows were still burning through are spent with it.
+    outOfLight(src = {}) {
+      const p = this.player, s = p.stats;
+      if (p.dead) return;
+      p.hurts.length = 0;
+      {
         if ((this.meta.shards || 0) >= 4 && !p.heartUsed && !this.practice && !src.heartless) {
           p.heartUsed = true; p.light = s.maxLight; p.invuln = 2.2;
           LF.audio.play('revive'); this.flareBurst(p.x, p.y, 260, 140, 2.2, 1.6);

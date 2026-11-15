@@ -351,6 +351,8 @@
           if (p.stats.lance) s.flare = !!(target && !target.orb && st.targetD < 480 && s.fire); // a lance is thrown down the line of aim, from wherever the bearer stands
           if (s.flare) st.flares++;
         }
+        // the Slow Dusk: flare to burn away a big blow before it has burned through
+        if (!s.flare && p.flareT <= 0 && p.stats.flareMend && fp !== 'never' && p.light > p.stats.flareCost + 1 && p.hurts.reduce((a, h) => a + h.left, 0) > p.stats.maxLight * 0.12) { s.flare = true; st.flares++; }
         if (p.dashT <= 0 && p.light > 12 && (danger && LF.dist(p.x, p.y, danger.x, danger.y) < 46 || nearest < 26)) s.dash = Math.random() < sk;
         for (const e of g.enemies) if (!e.dead && (e.state === 'lunge' || e.state === 'charge') && LF.dist(p.x, p.y, e.x, e.y) < 90 && p.dashT <= 0) { s.dash = true; s.mx = -(e.ly || 0); s.my = (e.lx || 0); }
       }

@@ -296,6 +296,9 @@
     lg.addColorStop(0, '#ff8a3d'); lg.addColorStop(1, '#ffe08a');
     ctx.fillStyle = frac < 0.25 && Math.floor(g.realTime * 6) % 2 ? '#ff5d4a' : lg; ctx.fillRect(bx, by, bw * frac, bh);
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(bx, by, bw * frac, bh * 0.35);
+    // what blows still have to take: a dark band at the end of the bar, eating back toward where it will stop
+    { const pend = (p.hurts || []).reduce((a, h) => a + h.left, 0);
+      if (pend > 0.05) { const f0 = LF.clamp((p.light - pend) / s.maxLight, 0, 1); ctx.fillStyle = 'rgba(120,20,24,' + (0.72 + 0.18 * Math.sin(g.realTime * 18)) + ')'; ctx.fillRect(bx + bw * f0, by, bw * (frac - f0), bh); } }
     txt(Math.ceil(p.light / LF.EMBER) + ' / ' + Math.round(s.maxLight / LF.EMBER), bx + bw / 2, by + bh / 2 + 1 * u, 11, '#1a1208', 'center', LF.FONT_UI, 'bold');
     // abilities
     const ay = by + bh + 12 * u;

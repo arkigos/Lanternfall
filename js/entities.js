@@ -47,6 +47,7 @@
       this.ward = 0; this.wardT = 0; this.wardMax = 0; this.waxT = 0; this.shadeCd = 0; this.shadeT = 0; this.lashT = 0; this.guardA = 0;
       this.fireT = 0; this.dashT = 0; this.flareT = 0;
       this.dashing = 0; this.dashDx = 1; this.dashDy = 0; this.dashHit = new Set(); this.trailD = 0;
+      this.hurts = []; // blows still burning through: { left, rate, name }
       this.invuln = 0; this.hurtFlash = 0; this.glass = 0; this.kills = 0; this.shots = 0;
       this.still = 0; this.vigilOn = false; this.phoenixUsed = false; this.lifelineUsed = false;
       this.familiars = []; this.swarm = []; this.orbitA = 0; this.stormT = 3; this.bob = 0; this.ghosts = [];
@@ -76,7 +77,8 @@
       LF.applySchools(s, this.schools, this);
       s.waxSlow = Math.min(0.8, s.waxSlow);
       s.flareCd = Math.max(0.8, s.flareCd); s.dashCd = Math.max(0.25, s.dashCd); s.stormCd = Math.max(0.4, s.stormCd); s.flareStun = Math.min(5, s.flareStun);
-      if (s.counterweight && s.chainGuard) s.dmgTaken *= Math.max(0.5, Math.pow(0.97, s.counterweight * s.chainGuard));
+      // Counterweight: every censer takes its share of a blow, each on top of the last (never more than 85% in all)
+      if (s.counterweight && s.chainGuard) s.dmgTaken *= Math.max(0.15, Math.pow(1 - Math.min(0.9, s.counterweight), s.chainGuard));
       if (s.undying) s.burnTime = 999;
       s.flareDmg *= s.flareAmp; // White Flash multiplies whatever harm the flare has been given
       // ward: the strongest theme multiplier the lantern has divides every blow it takes (a lantern is as tough as it is deep)
@@ -84,6 +86,7 @@
       if (s.buckler > (this.wardMax || 0)) this.ward = s.buckler; // a new buckler arrives whole
       this.wardMax = s.buckler; this.ward = Math.min(this.ward || 0, s.buckler);
       s.maxLight += this.bonusMax;
+      s.maxLight *= s.maxMul; // Heartwood multiplies every ember the lantern can hold, however it came by them
       if (this.g.vows && this.g.vows.glass) s.maxLight *= 0.5;
       s.maxLight = Math.max(25, s.maxLight - this.sacrificed);
       s.crit = Math.min(s.crit, 0.75);
@@ -99,8 +102,9 @@
       this.relics[id] = (this.relics[id] || 0) + 1;
       if (!this.relicOrder.includes(id)) this.relicOrder.push(id);
       const c0 = d.school ? (d.dmg ? 1 : Object.keys(this.relics).filter(k => k !== id && LF.RELICS[k] && LF.RELICS[k].school === d.school && !LF.RELICS[k].dmg).length + (this.relics[id] > 1 ? 1 : 0)) : 0;
-      const had = (this.synergies || []).map(sy => sy.id), sch = d.school, t0 = sch ? LF.tierOf((this.schools || {})[sch] || 0) : 0;
+      const had = (this.synergies || []).map(sy => sy.id), sch = d.school, t0 = sch ? LF.tierOf((this.schools || {})[sch] || 0) : 0, max0 = this.stats.maxLight;
       this.recalc();
+      if (this.stats.maxLight > max0) this.addLight(this.stats.maxLight - max0); // room to hold more embers comes filled
       if (sch) { const t1 = LF.tierOf(this.schools[sch] || 0), S = LF.SCHOOLS[sch]; if (t1 > t0) { this.g.toast('Attuned: ' + S.name + ' ' + ['', 'I', 'II', 'III'][t1], S.tiers[t1 - 1] + (LF.RELIC_LIST.some(r => r.school === sch && r.tier > t0 && r.tier <= t1) ? '. Stronger relics of ' + S.name.toLowerCase() + ' can now be offered' : ''), S.color, S.glyph, S.color, 7); LF.audio.play('rare'); if (this.g.attuned) this.g.attuned(sch, t0, t1); } }
       if (sch && !c0 && LF.SCHOOLS[sch].first) { const S = LF.SCHOOLS[sch]; this.g.toast(S.name, S.first, S.color, S.glyph, S.color, 7); }
       for (const sy of this.synergies) if (!had.includes(sy.id)) { this.g.toast('Kindred: ' + sy.name, sy.desc, '#9dffcf', 'star', '#9dffcf', 6.5); LF.audio.play('rare'); }
@@ -224,6 +228,8 @@
         const cost = s.flareFree ? 0 : s.flareCost;
         if (cost <= 0 || this.light > cost + 1) {
           this.light -= cost; this.flareT = s.flareCd;
+          // the Slow Dusk: a flare burns away whatever a blow has yet to take
+          if (s.flareMend && this.hurts.length) { const left = this.hurts.reduce((a, h) => a + h.left, 0); this.hurts.length = 0; g.run.taken -= left; if (left >= 0.5) fx.text(this.x, this.y - 34, 'MENDED ' + Math.round(left / LF.EMBER), '#fff0b8', 12, 0.9); }
           const fd = s.flareDmg * this.damageMul(), p = this, fk = LF.LOOK[LF.lookOf(g.meta)].flare;
           if (s.haul) {
             // the Haul: chains go out past the flare's edge, and whatever they catch is fastened to the bearer and drawn in
@@ -419,6 +425,14 @@
         this.inGlow = true; this.addLight(s.flareGlow * s.linger * dt);
         if (Math.random() < dt * 7) fx.spawn({ x: this.x + LF.rand(-12, 12), y: this.y + LF.rand(-2, 12), vx: LF.rand(-6, 6), vy: -34, life: 0.7, size: 2.2, color: LF.pick(['#ffe9a8', '#fff6dc']), drag: 1 });
         break;
+      }
+
+      // blows burning through: each takes its light over a second (or as long as the Slow Dusk makes it)
+      if (this.hurts.length && !this.dead) {
+        let last = null;
+        for (const h of this.hurts) { const d = Math.min(h.left, h.rate * dt); h.left -= d; this.light -= d; last = h; }
+        this.hurts = this.hurts.filter(h => h.left > 1e-6);
+        if (this.light <= 0) { this.light = 0; g.run.lastHit = last.name; g.outOfLight({ heartless: last.heartless }); }
       }
 
       // drain
