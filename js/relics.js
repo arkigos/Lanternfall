@@ -217,7 +217,7 @@
     ...WHOLE('cleanglass', 'Clean Glass', 'trimmedwick', 'The Trimmed Wick', 'seconddawn', 'Second Dawn', 'sun', LI, 'light (what it sears, what your flare burns, and your critical strikes)', 'lightAll'),
 
     // ---- chain: censers swinging round you
-    R('censer', 'Censer', U, 3, 'chain', CH, 'A censer on a chain swings round you, striking what it meets, jarring whatever stands beside it, and knocking shots out of the air. One more each rank up to three; past rank III they strike 10% harder a rank.', (s, n) => { s.chainGuard += Math.min(n, 3); if (n > 3) s.chainMul = (1 + s.chainMul) * Math.pow(1.1, n - 3) - 1; }),
+    R('censer', 'Censer', U, 3, 'chain', CH, 'A censer on a chain swings round you, striking what it meets, jarring whatever stands beside it, and knocking shots out of the air. One more each rank, up to three. From rank III they also strike harder: 10% at rank III, a third at rank IV, and a fifth more again for every rank after.', (s, n) => { s.chainGuard += Math.min(n, 3); if (n > 3) s.chainMul = (1 + s.chainMul) * Math.pow(1.1, n - 3) - 1; }),
     R('flail', 'Flail', U, 3, 'ring', CH, 'For a moment after you dash your censers swing faster, swell to half again their size, and strike far harder. Harder each rank.', (s, n) => { s.flail += n; }),
     R('castchains', 'Cast Chains', U, 1, 'chain', CH, 'Your flare swells your censers: for 3 seconds they are twice their size.', (s) => { s.flareFling += 1; }),
     R('heavycenser', 'Heavy Censer', C, 3, 'chain', CH, 'Your censers strike harder: ' + SAY(AMP) + '.', (s, n) => { s.chainMul = (1 + s.chainMul) * RK(n, LF.TUNE.amp) - 1; }),
@@ -399,7 +399,7 @@
   for (const sy of LF.SYNERGIES) for (const id of sy.needs) if (!LF.RELICS[id]) throw new Error('no relic ' + id + ' for kindred ' + sy.id);
   for (const r of list) if (r.req) for (const id of r.req) if (!LF.RELICS[id]) throw new Error('no relic ' + id + ' for ' + r.id);
   LF.schoolCounts = player => { const c = {}; for (const id in player.relics) { const d = LF.RELICS[id]; if (d && d.school) c[d.school] = (c[d.school] || 0) + player.relics[id]; } return c; };
-  // A relic's last rank counts double (for relics of three ranks or more): the third Censer brings two.
+  // A relic's last rank counts double (for relics of three ranks or more): the third Ember Halo brings two embers.
   // What a rank is worth to a relic that adds: 1, 2, then 4 for the third (it has always counted double), and 2 more for
   // every rank after. Relics of one or two ranks, and blessings, count their ranks plainly.
   LF.rankValue = (d, n) => d.base === 3 && n >= 3 ? 2 * n - 2 : n;

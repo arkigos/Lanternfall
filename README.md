@@ -13,7 +13,7 @@ rerolls and one more choice at every stair), the Heart (one free rekindling per 
 begins at the top of the first Depth; the deeper ones are reached by carrying on down in the same run. The fifth
 Depth ends at the Great Lantern, and you become the ember that lights it.
 
-Nine Levels to a Depth, three biomes, nine bosses, 70 relics, five starting lanterns, vows, a daily seed,
+Nine Levels to a Depth, three biomes, nine bosses, 132 relics, five starting lanterns, vows, a daily seed,
 and an endless wave-survival mode (The Long Vigil).
 
 Play it in the browser: https://arkigos.github.io/Lanternfall/
@@ -54,10 +54,10 @@ Settings has an auto-fire option for trackpads.
 - Braziers: light one for a refill, and rest beside it to recover up to half your light.
 - Each stair down offers a relic. Unmake at least 85% of a floor for one extra choice. You start each descent with
   two rerolls.
-- **Schools.** Every relic belongs to one of six schools (Spark, Chain, Pyre, Flare, Ember, Wax), named on its
-  card. Three relics of one school attune the lantern to it, five and seven attune it further, and the top tiers
-  are large (bolt damage more than doubled, fire five times as hot). Enemy health and damage climb steeply with
-  depth, so a lantern that takes a little of everything is outscaled: pick a school and fish for it.
+- **Themes.** Nearly every relic belongs to one of five themes (fire, wax, light, chain, moth), and your lantern
+  is one of them and carries its first relic. Each theme has paths inside it (fire that burns, fire on the ground,
+  fire worn close, and so on), and a theme's relics multiply each other. The dark grows quickly with depth, so a
+  lantern that takes a little of everything is outscaled: pick a theme, find a path in it, and build.
 - **Defences.** Wax and chain relics let you build a tougher lantern: the Wax Buckler stops blows and shots that
   come from where you are aiming, Wax Skin takes one hit whole after a quiet spell, and the Whirling Chain circles
   you knocking shots out of the air.
