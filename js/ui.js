@@ -1039,7 +1039,9 @@
       // a relic already held is a rank; and a pick that would wake a kindred says so
       const S = d.school && LF.SCHOOLS[d.school], have = g.player.relics[d.id] || 0, ROM = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
       if (have && d.max > 1 && d.rarity !== 'boon') return { text: 'RANK ' + ROM[have] + ' \u2192 ' + ROM[have + 1], color: S ? S.color : '#ffd9a0', up: true };
-      return S ? { text: S.name.toUpperCase() + (d.pathName ? '  \u00b7  ' + d.pathName.toUpperCase() : '') + (d.form ? '  \u00b7  ' + (d.form === 'bolt' ? 'BOLT' : 'FLARE') + ' FORM' : ''), color: S.color } : null;
+      // a bridge names the theme it carries in place of its path (the line has no room for both)
+      if (S && d.bridge && LF.SCHOOLS[d.bridge]) return { text: S.name.toUpperCase() + '  ·  BRIDGE TO ' + LF.SCHOOLS[d.bridge].name.toUpperCase(), color: S.color };
+      return S ? { text: S.name.toUpperCase() + (d.pathName ? '  ·  ' + d.pathName.toUpperCase() : '') + (d.form ? '  ·  ' + (d.form === 'bolt' ? 'BOLT' : 'FLARE') + ' FORM' : ''), color: S.color } : null;
     };
     o.relics.forEach((d, i) => {
       const idx = ui.count++;

@@ -80,7 +80,7 @@
     // paths: fire laid on the ground and fire worn (fireMul is the burn's alone); wax in pools; moths loosed; the wax shell
     groundMul: 1, mantleMul: 1, flareAmp: 1, markAll: 1, haloWide: 0, poolMul: 1, swarmMul: 1, skinExtra: 0, shed: 0,
     // what multiplies everything a theme does: every one of these multiplies the others and every amplifier on a path
-    fireAll: 1, lightAll: 1, waxAll: 1, chainAll: 1, mothAll: 1, surge: {}, lensFocus: 0, solarCrown: 0, leashOn: 0, sunstruck: 0, waxFoot: 0, longSwing: 0, incense: 0, decoy: 0,
+    fireAll: 1, lightAll: 1, waxAll: 1, chainAll: 1, mothAll: 1, surge: {}, tallowFire: 0, firelight: 0, poolLight: 0, softLight: 0, censerLamps: 0, censerMoths: 0, mothLamps: 0, censerDrip: 0, cinderMoth: 0, lensFocus: 0, solarCrown: 0, leashOn: 0, sunstruck: 0, waxFoot: 0, longSwing: 0, incense: 0, decoy: 0,
     // what each theme defends with beside the ward: Heartwood (fire) multiplies the embers held; the Slow Dusk (light)
     // stretches the second over which a blow burns through, and lets the flare burn away what is left of it
     maxMul: 1, hurtTime: 1, flareMend: 0,
@@ -160,6 +160,10 @@
     R('stoke', 'Stoke', C, 3, 'flame', FI, 'Your bolts do more to burning creatures: ' + SAY(MARK) + '. All that multiplies your fire multiplies this too.', (s, n) => { s.stoke = (1 + s.stoke) * RK(n, LF.TUNE.mark) - 1; }),
     R('slowburn', 'Slow Burn', U, 3, 'flame', FI, 'A burn grows hotter the longer it has burned, for as long as your burns last: 8% hotter every second at rank I, 16% at rank II, 32% at rank III.', (s, n) => { s.slowBurn += 0.08 * n; }),
     R('hearthstone', 'Hearthstone', C, 3, 'flame', FI, 'Resting by a lit brazier with nothing near mends you faster: twice as fast at rank I, three times at rank II, five times at rank III.', (s, n) => { s.restRate *= RK(n, [2, 3, 5]); }),
+    // Bridges: a relic of one theme that carries another. What harm it does counts as both themes, so everything that
+    // strengthens either strengthens it: a lantern of one theme gets a good relic, a lantern of the two gets a great one.
+    R('tallowflames', 'Tallow Flames', U, 3, 'flame', FI, 'The fire you leave on the ground runs with wax: whatever stands in it is waxed, and slowed, it stays in the flames. Your ground fire burns a waxed creature 30% harder at rank I, 60% at rank II, twice as hard at rank III, and that fire counts as wax as well as fire.', (s, n) => { s.tallowFire = RK(n, [0.3, 0.6, 1]); }, { bridge: 'wax' }),
+    R('firelight', 'Firelight', U, 3, 'flame', FI, 'Whatever stands in your light for 2 seconds catches fire: 1.5 seconds at rank II, 1 at rank III. Fire your light kindles counts as light as well as fire.', (s, n) => { s.firelight = RK(n, [2, 1.5, 1]); }, { bridge: 'light' }),
     R('heartwood', 'Heartwood', U, 3, 'flame', FI, 'You hold more embers: half again as many at rank I, twice as many at rank II, three times as many at rank III. The new room comes filled.', (s, n) => { s.maxMul *= RK(n, [1.5, 2, 3]); }),
     R('bankedcoals', 'Banked Coals', C, 3, 'flame', FI, 'Whatever dies burning gives back half an ember a rank.', (s, n) => { s.burnHeal += 1.25 * n; }),
     R('fireblade', 'The Blade of Fire', F, 3, 'flame', FI, 'You throw no bolts. You swing a blade of fire across your aim: a heavy close blow that sets alight what it strikes, cuts shots out of the air, and feeds your flame for every creature it lands on. Half again as hard at rank II, twice as hard at rank III.', (s, n) => { s.melee = 1; s.ignite += 1; s.bladeMul = RK(n, [1, 1.5, 2]); }, { form: 'bolt' }),
@@ -174,6 +178,7 @@
     // ---- wax: it slows, it scalds, it spreads, and it sets
     R('tallowbolt', 'Tallow Bolt', U, 3, 'drop', WA, 'Your bolts are tipped with wax: what they hit is slowed and scalded. It scalds harder by rank: ' + SAY(SRC) + '.', (s, n) => { s.boltWax += 1; s.waxDmg *= RK(n, LF.TUNE.src); s.boltColor = '#f6ecd0'; }),
     R('spiltwax', 'Spilt Wax', U, 3, 'drop', WA, 'Your dash spills a trail of wax. Whatever wades through it is waxed. Wider each rank.', (s, n) => { s.waxTrail += n; }),
+    R('candleglow', 'Candle Glow', U, 1, 'candle', WA, 'Every pool of wax you lay gives off light. It unshrouds what stands in it, your light sears there as it does in your own glow, and that searing counts as wax as well as light. While you stand in one your flame does not burn down.', (s) => { s.poolLight = 1; }, { bridge: 'light' }),
     R('candlefall', 'Candlefall', U, 3, 'candle', WA, 'Your flare waxes all it touches and floods the floor round you with wax. The flood lies 3 seconds longer each rank.', (s, n) => { s.waxFlood += n; s.flareWax = 1; }),
     R('waxskin', 'Wax Skin', U, 3, 'candle', WA, 'Go unhurt for six seconds and a coat of wax sets over you. It takes the next blow whole. It sets 2 seconds sooner each rank.', (s, n) => { s.waxSkin += n; }),
     R('lastcoat', 'The Last Coat', U, 1, 'candle', WA, 'Resting by a lit brazier mends you all the way, not just to half.', (s) => { s.restTo = 1; }),
@@ -217,6 +222,7 @@
     R('whiteflash', 'White Flash', C, 3, 'sun', LI, 'Your flare does more harm: ' + SAY(AMP) + '.', (s, n) => { s.flareAmp *= RK(n, LF.TUNE.amp); }),
     R('glowingflare', 'Glowing Flare', U, 3, 'sun', LI, 'While you stand in the light your flare leaves, embers come back to you: one every 4 seconds at rank I, every 2 at rank II, one a second at rank III. They come faster by as much as that light lasts longer.', (s, n) => { s.flareGlow += 0.625 * n; }),
     R('flarememory', 'Flare of Memory', U, 3, 'heart', LI, 'Your flare gives back a quarter of an ember for every creature it touches: half an ember at rank II, a whole one at rank III. A great shadow counts as eight.', (s, n) => { s.flareHeal += 0.625 * n; }),
+    R('softlight', 'Softening Light', U, 3, 'sun', LI, 'Whatever stands in your light for 2 seconds is waxed: 1.5 seconds at rank II, 1 at rank III. Wax your light lays scalds as light as well as wax.', (s, n) => { s.softLight = RK(n, [2, 1.5, 1]); }, { bridge: 'wax' }),
     R('slowdusk', 'The Slow Dusk', U, 3, 'sun', LI, 'A blow burns through your light over a second. Yours take longer: 2 seconds at rank I, 3 at rank II, 5 at rank III. Your flare burns away whatever a blow has yet to take.', (s, n) => { s.hurtTime = Math.max(s.hurtTime, RK(n, [2, 3, 5])); s.flareMend = 1; }),
     R('keenlight', 'Keen Light', C, 3, 'lens', LI, 'Your bolts strike critically more often the deeper a creature stands in your light: up to 20% more often at rank I, 40% at rank II, 80% at rank III.', (s, n) => { s.keen += 0.2 * n; }),
     R('hardlight', 'Hard Light', U, 3, 'star', LI, 'A critical strike does twice a bolt\'s harm. Yours do more: 2.5 times at rank I, 3.25 times at rank II, 5 times at rank III.', (s, n) => { s.critMul = RK(n, [2.5, 3.25, 5]); }),
@@ -229,6 +235,8 @@
     R('castchains', 'Cast Chains', U, 1, 'chain', CH, 'Your flare swells your censers: for 3 seconds they are twice their size.', (s) => { s.flareFling += 1; }),
     R('heavycenser', 'Heavy Censer', C, 3, 'chain', CH, 'Your censers strike harder: ' + SAY(AMP) + '.', (s, n) => { s.chainMul = (1 + s.chainMul) * RK(n, LF.TUNE.amp) - 1; }),
     R('longchain', 'Long Chain', C, 3, 'chain', CH, 'Your censers swing 8% wider a rank.', (s, n) => { s.chainReach += 0.08 * n; }),
+    R('censerlamps', 'Censer Lamps', U, 1, 'chain', CH, 'A lamp hangs from every censer you swing. It unshrouds what it passes and sears it as your own glow does, and that searing counts as chain as well as light.', (s) => { s.censerLamps = 1; }, { bridge: 'light' }),
+    R('drippingcenser', 'Dripping Censers', U, 3, 'chain', CH, 'Your censers drip wax: every blow leaves a pool of wax where it lands, for 2 seconds (3 at rank II, 5 at rank III). The wax a censer lays scalds as chain as well as wax.', (s, n) => { s.censerDrip = RK(n, [2, 3, 5]); }, { bridge: 'wax' }),
     R('counterweight', 'Counterweight', C, 3, 'shield', CH, 'Each censer you swing takes a share of every blow, each share on top of the last: 7% a censer at rank I, 12% at rank II, 20% at rank III. Three censers at rank III take half of every blow.', (s, n) => { s.counterweight = RK(n, [0.07, 0.12, 0.2]); }),
     R('tautchain', 'Taut Chain', C, 3, 'chain', CH, 'Your bolts do more to a shackled creature, or one a censer struck in the last 2 seconds: ' + SAY(MARK) + '. All that multiplies your chain multiplies this too.', (s, n) => { s.taut = (1 + s.taut) * RK(n, LF.TUNE.mark) - 1; }),
     R('longswing', 'The Long Swing', U, 3, 'ring', CH, 'The wider your censers swing, the harder they strike: every tenth of reach beyond their first adds 5% at rank I, 10% at rank II, 20% at rank III.', (s, n) => { s.longSwing += 0.05 * n; }),
@@ -256,6 +264,9 @@
     R('flit', 'Flit', C, 3, 'wing', MO, 'Your dash returns 15% sooner and you move 4% faster, a rank.', (s, n) => { s.dashCd *= Math.pow(0.85, n); s.speed *= 1 + 0.04 * n; }),
     R('mothcloud', 'The Moth Cloud', F, 3, 'moth', MO, 'Your flare leaves a cloud of moths where it burst. Everything in the cloud is bitten again and again, and carries whatever your moths carry. It hangs 4 seconds: 6 at rank II, 9 at rank III.', (s, n) => { s.mothCloud = RK(n, [4, 6, 9]); }, { form: 'flare' }),
     R('wingedbolts', 'Winged Bolts', F, 3, 'wing', MO, 'Your bolts are moths. They curve toward what you aim at and strike a fifth softer than a bolt, and each one bites, carrying whatever your moths carry. It bites half as hard as a moth; as hard at rank II; twice as hard at rank III.', (s, n) => { s.wing = RK(n, [0.5, 1, 2]); s.damage *= 0.8; s.boltColor = '#e4d4ff'; }, { form: 'bolt' }),
+    R('cindermoths', 'Cinder Moths', U, 3, 'moth', MO, 'Your moths carry embers. A loosed moth leaves a patch of fire where it dies, and every patch of fire you leave hatches a moth every 2 seconds. Their bites do 30% more to a burning creature at rank I, 60% at rank II, twice as much at rank III, and a bite there counts as fire as well as moth.', (s, n) => { s.cinderMoth = RK(n, [0.3, 0.6, 1]); }, { bridge: 'fire' }),
+    R('censermoths', 'Censer Moths', U, 3, 'moth', MO, 'A tame moth rides each censer you swing, and bites at what you light from wherever the censer is: two moths a censer at rank II, three at rank III. They bite as your tame moths do, with all that strengthens them.', (s, n) => { s.censerMoths = RK(n, [1, 2, 3]); }, { bridge: 'chain' }),
+    R('mothlamps', 'Moth Lamps', U, 1, 'moth', MO, 'Every moth beside you, tame or loosed, carries a small light. It unshrouds what it flies over and sears it as your own glow does, and that searing counts as moth as well as light.', (s) => { s.mothLamps = 1; }, { bridge: 'light' }),
     R('decoywings', 'Decoy Wings', U, 3, 'moth', MO, 'Every moth beside you, tame or loosed, takes a share of every blow, each share on top of the last: 6% a moth at rank I, 10% at rank II, 16% at rank III. Four moths at rank III take half. A loosed moth dies of it.', (s, n) => { s.decoy = RK(n, [0.06, 0.1, 0.16]); }),
     R('hatch', 'Embers Hatch', X, 1, 'moth', MO, 'An ember left on the ground for 3 seconds hatches into a moth that fights for 9 seconds. The ember is gone.', (s) => { s.hatch += 1; }),
     R('brood', 'The Brood', X, 1, 'moth', MO, 'Whatever dies to a moth\'s bite hatches another moth, for 6 seconds.', (s) => { s.broodKill += 1; }),
@@ -334,21 +345,23 @@
     moth: { name: 'Moth', color: '#e4d4ff', glyph: 'moth', tiers: [] },
   };
   const SCHOOL_OF = {
-    fire: 'catching kindle cindertrail burningflash emberhalo cinderskin tar pitch scorchedearth whitecoals widehalo stoke slowburn kiln fireblade ringfire drywood draught heartfire bankedcoals hearthstone heartwood cinderfall wildfire pyre conflagration undying burntoffering',
-    wax: 'tallowbolt spiltwax candlefall waxskin lastcoat tallow scald brittle slowset drippings waxunderfoot gout standingcandle waxcast spatter secondskin shedskin deepwax beeswax doubleboiler royalwax softwax sethard themelt twicedipped melting',
-    light: 'whiteflash lens whitelight flash quickfuse burningglass shutter afterlight litwick beacon brand dazzle gleaning glare solarcrown glowingflare flarememory slowdusk keenlight hardlight ray lance highnoon longlight cleanglass trimmedwick seconddawn wakeful sunstruck nakedflame',
-    chain: 'censer flail castchains heavycenser longchain counterweight tautchain longswing incense throwncenser haul scattershot temperedlinks momentum ironlaw hook leash leapinglink shackleshot peal gyre ballandchain',
-    moth: 'lampmoth startled flock mothshot mothdust longwings harry flit frenzy decoywings wingedbolts mothcloud hunger nightbloom greatmoth hatch brood cloud lampcalls feedmoths',
+    fire: 'catching kindle cindertrail burningflash emberhalo cinderskin tar pitch scorchedearth whitecoals widehalo stoke slowburn kiln tallowflames firelight fireblade ringfire drywood draught heartfire bankedcoals hearthstone heartwood cinderfall wildfire pyre conflagration undying burntoffering',
+    wax: 'tallowbolt spiltwax candlefall waxskin lastcoat tallow scald brittle slowset drippings waxunderfoot gout standingcandle waxcast spatter secondskin shedskin deepwax beeswax doubleboiler royalwax softwax sethard themelt twicedipped melting candleglow',
+    light: 'whiteflash lens whitelight flash quickfuse burningglass shutter afterlight litwick beacon brand dazzle gleaning glare solarcrown glowingflare flarememory slowdusk softlight keenlight hardlight ray lance highnoon longlight cleanglass trimmedwick seconddawn wakeful sunstruck nakedflame',
+    chain: 'censer flail castchains heavycenser longchain counterweight tautchain longswing incense throwncenser haul scattershot drippingcenser censerlamps temperedlinks momentum ironlaw hook leash leapinglink shackleshot peal gyre ballandchain',
+    moth: 'lampmoth startled flock mothshot mothdust longwings harry flit frenzy decoywings wingedbolts mothcloud hunger nightbloom greatmoth hatch brood cloud lampcalls feedmoths cindermoths censermoths mothlamps',
   };
   for (const k in SCHOOL_OF) for (const id of SCHOOL_OF[k].split(' ')) { if (LF.RELICS[id]) LF.RELICS[id].school = k; else throw new Error('no relic ' + id); }
   for (const r of list) if (!r.school) throw new Error(r.id + ' has no theme');
+  // a bridge says what holding it does to its two themes (Player.recalc: Kinship)
+  for (const r of list) if (r.bridge) r.desc += ' While you hold it, ' + LF.SCHOOLS[r.school].name.toLowerCase() + ' and ' + LF.SCHOOLS[r.bridge].name.toLowerCase() + ' lend each other half their strength: whatever multiplies all of one multiplies all of the other half as much.';
   // Paths: the builds inside a theme. Every relic in the deck walks one, and says so on its card.
   LF.PATHS = {
-    fire: { burn: ['The Burn', 'kindle catching pitch stoke slowburn bankedcoals wildfire pyre conflagration undying kiln'], ground: ['Scorched Ground', 'cindertrail tar cinderfall burningflash scorchedearth ringfire'], mantle: ['The Mantle', 'emberhalo cinderskin whitecoals widehalo burntoffering fireblade hearthstone heartwood'], whole: ['All Fire', 'drywood draught heartfire'] },
-    wax: { scald: ['The Scald', 'tallowbolt scald brittle slowset tallow spatter sethard drippings twicedipped'], pool: ['The Pool', 'spiltwax candlefall themelt waxunderfoot gout standingcandle deepwax melting'], shell: ['The Shell', 'waxskin softwax secondskin shedskin waxcast lastcoat'], whole: ['All Wax', 'beeswax doubleboiler royalwax'] },
-    light: { sear: ['The Searing', 'burningglass lens whitelight shutter gleaning litwick nakedflame highnoon'], flare: ['The Flare', 'whiteflash flash quickfuse afterlight beacon brand glowingflare flarememory slowdusk solarcrown sunstruck wakeful lance longlight'], eye: ['The Eye', 'dazzle glare keenlight hardlight ray'], whole: ['All Light', 'cleanglass trimmedwick seconddawn'] },
-    chain: { censer: ['The Censer', 'censer heavycenser longchain longswing flail castchains counterweight incense hook peal gyre ballandchain throwncenser'], shackle: ['The Shackle', 'shackleshot tautchain leash haul leapinglink scattershot'], whole: ['All Chain', 'temperedlinks momentum ironlaw'] },
-    moth: { tame: ['The Tame', 'lampmoth mothdust cloud feedmoths'], swarm: ['The Swarm', 'startled flock mothshot longwings brood hatch decoywings lampcalls frenzy mothcloud'], wing: ['The Wing', 'flit harry wingedbolts'], whole: ['All Moths', 'hunger nightbloom greatmoth'] },
+    fire: { burn: ['The Burn', 'kindle catching pitch stoke slowburn bankedcoals wildfire pyre conflagration undying kiln firelight'], ground: ['Scorched Ground', 'cindertrail tar cinderfall burningflash scorchedearth ringfire tallowflames'], mantle: ['The Mantle', 'emberhalo cinderskin whitecoals widehalo burntoffering fireblade hearthstone heartwood'], whole: ['All Fire', 'drywood draught heartfire'] },
+    wax: { scald: ['The Scald', 'tallowbolt scald brittle slowset tallow spatter sethard drippings twicedipped'], pool: ['The Pool', 'spiltwax candlefall themelt waxunderfoot gout standingcandle deepwax melting candleglow'], shell: ['The Shell', 'waxskin softwax secondskin shedskin waxcast lastcoat'], whole: ['All Wax', 'beeswax doubleboiler royalwax'] },
+    light: { sear: ['The Searing', 'burningglass lens whitelight shutter gleaning litwick nakedflame highnoon'], flare: ['The Flare', 'whiteflash flash quickfuse afterlight beacon brand glowingflare flarememory slowdusk softlight solarcrown sunstruck wakeful lance longlight'], eye: ['The Eye', 'dazzle glare keenlight hardlight ray'], whole: ['All Light', 'cleanglass trimmedwick seconddawn'] },
+    chain: { censer: ['The Censer', 'censer heavycenser longchain longswing flail castchains counterweight incense hook peal gyre ballandchain throwncenser drippingcenser censerlamps'], shackle: ['The Shackle', 'shackleshot tautchain leash haul leapinglink scattershot'], whole: ['All Chain', 'temperedlinks momentum ironlaw'] },
+    moth: { tame: ['The Tame', 'lampmoth mothdust cloud feedmoths cindermoths censermoths'], swarm: ['The Swarm', 'startled flock mothshot longwings brood hatch decoywings lampcalls frenzy mothcloud mothlamps'], wing: ['The Wing', 'flit harry wingedbolts'], whole: ['All Moths', 'hunger nightbloom greatmoth'] },
   };
   for (const k in LF.PATHS) for (const pk in LF.PATHS[k]) { const [nm, ids] = LF.PATHS[k][pk]; for (const id of ids.split(' ')) { const d = LF.RELICS[id]; if (!d || d.school !== k) throw new Error('path ' + pk + ': ' + id + ' is not a relic of ' + k); if (d.path) throw new Error(id + ' walks two paths'); d.path = pk; d.pathName = nm; } }
   for (const r of list) if (!r.path) throw new Error(r.id + ' walks no path');
@@ -361,11 +374,14 @@
     LF.RELICS.tautchain.src = CENSER.concat(['shackleshot', 'throwncenser', 'haul']); LF.RELICS.tautchain.srcSay = 'you swing no censer and shackle nothing yet';
     for (const id of ['heavycenser', 'longchain', 'incense']) { LF.RELICS[id].src = CENSER.concat(['throwncenser']); LF.RELICS[id].srcSay = 'you have no censer yet'; }
     const need = (ids, src, say) => { for (const id of ids.split(' ')) { LF.RELICS[id].src = src; LF.RELICS[id].srcSay = say; } };
-    need('scorchedearth', ['cindertrail', 'tar', 'cinderfall', 'burningflash'], 'you leave no fire on the ground yet');
+    need('scorchedearth tallowflames', ['cindertrail', 'tar', 'cinderfall', 'burningflash', 'ringfire'], 'you leave no fire on the ground yet');
     need('whitecoals', ['emberhalo', 'cinderskin', 'burntoffering'], 'you wear no fire yet');
     need('widehalo', ['emberhalo', 'burntoffering'], 'no ember circles you yet');
     need('secondskin shedskin', ['waxskin'], 'no wax sets over you yet');
-    need('deepwax', ['spiltwax', 'candlefall', 'gout', 'standingcandle', 'melting', 'themelt'], 'you leave no wax on the ground yet');
+    need('deepwax candleglow', ['spiltwax', 'candlefall', 'gout', 'standingcandle', 'melting', 'themelt'], 'you leave no wax on the ground yet');
+    need('cindermoths', MOTH, 'you have no moths yet');
+    need('drippingcenser censerlamps censermoths', CENSER, 'you swing no censer yet');
+    need('mothlamps', MOTH, 'you have no moths yet');
     need('frenzy', ['startled', 'flock', 'mothshot', 'hatch', 'brood'], 'you loose no moths yet');
     need('mothdust', ['lampmoth', 'feedmoths', 'wingedbolts'], 'you have no tame moths yet');
     need('whiteflash', ['longlight', 'burningflash', 'lance'], 'your flare does no harm yet');
@@ -374,8 +390,8 @@
     need('temperedlinks momentum ironlaw', of('chain'), 'you have no chain yet'); need('hunger nightbloom greatmoth', of('moth'), 'you have no moths yet'); }
   // What such a relic brings with it: the first rank of the relic its path starts from. Taken with nothing to work
   // on, it comes with that relic; once the lantern has one, it brings nothing more.
-  { const BRING = { censer: 'flail castchains heavycenser longchain counterweight longswing incense hook tautchain temperedlinks momentum ironlaw', kindle: 'catching pitch stoke slowburn bankedcoals wildfire pyre drywood draught heartfire', cindertrail: 'scorchedearth', emberhalo: 'whitecoals widehalo',
-      tallowbolt: 'tallow scald brittle slowset drippings spatter softwax sethard beeswax doubleboiler royalwax', spiltwax: 'deepwax waxunderfoot', longlight: 'whiteflash', waxskin: 'secondskin shedskin', lampmoth: 'mothdust harry hunger nightbloom greatmoth', startled: 'frenzy longwings decoywings brood' };
+  { const BRING = { censer: 'flail castchains heavycenser longchain counterweight longswing incense hook tautchain temperedlinks momentum ironlaw drippingcenser censerlamps censermoths', kindle: 'catching pitch stoke slowburn bankedcoals wildfire pyre drywood draught heartfire', cindertrail: 'scorchedearth tallowflames', emberhalo: 'whitecoals widehalo',
+      tallowbolt: 'tallow scald brittle slowset drippings spatter softwax sethard beeswax doubleboiler royalwax', spiltwax: 'deepwax waxunderfoot candleglow', longlight: 'whiteflash', waxskin: 'secondskin shedskin', lampmoth: 'mothdust harry hunger nightbloom greatmoth cindermoths mothlamps', startled: 'frenzy longwings decoywings brood' };
     for (const src in BRING) for (const id of BRING[src].split(' ')) { const d = LF.RELICS[id]; if (!d || !d.src || !LF.RELICS[src]) throw new Error('bring: ' + id + ' / ' + src); d.gives = src; }
     for (const r of list) if (r.src && !r.gives) throw new Error(r.id + ' would lie idle and brings nothing'); }
   LF.brings = (player, id) => { const d = LF.RELICS[id]; return d && d.gives && !player.relics[d.gives] && !d.src.some(s => player.relics[s]) ? LF.RELICS[d.gives] : null; };
@@ -383,7 +399,7 @@
   // Abilities that grow with a stat, and the relics that raise that stat. The card names them, and an offer says so
   // when it would feed something the lantern already holds.
   LF.FEEDS = {
-    glowingflare: ['afterlight', 'quickfuse'], flarememory: ['flash', 'quickfuse', 'sunstruck'], brand: ['flash', 'quickfuse'],
+    glowingflare: ['afterlight', 'quickfuse'], firelight: ['shutter'], flarememory: ['flash', 'quickfuse', 'sunstruck'], brand: ['flash', 'quickfuse'],
     keenlight: ['shutter'], hardlight: ['keenlight', 'dazzle'], slowburn: ['tar', 'undying'],
     waxunderfoot: ['candlefall', 'spiltwax', 'themelt'], slowset: ['tallow', 'twicedipped'], softwax: ['tallow'], sethard: ['tallow'],
     longswing: ['longchain'], incense: ['censer', 'gyre'], counterweight: ['censer'],

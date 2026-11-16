@@ -507,6 +507,9 @@
         else if (z.kind === 'fire') { lc.globalAlpha = 0.7 * k; lc.drawImage(white, z.x - 50, z.y - 50, 100, 100); }
         else if (z.kind === 'wax') { lc.globalAlpha = 0.65 * k; lc.drawImage(white, z.x - z.r * 1.8, z.y - z.r * 1.8, z.r * 3.6, z.r * 3.6); }
       }
+      // lamps carried by censers and moths
+      lc.globalAlpha = 0.8;
+      for (const c of (g.player && g.player.carried) || []) if (inView(c.x, c.y, c.r * 2)) lc.drawImage(white, c.x - c.r * 1.3, c.y - c.r * 1.3, c.r * 2.6, c.r * 2.6);
       // a creature carrying a light of its own shows in the dark
       lc.globalAlpha = 0.8;
       for (const e of g.enemies) if (!e.dead && e.selfGlow && e.spawnT <= 0) lc.drawImage(white, e.x - 58, e.y - 58, 116, 116);

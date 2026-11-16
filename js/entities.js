@@ -82,6 +82,11 @@
       if (s.undying) s.burnTime = 999;
       s.flareDmg *= s.flareAmp; // White Flash multiplies whatever harm the flare has been given
       // ward: the strongest theme multiplier the lantern has divides every blow it takes (a lantern is as tough as it is deep)
+      // Kinship: a bridge held makes its two themes lend each other half their strength (each theme's multiplier
+      // counts for the other at half its worth). A lantern of one theme gains nothing by it; a lantern of the two does.
+      { const lend = {};
+        for (const id in this.relics) { const d = LF.RELICS[id]; if (!d || !d.bridge || !d.school) continue; const a = d.school + 'All', b = d.bridge + 'All'; lend[a] = (lend[a] || 1) * (1 + (s[b] - 1) / 2); lend[b] = (lend[b] || 1) * (1 + (s[a] - 1) / 2); }
+        for (const k in lend) s[k] *= lend[k]; }
       s.ward = Math.max(1, s.fireAll, s.lightAll, s.waxAll, s.chainAll, s.mothAll);
       s.allBase = { fireAll: s.fireAll, lightAll: s.lightAll, waxAll: s.waxAll, chainAll: s.chainAll, mothAll: s.mothAll }; // before any surge (see surge())
       if (s.buckler > (this.wardMax || 0)) this.ward = s.buckler; // a new buckler arrives whole
@@ -326,7 +331,7 @@
       } else if (inp.fire && this.fireT <= 0 && this.dashing <= 0) this.fire();
 
       // familiars (mirror moths), and the flock the Moth's flare looses: those fly wider and do not stay
-      for (let i = this.swarm.length - 1; i >= 0; i--) { this.swarm[i].life -= dt; if (this.swarm[i].life <= 0) { fx.burst(this.swarm[i].x, this.swarm[i].y, 3, { color: '#ffe2b0', speed1: 50, life: 0.3, size: 1.5 }); this.swarm.splice(i, 1); } }
+      for (let i = this.swarm.length - 1; i >= 0; i--) { this.swarm[i].life -= dt; if (this.swarm[i].life <= 0) { fx.burst(this.swarm[i].x, this.swarm[i].y, 3, { color: '#ffe2b0', speed1: 50, life: 0.3, size: 1.5 }); if (s.cinderMoth) g.addZone({ kind: 'fire', x: this.swarm[i].x, y: this.swarm[i].y + 8, r: 20, life: 2, dps: 30 }); this.swarm.splice(i, 1); } } // (Cinder Moths: a loosed moth dies in fire)
       const flock = this.swarm.length ? this.familiars.concat(this.swarm) : this.familiars;
       for (let i = 0; i < flock.length; i++) {
         const f = flock[i];
@@ -385,8 +390,12 @@
         const R = this.guardR;
         // (clockwise, so the chain's arc trails behind the censer it drives)
         this.guardA += dt * 3.3 * (flail ? 1.6 : 1) * (s.gyre ? 2 : 1);
+        this.censerPos = [];
         for (let i = 0; i < s.chainGuard; i++) {
           const a = this.guardA + i * TAU / s.chainGuard, ca = Math.cos(a), sa = Math.sin(a), gx = this.x + ca * R, gy = this.y + sa * R;
+          this.censerPos.push({ x: gx, y: gy });
+          // Censer Moths: tame moths ride the censer and bite from there, as tame moths do
+          if (s.censerMoths) { const ct = this.cmT || (this.cmT = []); ct[i] = (ct[i] || 0) - dt; if (ct[i] <= 0) { const e = g.nearestEnemy(gx, gy, 300, en => (en.lit || s.mothLight) && !en.intangible); if (e) { ct[i] = 0.85 / s.censerMoths; g.fireBolt({ x: gx, y: gy - 6, angle: Math.atan2(e.y - gy, e.x - gx), dmg: s.mothBite * s.mothMul, size: 3, color: '#e4d4ff', minor: true, moth: true }); } else ct[i] = 0.2; } }
           for (const b of g.ebullets) if (!b.dead && LF.dist2(gx, gy, b.x, b.y) < 16 * fat * 16 * fat) { b.dead = true; fx.burst(b.x, b.y, 4, { color: '#d9b070', speed1: 90, life: 0.25 }); }
           for (const e of g.enemies) {
             if (e.dead || e.intangible || e.spawnT > 0 || g.time - (e.chainAt || -9) < 0.35) continue;
@@ -396,6 +405,7 @@
               g.damageEnemy(e, blow, { type: 'chain', noShroud: true });
               if (s.incense) this.addLight(s.incense);
               if (s.chainWax) g.waxEnemy(e);
+              if (s.censerDrip) g.censerDrip(e);
               // the Peal: the blow rings out through whatever stands near
               // every blow jars whatever stands beside the creature it struck; with the Peal it rings out twice as far and twice as hard
               { const R = s.peal ? 88 : 44, part = s.peal ? 0.8 : 0.4; if (s.peal) fx.ring(e.x, e.y, 6, R, 0.25, '#d9b070', 2); for (const o of g.enemies) if (o !== e && !o.dead && !o.intangible && o.spawnT <= 0 && LF.dist2(e.x, e.y, o.x, o.y) < (R + o.r) * (R + o.r)) g.damageEnemy(o, blow * part, { type: 'chain', noShroud: true, quiet: true }); }
@@ -450,6 +460,10 @@
       }
 
       this.surge(dt);
+      // lamps that censers and moths carry (Censer Lamps, Moth Lamps): small lights that move with them (Game.isLit, the renderer)
+      this.carried = [];
+      if (s.censerLamps && s.chainGuard && this.censerPos) for (const c of this.censerPos) this.carried.push({ x: c.x, y: c.y, r: 64, also: 'chainAll' });
+      if (s.mothLamps) for (const f of this.familiars.concat(this.swarm)) this.carried.push({ x: f.x, y: f.y, r: 46, also: 'mothAll' });
 
       // blows burning through: each takes its light over a second (or as long as the Slow Dusk makes it)
       if (this.hurts.length && !this.dead) {
