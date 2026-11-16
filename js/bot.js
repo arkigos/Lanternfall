@@ -176,7 +176,9 @@
         if (pr.kind === 'shrine' && !pr.used && opts.cursed) consider(pr.x, pr.y, 'prop');
       }
       for (const pk of g.pickups) {
-        if (pk.kind === 'ember' && p.light >= p.stats.maxLight - 1) continue;
+        // an ember is worth a walk only when the lantern is down far enough to use it: a bearer a sliver short of full
+        // does not keep doubling back for every ember it left lying (one at its feet is still picked up in passing)
+        if (pk.kind === 'ember' && (p.light >= p.stats.maxLight - 1 || LF.dist(p.x, p.y, pk.x, pk.y) > 70 && p.stats.maxLight - p.light < Math.max(pk.value || 0, p.stats.maxLight * 0.25))) continue;
         if (LF.dist(p.x, p.y, pk.x, pk.y) < 260) consider(pk.x, pk.y, 'pickup', -40);
       }
       if (best) return best;
