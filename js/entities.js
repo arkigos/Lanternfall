@@ -83,6 +83,7 @@
       s.flareDmg *= s.flareAmp; // White Flash multiplies whatever harm the flare has been given
       // ward: the strongest theme multiplier the lantern has divides every blow it takes (a lantern is as tough as it is deep)
       s.ward = Math.max(1, s.fireAll, s.lightAll, s.waxAll, s.chainAll, s.mothAll);
+      s.allBase = { fireAll: s.fireAll, lightAll: s.lightAll, waxAll: s.waxAll, chainAll: s.chainAll, mothAll: s.mothAll }; // before any surge (see surge())
       if (s.buckler > (this.wardMax || 0)) this.ward = s.buckler; // a new buckler arrives whole
       this.wardMax = s.buckler; this.ward = Math.min(this.ward || 0, s.buckler);
       s.maxLight += this.bonusMax;
@@ -94,6 +95,27 @@
       if (this.light > s.maxLight) this.light = s.maxLight;
       while (this.familiars.length < s.familiars) this.familiars.push({ a: Math.random() * TAU, x: this.x, y: this.y, t: Math.random() });
       this.familiars.length = Math.min(this.familiars.length, s.familiars);
+    }
+    // The uncommon card of each theme grows all the theme does only while its own condition holds: the Draught while
+    // the bearer keeps moving, the Trimmed Wick while the lantern is full, the Double Boiler for every waxed creature
+    // near, Momentum while the censers keep striking, Night Bloom while the light is low. The ward follows.
+    surge(dt) {
+      const s = this.stats, S = s.surge, B = s.allBase;
+      if (!B || !(S.fireAll || S.lightAll || S.waxAll || S.chainAll || S.mothAll)) return;
+      const g = this.g, f = this.frac();
+      const moved = this.lastX === undefined ? 0 : Math.hypot(this.x - this.lastX, this.y - this.lastY) / Math.max(dt, 1e-3);
+      this.lastX = this.x; this.lastY = this.y;
+      this.heat = LF.clamp((this.heat || 0) + (moved > 40 ? dt : -dt) / 1.5, 0, 1);
+      this.mom = Math.max(0, (this.mom || 0) - dt * 0.15);
+      let waxed = 0;
+      if (S.waxAll) for (const e of g.enemies) if (!e.dead && e.chill > 0 && LF.dist2(e.x, e.y, this.x, this.y) < 500 * 500) waxed++;
+      const up = (m, c) => m ? 1 + (m - 1) * LF.clamp(c, 0, 1) : 1;
+      s.fireAll = B.fireAll * up(S.fireAll, this.heat);
+      s.lightAll = B.lightAll * up(S.lightAll, (f - 0.5) / 0.4);
+      s.waxAll = B.waxAll * up(S.waxAll, waxed / 2);
+      s.chainAll = B.chainAll * up(S.chainAll, this.mom);
+      s.mothAll = B.mothAll * up(S.mothAll, (1 - f) / 0.5);
+      s.ward = Math.max(1, s.fireAll, s.lightAll, s.waxAll, s.chainAll, s.mothAll);
     }
     addRelic(id) {
       const d = LF.RELICS[id]; if (!d) return;
@@ -225,7 +247,7 @@
       // flare
       if (inp.flare && g.vows.silence) { LF.audio.play('noLight'); g.hint('You are vowed to silence'); }
       else if (inp.flare && this.flareT <= 0) {
-        const cost = s.flareFree ? 0 : s.flareCost;
+        const cost = s.flareFree || (s.solarCrown && this.frac() >= 0.75) ? 0 : s.flareCost; // Solar Crown: free while the lantern is three quarters full
         if (cost <= 0 || this.light > cost + 1) {
           this.light -= cost; this.flareT = s.flareCd;
           // the Slow Dusk: a flare burns away whatever a blow has yet to take
@@ -276,7 +298,7 @@
               else g.flareBurst(p.x, p.y, s.flareRadius * 0.9, s.flareDmg * 0.5 * p.damageMul(), s.flareStun * 0.5, 0.6, fk);
             });
           }
-          if (s.beacon) g.addZone({ kind: 'beacon', x: this.x, y: this.y, r: 150, life: 9, dps: 0, flare: true });
+          if (s.beacon && g.mode === 'descent') g.floorT = Math.max(0, g.floorT - 3 * s.beacon); // Beacon: every flare holds the dark back, and the Hunters come later
           // The Ring of Fire: fire laid round the flare's edge, where the burst throws what it strikes
           if (s.ringFire) { const RR = s.flareRadius * 0.95, k = Math.max(10, Math.round(RR / 22)); for (let i = 0; i < k; i++) { const a = i * TAU / k; g.addZone({ kind: 'fire', x: this.x + Math.cos(a) * RR, y: this.y + Math.sin(a) * RR, r: 24, life: s.ringFire, dps: 90 }); } }
           // High Noon: the bearer's own light becomes noon for a while
@@ -426,6 +448,8 @@
         if (Math.random() < dt * 7) fx.spawn({ x: this.x + LF.rand(-12, 12), y: this.y + LF.rand(-2, 12), vx: LF.rand(-6, 6), vy: -34, life: 0.7, size: 2.2, color: LF.pick(['#ffe9a8', '#fff6dc']), drag: 1 });
         break;
       }
+
+      this.surge(dt);
 
       // blows burning through: each takes its light over a second (or as long as the Slow Dusk makes it)
       if (this.hurts.length && !this.dead) {

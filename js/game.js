@@ -569,6 +569,7 @@
       // (within fire, each path has its own amplifier: the burn, the fire left on the ground or thrown, and the fire worn)
       if (src.type === 'burn' || src.type === 'cinder' || src.type === 'thorns' || src.type === 'flare') dmg *= (src.of === 'ground' || src.type === 'flare' ? s.groundMul : src.of === 'mantle' || src.type === 'thorns' ? s.mantleMul : s.fireMul) * (s.pyre ? 1 + 0.01 * (this.player.pyre || 0) : 1);
       // what multiplies a whole theme: fire, light (searing and the flare), wax, chain, moths
+      if (src.type === 'chain' && s.surge.chainAll) this.player.mom = Math.min(1, (this.player.mom || 0) + 0.25); // Momentum builds with every censer's blow
       { const ty = src.type; dmg *= ty === 'sear' || ty === 'flare' ? s.lightAll : ty === 'wax' ? s.waxAll : ty === 'chain' ? s.chainAll : ty === 'moth' ? s.mothAll : ty === 'burn' || ty === 'cinder' || ty === 'thorns' || ty === 'fire' ? s.fireAll : 1; }
       if (s.glare && e.stun > 0) dmg *= 1.5;
       if (e.elite && s.eliteDmg) dmg *= 1 + s.eliteDmg;
@@ -608,6 +609,17 @@
       e.dead = true;
       const p = this.player, s = p.stats;
       if (e.def.onDeath) e.def.onDeath(e, this, src);
+      // the Long Leash: a shackled creature's chain leaps to the nearest creature when it dies
+      if (s.leashOn && e.shackle > 0) {
+        let nx = null, nd = 260 * 260;
+        for (const o of this.enemies) { if (o === e || o.dead || o.spawnT > 0 || o.intangible || o.def.speed === 0) continue; const d2 = LF.dist2(e.x, e.y, o.x, o.y); if (d2 < nd) { nd = d2; nx = o; } }
+        if (nx) { fx.arc(e.x, e.y, nx.x, nx.y, '#d9b070', 0.3, 2.5); this.shackle(nx, Math.max(e.shackle, 2)); }
+      }
+      // Sunstruck: a creature that dies stunned bursts like a small flare (a few a second at most, so it cannot run away)
+      if (s.sunstruck && e.stun > 0 && !e.boss && !(this.sunT > this.time)) {
+        this.sunN = (this.sunN || 0) + 1; if (this.sunN >= 4) { this.sunN = 0; this.sunT = this.time + 1; }
+        const x = e.x, y = e.y; this.delay(0.12, () => { if (!p.dead) this.flareBurst(x, y, s.flareRadius * 0.55, s.flareDmg * p.damageMul() / 3, s.flareStun * 0.6, 0.35, 'sun'); });
+      }
       if (src.type === 'burn' || src.type === 'sear' || src.type === 'cinder') LF.audio.play('crackle');
       const self = src.type === 'self';
       if (e.counted) this.floorKills++;

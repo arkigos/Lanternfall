@@ -76,8 +76,10 @@
       // Light sears: anything standing in the lantern's glow or a flare's afterlight smoulders.
       // A brazier or wall lamp on its own only does so with the Tinderbox.
       // The glow is weaker as the flame runs low, so losing light makes every fight slower.
-      if (this.lit && !d.selfLit && !this.intangible && p.stats.sear > 0 && !p.dead && (fireOnly ? p.stats.brazierBurn : p.stats.searOn)) {
-        g.damageEnemy(this, 10 * p.stats.sear * (p.noonT > 0 ? 3 : 1) * (1 + p.stats.searFlat / 4) * (p.stats.waxGlow && this.chill > 0 ? 2 : 1) * searDepth * (0.4 + 0.6 * Math.min(1, p.frac())) * dt, { type: 'sear', quiet: true, sear: true, noShroud: true });
+      // (a creature with a light of its own, a votive or a lure, is always seen, but it is seared only where the
+      // bearer's light really reaches it, like anything else: its own glow does not burn it)
+      if (lit && !this.intangible && p.stats.sear > 0 && !p.dead && (fireOnly ? p.stats.brazierBurn : p.stats.searOn)) {
+        g.damageEnemy(this, 10 * p.stats.sear * (ps.lensFocus ? 1 + (ps.lensFocus - 1) * (g.litDepth || 0) : 1) * (p.noonT > 0 ? 3 : 1) * (1 + p.stats.searFlat / 4) * (p.stats.waxGlow && this.chill > 0 ? 2 : 1) * searDepth * (0.4 + 0.6 * Math.min(1, p.frac())) * dt, { type: 'sear', quiet: true, sear: true, noShroud: true });
         if (this.dead) return;
         if (p.stats.noon && searDepth > 0.95 && !(this.burn > 0)) g.ignite(this, p.stats.burnBase);
         if (Math.random() < dt * 1.3) LF.audio.play('sizzle');
