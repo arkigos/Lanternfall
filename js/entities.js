@@ -78,7 +78,6 @@
       s.waxSlow = Math.min(0.8, s.waxSlow);
       s.flareCd = Math.max(0.8, s.flareCd); s.dashCd = Math.max(0.25, s.dashCd); s.stormCd = Math.max(0.4, s.stormCd); s.flareStun = Math.min(5, s.flareStun);
       // Counterweight: every censer takes its share of a blow, each on top of the last (never more than 85% in all)
-      if (s.counterweight && s.chainGuard) s.dmgTaken *= Math.max(0.15, Math.pow(1 - Math.min(0.9, s.counterweight), s.chainGuard));
       if (s.undying) s.burnTime = 999;
       s.flareDmg *= s.flareAmp; // White Flash multiplies whatever harm the flare has been given
       // ward: the strongest theme multiplier the lantern has divides every blow it takes (a lantern is as tough as it is deep)
@@ -92,7 +91,6 @@
       if (s.buckler > (this.wardMax || 0)) this.ward = s.buckler; // a new buckler arrives whole
       this.wardMax = s.buckler; this.ward = Math.min(this.ward || 0, s.buckler);
       s.maxLight += this.bonusMax;
-      s.maxLight *= s.maxMul; // Heartwood multiplies every ember the lantern can hold, however it came by them
       if (this.g.vows && this.g.vows.glass) s.maxLight *= 0.5;
       s.maxLight = Math.max(25, s.maxLight - this.sacrificed);
       s.crit = Math.min(s.crit, 0.75);
@@ -335,7 +333,7 @@
       const flock = this.swarm.length ? this.familiars.concat(this.swarm) : this.familiars;
       for (let i = 0; i < flock.length; i++) {
         const f = flock[i];
-        f.a += dt * (f.temp ? 2.8 : 2.1); f.t -= dt;
+        f.a += dt * (f.temp ? 2.8 : 2.1); f.t -= dt; if (f.down > 0) { f.down -= dt; f.t = Math.max(f.t, 0.2); } // (a dazed tame moth does not bite)
         const tx = this.x + Math.cos(f.a + i * 2.1) * (f.temp ? 52 : 30), ty = this.y + Math.sin(f.a + i * 2.1) * (f.temp ? 38 : 22) - 8;
         f.x += (tx - f.x) * Math.min(1, dt * 9); f.y += (ty - f.y) * Math.min(1, dt * 9);
         if (f.t <= 0) {
@@ -372,7 +370,9 @@
         }
       }
       // wax wards re-harden; wax skin sets after a quiet spell
-      this.waxT += dt; this.shadeCd -= dt; this.shadeT -= dt;
+      this.waxT += dt; this.shadeCd -= dt; this.shadeT -= dt; this.decoyT = (this.decoyT || 0) - dt;
+      // Wax Skin: after 2 seconds unhurt the coat sets again over 2 seconds (a thicker coat, newly taken, comes whole)
+      { const cm = s.coatMax * s.coatMul; this.coatT = (this.coatT || 0) + dt; if (cm > (this.coatCap || 0)) this.coat = cm; this.coatCap = cm; if (cm > 0 && this.coatT > 2) this.coat = Math.min(cm, (this.coat || 0) + cm / 2 * dt); if (!cm) this.coat = 0; }
       if (s.buckler && this.ward < s.buckler) { this.wardT += dt * s.wardRegen; if (this.wardT >= 5) { this.wardT = 0; this.ward++; } }
       // whirling chain: a positional shield that never stops moving
       if (s.chainGuard) {
@@ -396,7 +396,7 @@
           this.censerPos.push({ x: gx, y: gy });
           // Censer Moths: tame moths ride the censer and bite from there, as tame moths do
           if (s.censerMoths) { const ct = this.cmT || (this.cmT = []); ct[i] = (ct[i] || 0) - dt; if (ct[i] <= 0) { const e = g.nearestEnemy(gx, gy, 300, en => (en.lit || s.mothLight) && !en.intangible); if (e) { ct[i] = 0.85 / s.censerMoths; g.fireBolt({ x: gx, y: gy - 6, angle: Math.atan2(e.y - gy, e.x - gx), dmg: s.mothBite * s.mothMul, size: 3, color: '#e4d4ff', minor: true, moth: true }); } else ct[i] = 0.2; } }
-          for (const b of g.ebullets) if (!b.dead && LF.dist2(gx, gy, b.x, b.y) < 16 * fat * 16 * fat) { b.dead = true; fx.burst(b.x, b.y, 4, { color: '#d9b070', speed1: 90, life: 0.25 }); }
+          for (const b of g.ebullets) if (!b.dead && LF.dist2(gx, gy, b.x, b.y) < 16 * fat * s.cwWide * 16 * fat * s.cwWide) { b.dead = true; fx.burst(b.x, b.y, 4, { color: '#d9b070', speed1: 90, life: 0.25 }); }
           for (const e of g.enemies) {
             if (e.dead || e.intangible || e.spawnT > 0 || g.time - (e.chainAt || -9) < 0.35) continue;
             if (LF.dist2(gx, gy, e.x, e.y) < (e.r + 18 * fat) * (e.r + 18 * fat)) {
@@ -412,7 +412,7 @@
               if (e.dead) continue;
               if (!e.boss && e.def.speed > 0) {
                 // shoved outward; a hooked chain hauls the creature round with it instead
-                const k = 300 * Math.sqrt(hard);
+                const k = 300 * Math.sqrt(hard) * s.cwThrow; // (Counterweight throws them farther)
                 if (s.hook) { e.kx += (-sa * 0.9 - ca * 0.3) * k; e.ky += (ca * 0.9 - sa * 0.3) * k; }
                 else { e.kx += ca * k; e.ky += sa * k; }
               }
@@ -638,7 +638,7 @@
         }
       }
       if (this.castN > 0) { ctx.fillStyle = 'rgba(240,226,192,0.28)'; ctx.strokeStyle = 'rgba(240,226,192,0.9)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 7, 0, TAU); ctx.fill(); ctx.stroke(); }
-      if (st.waxSkin && this.waxT >= Math.max(2.5, 8 - 2 * st.waxSkin)) { ctx.strokeStyle = 'rgba(240,226,192,0.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 4, 0, TAU); ctx.stroke(); }
+      if (this.coat > 0) { ctx.strokeStyle = 'rgba(240,226,192,' + (0.25 + 0.5 * Math.min(1, this.coat / Math.max(1, st.coatMax * st.coatMul))) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(this.x, this.y, this.r + 4, 0, TAU); ctx.stroke(); }
       if (st.chainGuard) {
         for (let i = 0; i < st.chainGuard; i++) {
           const a = this.guardA + i * TAU / st.chainGuard, GR = this.guardR || LF.CENSER_REACH;

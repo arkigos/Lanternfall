@@ -13,7 +13,7 @@ rerolls and one more choice at every stair), the Heart (one free rekindling per 
 begins at the top of the first Depth; the deeper ones are reached by carrying on down in the same run. The fifth
 Depth ends at the Great Lantern, and you become the ember that lights it.
 
-Nine Levels to a Depth, three biomes, nine bosses, 143 relics, five starting lanterns, vows, a daily seed,
+Nine Levels to a Depth, three biomes, nine bosses, 144 relics, five starting lanterns, vows, a daily seed,
 and an endless wave-survival mode (The Long Vigil).
 
 Play it in the browser: https://arkigos.github.io/Lanternfall/
@@ -138,7 +138,8 @@ LF.soak(9500, 8, { mode: 'rush' })                        // the Gauntlet (boss 
 ```
 
 A full descent simulates in well under a second. By default the bot aims perfectly and reacts instantly.
-Pass `human: 'novice' | 'average' | 'good'` for aim wobble, reaction lag and missed dodges:
+Pass `human: 'novice' | 'average' | 'good'` for aim wobble, reaction lag and missed dodges, or `'reckless'` for a bot
+that plays like a person new to the game (wades in, sees few shots coming, never rests, explores every room):
 
 ```js
 LF.soak(3000, 10, { human: 'novice', diff: 1 })   // diff: 0 Kindled, 1 Standard, 2 Umbral

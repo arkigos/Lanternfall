@@ -5,6 +5,9 @@
   const TILE = LF.TILE;
 
   function makeBot(opts = {}) {
+    // 'reckless' plays the way a person new to the game does: wades in and gives no ground, sees a quarter of the
+    // shots coming, reacts late, aims loosely, never stops to rest at a fire, and explores every room before the stair
+    if (opts.human === 'reckless') opts = Object.assign({ style: 'aggressive', rest: false, patience: 400 }, opts);
     const st = { nav: null, navKey: '', goal: null, strafe: 1, strafeT: 0, stuckT: 0, lastX: 0, lastY: 0, think: 0, offerT: 0, skill: opts.skill === undefined ? 1 : opts.skill, log: [], offers: [], flares: 0 };
     const patience = opts.patience || 170, restAt = opts.rest === false ? -1 : (typeof opts.rest === 'number' ? opts.rest : 0.38);
 
@@ -197,7 +200,8 @@
     }
 
     // opts.human: 'novice' | 'average' | undefined (perfect aim, instant reactions)
-    const H = opts.human === 'novice' ? { aimErr: 0.26, track: 5, lag: 0.34, dodge: 0.35 }
+    const H = opts.human === 'reckless' ? { aimErr: 0.22, track: 5, lag: 0.38, dodge: 0.25 }
+      : opts.human === 'novice' ? { aimErr: 0.26, track: 5, lag: 0.34, dodge: 0.35 }
       : opts.human === 'average' ? { aimErr: 0.14, track: 8, lag: 0.2, dodge: 0.65 }
       : opts.human === 'good' ? { aimErr: 0.07, track: 12, lag: 0.12, dodge: 0.85 }
       : { aimErr: 0, track: 99, lag: 0, dodge: 1 };

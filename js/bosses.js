@@ -77,7 +77,7 @@
   // =====================================================================================
   DEFS.bell = {
     name: 'The Fallen Bell', title: 'It rang the hours of the Lantern, and fell with it', boss: true,
-    hp: 1400, speed: 42, r: 34, dmg: 10, embers: 0, glass: 0, phases: [0.66, 0.33],
+    hp: 2000, speed: 42, r: 34, dmg: 10, embers: 0, glass: 0, phases: [0.66, 0.33], // (1400 until 2026-11-16: too easy by hand)
     eyes: [[12, -9, 2.6], [12, 9, 2.6]], eyeColor: '120,220,255',
     init: bossInit,
     update(e, g, dt) {

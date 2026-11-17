@@ -296,6 +296,8 @@
     lg.addColorStop(0, '#ff8a3d'); lg.addColorStop(1, '#ffe08a');
     ctx.fillStyle = frac < 0.25 && Math.floor(g.realTime * 6) % 2 ? '#ff5d4a' : lg; ctx.fillRect(bx, by, bw * frac, bh);
     ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(bx, by, bw * frac, bh * 0.35);
+    // the wax coat (Wax Skin): a pale cover laid over the bar from its start, as long as the coat is thick
+    if (p.coat > 0.05) { const cw = bw * Math.min(1, p.coat / s.maxLight); ctx.fillStyle = 'rgba(240,226,192,0.78)'; ctx.fillRect(bx, by, cw, bh * 0.5); ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(bx, by, cw, 1.5 * u); }
     // what blows still have to take: a dark band at the end of the bar, eating back toward where it will stop
     { const pend = (p.hurts || []).reduce((a, h) => a + h.left, 0);
       if (pend > 0.05) { const f0 = LF.clamp((p.light - pend) / s.maxLight, 0, 1); ctx.fillStyle = 'rgba(120,20,24,' + (0.72 + 0.18 * Math.sin(g.realTime * 18)) + ')'; ctx.fillRect(bx + bw * f0, by, bw * (frac - f0), bh); } }

@@ -591,6 +591,7 @@
       if (e.affix === 'warded' && src.type === 'bolt' && !(e.wardBroken > 0)) { dmg *= 0.45; if (Math.random() < 0.15) fx.text(e.x, e.y - e.r - 16, 'WARDED: flare to break', '#9fc7ff', 9, 0.8); }
       if (e.def.modDamage) dmg = e.def.modDamage(e, dmg, src, this);
       if (dmg <= 0) return;
+      if (s.fireLeech && (src.type === 'burn' || src.type === 'cinder' || src.type === 'fire' || src.type === 'thorns') && !this.player.dead) this.player.addLight(Math.min(dmg, Math.max(0, e.hp)) / (e.maxHp || 1) * s.fireLeech * (e.boss ? 20 : 1)); // Heartwood
       e.hp -= dmg; this.run.dmg += dmg;
       if ((e.boss || e.type === 'choirhead') && !s.noEmbers) {
         e.shedAcc = (e.shedAcc || 0) + dmg;
@@ -736,24 +737,37 @@
           if (src.enemy && !src.enemy.boss) { src.enemy.kx += Math.cos(p.aim) * 260; src.enemy.ky += Math.sin(p.aim) * 260; src.enemy.stun = Math.max(src.enemy.stun, 0.4); }
           return;
         }
-        // wax skin: the coat takes one hit whole, then has to set again
-        if (s.waxSkin && p.waxT >= Math.max(2.5, 8 - 2 * s.waxSkin)) {
-          // Second Skin: the coat takes more than one blow before it has to set again. Shed Skin: it bursts when struck.
-          if ((p.skinUsed || 0) < s.skinExtra) p.skinUsed = (p.skinUsed || 0) + 1; else { p.waxT = 0; p.skinUsed = 0; }
-          if (s.shed) { fx.ring(p.x, p.y, 10, 90, 0.3, '#f0e2c0', 4); for (const e of this.enemies) { if (e.dead || e.intangible || e.spawnT > 0 || LF.dist2(p.x, p.y, e.x, e.y) > (90 + e.r) * (90 + e.r)) continue; this.damageEnemy(e, 75 * s.shed * s.waxMul, { type: 'wax', noShroud: true }); if (!e.dead) this.waxEnemy(e); } }
-          p.invuln = 0.45; fx.text(p.x, p.y - 22, 'WAX', '#f0e2c0', 10, 0.6); fx.burst(p.x, p.y, 10, { color: '#f0e2c0', speed1: 110, life: 0.35 }); LF.audio.play('wax'); return; }
       }
       p.waxT = 0; p.skinUsed = 0;
       amt *= s.dmgTaken;
-      if (!src.steal) amt /= s.ward; // the strongest theme the lantern has built divides the blow
+      // (there is no ward: a lantern survives by what its themes give it)
+      if (!src.force && !src.steal && src.enemy && !src.bullet && src.enemy.shackle > 0 && !src.enemy.boss) {
+        // a shackled creature cannot reach the bearer: its blow spends itself on the chain, and breaks it
+        src.enemy.shackle = 0; p.invuln = Math.max(p.invuln, 0.25); fx.text(p.x, p.y - 22, 'THE CHAIN HELD', '#d9b070', 10, 0.6); LF.audio.play('chain'); return;
+      }
+      if (!src.force && !src.steal && s.lightSoft && src.enemy && src.enemy.lit) {
+        // Blinding Glow: a creature deep in the bearer's light strikes softer
+        const k = LF.clamp(1 - LF.dist(src.enemy.x, src.enemy.y, p.x, p.y) / Math.max(1, p.lightR), 0, 1);
+        amt *= 1 - Math.min(0.85, s.lightSoft) * (0.4 + 0.6 * k);
+      }
       if (!src.force && !src.steal) {
         // Wax Underfoot: a bearer standing in wax of their own takes a softer blow
         if (s.waxFoot && this.zones.some(z => z.kind === 'tallow' && !z.dead && LF.dist2(z.x, z.y, p.x, p.y) < z.r * z.r)) amt *= 1 - s.waxFoot;
         // Decoy Wings: every moth beside the bearer, tame or loosed, takes its share (each on top of the last, never
         // more than 85% in all); one loosed moth dies of it
-        { const nm = Math.min(12, p.familiars.length + p.swarm.length);
-          if (s.decoy && nm) { amt *= Math.max(0.15, Math.pow(1 - Math.min(0.9, s.decoy), nm)); const m = p.swarm.shift() || p.familiars[0];
-            fx.burst(m.x, m.y, 9, { color: ['#e4d4ff', '#ffe2b0'], speed1: 120, life: 0.4, size: 2 }); fx.text(p.x, p.y - 36, nm > 1 ? nm + ' MOTHS TOOK IT' : 'A MOTH TOOK IT', '#e4d4ff', 10, 0.8); } }
+        // Decoy Wings: a moth takes the whole blow (a loosed one dies, a tame one falls dazed), once in a while
+        if (s.decoy && !(p.decoyT > 0)) {
+          const tame = p.familiars.find(f => !(f.down > 0)), m = p.swarm.length ? p.swarm.shift() : tame;
+          if (m) { if (m === tame) m.down = 8; p.decoyT = s.decoy; p.invuln = Math.max(p.invuln, 0.4);
+            fx.burst(m.x, m.y, 9, { color: ['#e4d4ff', '#ffe2b0'], speed1: 120, life: 0.4, size: 2 }); fx.text(p.x, p.y - 36, 'A MOTH TOOK IT', '#e4d4ff', 10, 0.8); return; }
+        }
+        // Wax Skin: the coat takes what it can of the blow before the light does
+        if (p.coat > 0) {
+          const soak = Math.min(p.coat, amt); p.coat -= soak; amt -= soak; p.coatT = 0;
+          fx.burst(p.x, p.y, 6, { color: '#f0e2c0', speed1: 90, life: 0.3 }); LF.audio.play('wax');
+          if (p.coat <= 0 && s.shed) { fx.ring(p.x, p.y, 10, 90, 0.3, '#f0e2c0', 4); for (const e of this.enemies) { if (e.dead || e.intangible || e.spawnT > 0 || LF.dist2(p.x, p.y, e.x, e.y) > (90 + e.r) * (90 + e.r)) continue; this.waxEnemy(e); this.damageEnemy(e, 75 * s.shed * s.waxMul, { type: 'wax', noShroud: true }); } }
+          if (amt <= 0.01) { p.invuln = 0.45; fx.text(p.x, p.y - 22, 'WAX', '#f0e2c0', 10, 0.6); return; }
+        }
       }
       if (s.lowDef < 1 && p.frac() < 0.5) amt *= s.lowDef;
       if (s.lastLight && p.frac() < 0.25) amt *= 0.75;
