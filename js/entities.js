@@ -99,8 +99,8 @@
       while (this.familiars.length < s.familiars) this.familiars.push({ a: Math.random() * TAU, x: this.x, y: this.y, t: Math.random() });
       this.familiars.length = Math.min(this.familiars.length, s.familiars);
     }
-    // The uncommon card of each theme grows all the theme does only while its own condition holds: the Draught while
-    // the bearer keeps moving, the Trimmed Wick while the lantern is full, the Double Boiler for every waxed creature
+    // The uncommon card of each theme grows all the theme does only while its own condition holds: the Still Flame while
+    // the bearer stands still, the Trimmed Wick while the lantern is full, the Double Boiler for every waxed creature
     // near, Momentum while the censers keep striking, Night Bloom while the light is low. The ward follows.
     surge(dt) {
       const s = this.stats, S = s.surge, B = s.allBase;
@@ -108,7 +108,8 @@
       const g = this.g, f = this.frac();
       const moved = this.lastX === undefined ? 0 : Math.hypot(this.x - this.lastX, this.y - this.lastY) / Math.max(dt, 1e-3);
       this.lastX = this.x; this.lastY = this.y;
-      this.heat = LF.clamp((this.heat || 0) + (moved > 40 ? dt : -dt) / 1.5, 0, 1);
+      // the Still Flame: stand still and the fire gathers over a second; take a step and it scatters in a third of one
+      this.heat = LF.clamp((this.heat || 0) + (moved < 15 ? dt : -3 * dt), 0, 1);
       this.mom = Math.max(0, (this.mom || 0) - dt * 0.15);
       let waxed = 0;
       if (S.waxAll) for (const e of g.enemies) if (!e.dead && e.chill > 0 && LF.dist2(e.x, e.y, this.x, this.y) < 500 * 500) waxed++;

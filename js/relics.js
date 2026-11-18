@@ -46,7 +46,7 @@
   // seek: how much likelier a theme's sources are offered to a lantern that holds that theme with nothing to start it.
   // their blows do. They have a great deal of health and hit softer than they did: the fight is long, and what decides
   // it is how fast the lantern kills, which is what a build changes. burn: a burn's damage a second before any relic.
-  LF.TUNE = { bolt: 13, grow: 0.65, typeStair: 0.45, first: 2, second: 1, secondHit: 0.8, third: 1, thirdHit: 0.85, late: 0, deep: 0, hpGrow: [1.8, 2.2, 3.5], dmgGrow: [1.12, 1.15, 1.18], bite: 25, wax: 22, link: 50, burn: 30, catchR: 46, catchT: 0.35, slow: 0.3, draw: 0, melt: 45, seek: 1, glassRanks: 0, forging: 1, forgeII: 30, forgeIII: 50, rerollGlass: 10, rerollMore: 5, formPrice: 150, chandler: 0.6, glassYield: 2, swap: 0.35, deepen: 1.08, maxRank: 10, past: 1.5, forgeMore: 30, early: 0.8, earlyHp: 0.8, pack: 0.6, again: 3, rerollStair: 1, forge: 0, surge: [1.8, 2.9, 4.5], focus: [2.25, 3.4, 5.1], src: [1, 1.6, 2.5], amp: [1.5, 2.25, 3.4], mark: [1.5, 2.25, 3.4], glass: [1.8, 2.9, 4.5], white: 2 };
+  LF.TUNE = { bolt: 13, grow: 0.65, typeStair: 0.45, first: 2, second: 1, secondHit: 0.8, third: 1, thirdHit: 0.85, late: 0, deep: 0, hpGrow: [1.8, 2.2, 3.5], dmgGrow: [1.12, 1.15, 1.18], bite: 25, wax: 22, link: 50, burn: 30, catchR: 46, catchT: 0.35, slow: 0.3, draw: 0, melt: 45, seek: 1, glassRanks: 0, forging: 1, forgeII: 30, forgeIII: 50, rerollGlass: 10, rerollMore: 5, formPrice: 150, chandler: 0.6, glassYield: 2, swap: 0.35, deepen: 1.08, maxRank: 10, past: 1.5, forgeMore: 30, early: 0.8, earlyHp: 0.8, pack: 0.6, again: 3, rerollStair: 1, forge: 0, surge: [1.8, 2.9, 4.5], still: [2.5, 4, 6.5], focus: [2.25, 3.4, 5.1], src: [1, 1.6, 2.5], amp: [1.5, 2.25, 3.4], mark: [1.5, 2.25, 3.4], glass: [1.8, 2.9, 4.5], white: 2 };
   // how much the dark has multiplied by a Level: the product of each step's growth (`by` is hpGrow or dmgGrow, one figure a Depth)
   LF.curve = (by, floor) => { let m = 1; for (let k = 2; k <= floor; k++) m *= by[Math.min(by.length - 1, Math.floor((k - 1) / 3))]; return m; };
   LF.baseStats = () => ({
@@ -132,7 +132,7 @@
   const WHOLE = (id1, nm1, id2, nm2, id3, nm3, glyph, col, what, key, when2) => [
     R(id1, nm1, C, 3, glyph, col, 'All your ' + what + (what === 'moths' ? ' do' : ' does') + ' more' + (key === 'lightAll' ? ': its searing, your flare and your critical strikes' : '') + '. More each rank.', (s, n) => { s[key] *= RK(n, ALL1); }),
     // the uncommon one grows the theme only while its own condition holds, and by more (Player.surge works it out every frame)
-    R(id2, nm2, U, 3, glyph, col, 'All your ' + what + (what === 'moths' ? ' do' : ' does') + ' more ' + when2 + '. More each rank.', (s, n) => { s.surge[key] = RK(n, LF.TUNE.surge); }),
+    R(id2, nm2, U, 3, glyph, col, 'All your ' + what + (what === 'moths' ? ' do' : ' does') + ' more ' + when2 + '. More each rank.', (s, n) => { s.surge[key] = RK(n, key === 'fireAll' ? LF.TUNE.still : LF.TUNE.surge); }),
     R(id3, nm3, X, 1, glyph, col, 'All your ' + what + (what === 'moths' ? ' do ' : ' does ') + 'more for every rank of ' + key.replace('All', '') + ' you hold.', (s, n, pl) => { const th = key.replace('All', ''); let k = 0; if (pl) for (const id in pl.relics) { const d = LF.RELICS[id]; if (d && d.school === th) k += pl.relics[id]; } s[key] *= Math.pow(LF.TUNE.deepen, k); }),
   ];
   const FI = '#ff7b3d', WA = '#f0e2c0', LI = '#fff0b8', CH = '#d9b070', MO = '#e4d4ff';
@@ -170,7 +170,7 @@
     R('wildfire', 'Wildfire', X, 1, 'flame', '#ff4d1f', 'Burning creatures burst when they die, and the fire leaps to everything near.', (s) => { s.wildfire += 1; }),
     R('pyre', 'The Pyre', X, 1, 'flame', '#ff4d1f', 'Every creature that dies burning makes your fire a little hotter, for the rest of the descent.', (s) => { s.pyre += 1; }),
 
-    ...WHOLE('drywood', 'Dry Wood', 'draught', 'The Draught', 'heartfire', 'Heart of the Fire', 'flame', FI, 'fire', 'fireAll', 'while you keep moving'),
+    ...WHOLE('drywood', 'Dry Wood', 'draught', 'The Still Flame', 'heartfire', 'Heart of the Fire', 'flame', FI, 'fire', 'fireAll', 'while you stand still'),
 
     // ---- wax: it slows, it scalds, it spreads, and it sets
     R('tallowbolt', 'Tallow Bolt', U, 3, 'drop', WA, 'Your bolts are tipped with wax: what they hit is slowed and scalded. Harder each rank.', (s, n) => { s.boltWax += 1; s.waxDmg *= RK(n, LF.TUNE.src); s.boltColor = '#f6ecd0'; }),
