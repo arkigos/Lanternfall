@@ -817,7 +817,7 @@
           const by = y - 20 + Math.sin(t * 2.4 + pr.x) * 2.5;
           if (pr.item.type === 'relic') {
             const d = LF.RELICS[pr.item.relic];
-            drawGlow(ctx, LF.RARITY[d.rarity].color, x, by, 20, 0.35);
+            drawGlow(ctx, LF.rar(d).color, x, by, 20, 0.35);
             ctx.globalCompositeOperation = 'source-over'; LF.drawIcon(ctx, d.glyph, x, by, 18, d.color); ctx.globalCompositeOperation = 'lighter';
           } else {
             drawGlow(ctx, '#ffb347', x, by, 20, 0.4);
@@ -896,7 +896,7 @@
           ctx.font = `9px ${LF.FONT_UI}`;
           const lines = LF.wrapText(ctx, d.desc, W2 - 20), h = 34 + lines.length * 11.5, bx = pr.x - W2 / 2, by0 = y - h - 6;
           ctx.fillStyle = 'rgba(8,8,14,0.92)'; LF.roundRect(ctx, bx, by0, W2, h, 6); ctx.fill();
-          ctx.strokeStyle = LF.RARITY[d.rarity].color; ctx.lineWidth = 1; LF.roundRect(ctx, bx, by0, W2, h, 6); ctx.stroke();
+          ctx.strokeStyle = LF.rar(d).color; ctx.lineWidth = 1; LF.roundRect(ctx, bx, by0, W2, h, 6); ctx.stroke();
           ctx.font = `bold 11px ${LF.FONT_UI}`; ctx.fillStyle = '#fff2d6'; ctx.fillText(d.name, pr.x, by0 + 11);
           ctx.font = `bold 7.5px ${LF.FONT_UI}`; ctx.fillStyle = S ? S.color : '#ffd9a0'; ctx.fillText(((S ? S.name : '') + (d.pathName ? '  \u00b7  ' + d.pathName : '') + (d.form ? '  \u00b7  ' + d.form + ' form' : '')).toUpperCase(), pr.x, by0 + 23);
           ctx.font = `9px ${LF.FONT_UI}`; ctx.fillStyle = '#d8cdb8'; lines.forEach((l, j) => ctx.fillText(l, pr.x, by0 + 36 + j * 11.5));

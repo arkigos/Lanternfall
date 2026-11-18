@@ -58,23 +58,17 @@
       // lit by the lantern, a fire or a flare; or carrying a light of its own (a bolt of light, a moth's bite, glowing wax, a lamp chain)
       const ps = p.stats;
       let lit = g.isLit(this.x, this.y);
-      const litAlso = lit ? g.litAlso : null; // Candle Glow: searing in a pool of wax counts as wax too
       this.selfGlow = false;
       if (lit) { if (ps.glowKeep) this.glow = Math.max(this.glow, ps.glowKeep); }
       else if (this.glow > 0 || (ps.waxGlow && this.chill > 0) || (ps.chainLight && this.shackle > 0)) { lit = true; this.selfGlow = true; g.litDepth = 0.35; g.litByFire = false; }
       this.lit = !!d.selfLit || lit;
       this.depth = lit ? (g.litDepth || 0) : 0; // how deep in the bearer's light it stands (Keen Light)
       const fireOnly = g.litByFire;
-      // Firelight: whatever stands in the bearer's light long enough catches fire, and that fire counts as light too
-      if (ps.firelight && lit && !fireOnly && !this.selfGlow && !this.intangible && !p.dead) {
-        this.kindleT = (this.kindleT || 0) + dt;
-        if (this.kindleT >= ps.firelight && !(this.burn > 0)) { this.kindleT = 0; g.ignite(this, ps.burnBase); this.burnAlso = 'lightAll'; }
-      } else this.kindleT = 0;
-      // Softening Light: whatever stands in the bearer's light long enough is waxed, and that wax scalds as light too
-      if (ps.softLight && lit && !fireOnly && !this.selfGlow && !this.intangible && !p.dead) {
-        this.softT = (this.softT || 0) + dt;
-        if (this.softT >= ps.softLight) { this.softT = 0; g.waxEnemy(this); this.waxAlso = 'lightAll'; }
-      } else this.softT = 0;
+      // Firelight and Softening Light: the inner half of any light of yours sets alight, or waxes, what stands in it
+      if ((ps.firelight || ps.softLight) && lit && !fireOnly && !this.selfGlow && !this.intangible && !p.dead && (g.litDepth || 0) >= 0.5) {
+        if (ps.firelight && !(this.burn > 0)) g.ignite(this, ps.burnBase);
+        if (ps.softLight && !(this.chill > 0.5)) g.waxEnemy(this);
+      }
       // Half strength at the rim of the light, about 1.6 times at the flame itself.
       const searDepth = 0.5 + 1.1 * (g.litDepth || 0);
       if (!this.awake) {
@@ -90,7 +84,7 @@
       // (a creature with a light of its own, a votive or a lure, is always seen, but it is seared only where the
       // bearer's light really reaches it, like anything else: its own glow does not burn it)
       if (lit && !this.intangible && p.stats.sear > 0 && !p.dead && (fireOnly ? p.stats.brazierBurn : p.stats.searOn)) {
-        g.damageEnemy(this, 10 * p.stats.sear * (ps.lensFocus ? 1 + (ps.lensFocus - 1) * (g.litDepth || 0) : 1) * (p.noonT > 0 ? 3 : 1) * (1 + p.stats.searFlat / 4) * (p.stats.waxGlow && this.chill > 0 ? 2 : 1) * searDepth * (0.4 + 0.6 * Math.min(1, p.frac())) * dt, { type: 'sear', quiet: true, sear: true, noShroud: true, also: litAlso || undefined });
+        g.damageEnemy(this, 10 * p.stats.sear * (ps.lensFocus ? 1 + (ps.lensFocus - 1) * (g.litDepth || 0) : 1) * (p.noonT > 0 ? 3 : 1) * (1 + p.stats.searFlat / 4) * (p.stats.waxGlow && this.chill > 0 ? 2 : 1) * searDepth * (0.4 + 0.6 * Math.min(1, p.frac())) * dt, { type: 'sear', quiet: true, sear: true, noShroud: true });
         if (this.dead) return;
         if (p.stats.noon && searDepth > 0.95 && !(this.burn > 0)) g.ignite(this, p.stats.burnBase);
         if (Math.random() < dt * 1.3) LF.audio.play('sizzle');
@@ -100,10 +94,10 @@
       // wax scalds while it holds; the rest here are the rare relics that carry wax and chain into chain, and into fire
       if (this.chill > 0) {
         this.waxedT += dt;
-        g.damageEnemy(this, ps.waxDmg * ps.waxMul * (ps.cure ? 1 + ps.cure * Math.min(this.waxedT, ps.waxTime, 12) : 1) * (ps.poolMul > 1 && g.time - (this.pooled || -9) < 0.25 ? ps.poolMul : 1) * dt, { type: 'wax', quiet: true, noShroud: true, also: this.waxAlso }); // (Slow Set: hotter for every second it has held) if (this.dead) return;
+        g.damageEnemy(this, ps.waxDmg * ps.waxMul * (ps.cure ? 1 + ps.cure * Math.min(this.waxedT, ps.waxTime, 12) : 1) * (ps.poolMul > 1 && g.time - (this.pooled || -9) < 0.25 ? ps.poolMul : 1) * dt, { type: 'wax', quiet: true, noShroud: true }); // (Slow Set: hotter for every second it has held) if (this.dead) return;
         if (ps.waxBurn) { g.damageEnemy(this, 7 * ps.waxBurn * dt, { type: 'burn', quiet: true, noShroud: true }); if (this.dead) return; if (Math.random() < dt * 8) fx.spawn({ x: this.x + LF.rand(-this.r, this.r) * 0.6, y: this.y - this.r, vy: -36, life: 0.4, size: 2, color: LF.pick(['#ff9a3d', '#ffd28a']) }); }
         if (ps.waxSet && this.waxedT > 2 && this.setCd <= 0) { this.setCd = 7; g.shackle(this, 2.5); }
-      } else { this.waxedT = 0; this.waxAlso = null; }
+      } else this.waxedT = 0;
       if (this.shackle > 0) {
         this.shackle -= dt;
         if (ps.chainBurn) { g.damageEnemy(this, 7 * dt, { type: 'burn', quiet: true, noShroud: true }); if (this.dead) return; if (Math.random() < dt * 8) fx.spawn({ x: this.x + LF.rand(-this.r, this.r) * 0.6, y: this.y + LF.rand(-this.r, this.r) * 0.6, vy: -36, life: 0.4, size: 2, color: '#ff7b2e' }); }
@@ -114,13 +108,14 @@
       if (this.burn > 0) {
         this.burn -= dt; this.burnAge = (this.burnAge || 0) + dt;
         // Slow Burn: a burn is hotter for every second it has burned, up to as long as the lantern's burns last
-        g.damageEnemy(this, this.burnDps * (ps.slowBurn ? 1 + ps.slowBurn * Math.min(this.burnAge, ps.burnTime, 12) : 1) * dt, { type: 'burn', quiet: true, noShroud: true, also: this.burnAlso });
+        g.damageEnemy(this, this.burnDps * (ps.slowBurn ? 1 + ps.slowBurn * Math.min(this.burnAge, ps.burnTime, 12) : 1) * dt, { type: 'burn', quiet: true, noShroud: true });
+        if (ps.tallowFire && !(this.chill > 0.5)) g.waxEnemy(this); // Tallow Flames: your fire leaves wax
         // fire catches (with Catching Fire, or Conflagration): every so often a burning creature sets alight whatever stands close beside it
         this.catchT = (this.catchT || 0) - dt;
         if (this.catchT <= 0 && !this.dead && (ps.catching || ps.conflag)) { this.catchT = LF.TUNE.catchT / (ps.catchFast || 1); g.spreadFire(this); }
         if (Math.random() < dt * 18) fx.spawn({ x: this.x + LF.rand(-this.r, this.r), y: this.y + LF.rand(-this.r, this.r), vy: -40, life: 0.4, size: 2.4, color: LF.pick(['#ff7b2e', '#ffc24d']) });
         if (this.dead) return;
-      } else { this.burnAge = 0; this.burnAlso = null; }
+      } else this.burnAge = 0;
       if (this.dotT > 0) { this.dotT -= dt; if (this.dotT <= 0 && this.dotAcc >= 1) { fx.text(this.x + LF.rand(-6, 6), this.y - this.r - 6, String(Math.round(this.dotAcc)), '#ffb36b', 10, 0.6); this.dotAcc = 0; } }
       // knockback
       if (this.kx || this.ky) {

@@ -213,7 +213,7 @@
     ctx.restore();
   }
   function relicBadge(id, x, y, size, n) {
-    const d = LF.RELICS[id], col = LF.RARITY[d.rarity].color;
+    const d = LF.RELICS[id], col = LF.rar(d).color;
     ctx.fillStyle = 'rgba(10,10,18,0.85)'; ctx.beginPath(); ctx.arc(x, y, size * 0.62, 0, TAU); ctx.fill();
     ctx.strokeStyle = col; ctx.lineWidth = 1.4 * u; ctx.stroke();
     LF.drawIcon(ctx, d.glyph, x, y, size * 0.82, d.color);
@@ -231,8 +231,8 @@
     const hh = pad * 2 + 24 * u + lines.length * 18 * u;
     let x = h.x + 20 * u, y = h.y - hh - 10 * u;
     if (x + w > W - 8) x = W - w - 8; if (y < 8) y = h.y + 24 * u;
-    panel(x, y, w, hh, 8, 'rgba(8,8,14,0.96)', LF.RARITY[h.d.rarity].color);
-    txt(h.d.name + (h.n > 1 ? '  ×' + h.n : ''), x + pad, y + pad + 8 * u, 15, LF.RARITY[h.d.rarity].color, 'left', LF.FONT_UI, 'bold');
+    panel(x, y, w, hh, 8, 'rgba(8,8,14,0.96)', LF.rar(h.d).color);
+    txt(h.d.name + (h.n > 1 ? '  ×' + h.n : ''), x + pad, y + pad + 8 * u, 15, LF.rar(h.d).color, 'left', LF.FONT_UI, 'bold');
     if (h.d.school) txt(LF.SCHOOLS[h.d.school].name.toUpperCase(), x + w - pad, y + pad + 8 * u, 10, LF.SCHOOLS[h.d.school].color, 'right', LF.FONT_UI, 'bold');
     lines.forEach((l, i) => txt(l, x + pad, y + pad + 32 * u + i * 18 * u, 13, '#e6dcc8'));
   }
@@ -976,7 +976,7 @@
       const d = LF.RELICS[id], yy = ly + 50 * u + i * rowH;
       if (yy > ly + lh - 30 * u) return;
       LF.drawIcon(ctx, d.glyph, lx + 30 * u, yy, Math.min(22 * u, rowH * 0.7), d.color);
-      txt(d.name + (p.relics[id] > 1 ? ' ×' + p.relics[id] : ''), lx + 52 * u, yy - (rowH > 30 * u ? 7 * u : 0), 13, LF.RARITY[d.rarity].color, 'left', LF.FONT_UI, 'bold');
+      txt(d.name + (p.relics[id] > 1 ? ' ×' + p.relics[id] : ''), lx + 52 * u, yy - (rowH > 30 * u ? 7 * u : 0), 13, LF.rar(d).color, 'left', LF.FONT_UI, 'bold');
       if (rowH > 30 * u) { ctx.font = `${Math.round(11 * u)}px ${LF.FONT_UI}`; txt(LF.wrapText(ctx, d.desc, lw - 70 * u)[0], lx + 52 * u, yy + 9 * u, 11, '#b9ad96'); }
     });
   }
@@ -1041,8 +1041,8 @@
       // a relic already held is a rank; and a pick that would wake a kindred says so
       const S = d.school && LF.SCHOOLS[d.school], have = g.player.relics[d.id] || 0, ROM = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
       if (have && d.max > 1 && d.rarity !== 'boon') return { text: 'RANK ' + ROM[have] + ' \u2192 ' + ROM[have + 1], color: S ? S.color : '#ffd9a0', up: true };
-      // a bridge names the theme it carries in place of its path (the line has no room for both)
-      if (S && d.bridge && LF.SCHOOLS[d.bridge]) return { text: S.name.toUpperCase() + '  ·  BRIDGE TO ' + LF.SCHOOLS[d.bridge].name.toUpperCase(), color: S.color };
+      // a legendary names the theme it carries yours into, in place of its path
+      if (S && d.bridge && LF.SCHOOLS[d.bridge]) return { text: S.name.toUpperCase() + '  \u2192  ' + LF.SCHOOLS[d.bridge].name.toUpperCase(), color: S.color };
       return S ? { text: S.name.toUpperCase() + (d.pathName ? '  ·  ' + d.pathName.toUpperCase() : '') + (d.form ? '  ·  ' + (d.form === 'bolt' ? 'BOLT' : 'FLARE') + ' FORM' : ''), color: S.color } : null;
     };
     o.relics.forEach((d, i) => {
@@ -1051,7 +1051,7 @@
       const bx = NAR ? x0 : x0 + i * (cw + gap), by0 = NAR ? y0 + i * (ch + gap) : y0;
       const over = hit(bx, by0, cw, ch);
       if (over && inp.mouseMoved && ui.focus !== idx) { ui.focus = idx; LF.audio.play('uiMove'); }
-      const foc = ui.focus === idx, col = LF.RARITY[d.rarity].color;
+      const foc = ui.focus === idx, col = LF.rar(d).color;
       const x = bx + (NAR ? (1 - appear) * 30 * u : 0), y = by0 + (NAR ? 0 : (1 - appear) * 40 * u + (foc ? -8 * u : 0));
       ctx.globalAlpha = LF.clamp(appear, 0, 1);
       LF.roundRect(ctx, x, y, cw, ch, 12 * u);
@@ -1059,13 +1059,14 @@
       cg.addColorStop(0, foc ? 'rgba(46,34,22,0.98)' : 'rgba(18,18,28,0.96)'); cg.addColorStop(1, 'rgba(8,8,14,0.98)');
       ctx.fillStyle = cg; ctx.fill();
       ctx.strokeStyle = col; ctx.lineWidth = (foc ? 2.6 : 1.3) * u; ctx.stroke();
+      if (d.legend) { LF.roundRect(ctx, x + 4 * u, y + 4 * u, cw - 8 * u, ch - 8 * u, 9 * u); ctx.lineWidth = 1 * u; ctx.stroke(); } // (a legendary's edge is doubled)
       const have = g.player.relics[d.id] || 0;
       if (!NAR) {
         ctx.globalCompositeOperation = 'lighter';
         LF.drawGlow(ctx, col, x + cw / 2, y + 86 * u, (foc ? 78 : 60) * u, foc ? 0.4 : 0.22);
         ctx.globalCompositeOperation = 'source-over';
         LF.drawIcon(ctx, d.glyph, x + cw / 2, y + 86 * u + Math.sin(g.realTime * 2 + i) * 3 * u, 64 * u, d.color);
-        txt(LF.RARITY[d.rarity].name.toUpperCase(), x + cw / 2, y + 156 * u, 10, col, 'center', LF.FONT_UI, 'bold');
+        txt(LF.rar(d).name.toUpperCase(), x + cw / 2, y + 156 * u, 10, col, 'center', LF.FONT_UI, 'bold');
         txt(d.name, x + cw / 2, y + 180 * u, 18, '#fff2d6', 'center', LF.FONT_TITLE, '700');
         const sl = schoolLine(d);
         if (sl) txt(sl.text, x + cw / 2, y + 200 * u, 10.5, sl.color, 'center', LF.FONT_UI, 'bold');
@@ -1089,7 +1090,7 @@
         txt(d.name, tx, y + 22 * u, 16, '#fff2d6', 'left', LF.FONT_TITLE, '700');
         const cmp = LF.completes(g.player, d.id);
         const sl = schoolLine(d);
-        txt(cmp.length ? 'COMPLETES ' + cmp[0].name.toUpperCase() : sl ? sl.text : LF.RARITY[d.rarity].name.toUpperCase() + (have ? '   ·   you hold ' + have + (d.base === 3 ? '' : ' of ' + d.max) : ''), x + cw - 14 * u, y + 22 * u, 9.5, cmp.length ? '#9dffcf' : sl ? sl.color : col, 'right', LF.FONT_UI, 'bold');
+        txt(cmp.length ? 'COMPLETES ' + cmp[0].name.toUpperCase() : sl ? sl.text : LF.rar(d).name.toUpperCase() + (have ? '   ·   you hold ' + have + (d.base === 3 ? '' : ' of ' + d.max) : ''), x + cw - 14 * u, y + 22 * u, 9.5, cmp.length ? '#9dffcf' : sl ? sl.color : col, 'right', LF.FONT_UI, 'bold');
         ctx.font = `${Math.round(12.5 * u)}px ${LF.FONT_UI}`;
         const maxLines = Math.max(1, Math.floor((ch - 38 * u) / (16 * u)));
         LF.wrapText(ctx, d.desc, cw - 106 * u).slice(0, maxLines).forEach((l, j) => txt(l, tx, y + 44 * u + j * 16 * u, 12.5, '#d8cdb8'));

@@ -81,11 +81,6 @@
       if (s.undying) s.burnTime = 999;
       s.flareDmg *= s.flareAmp; // White Flash multiplies whatever harm the flare has been given
       // ward: the strongest theme multiplier the lantern has divides every blow it takes (a lantern is as tough as it is deep)
-      // Kinship: a bridge held makes its two themes lend each other half their strength (each theme's multiplier
-      // counts for the other at half its worth). A lantern of one theme gains nothing by it; a lantern of the two does.
-      { const lend = {};
-        for (const id in this.relics) { const d = LF.RELICS[id]; if (!d || !d.bridge || !d.school) continue; const a = d.school + 'All', b = d.bridge + 'All'; lend[a] = (lend[a] || 1) * (1 + (s[b] - 1) / 2); lend[b] = (lend[b] || 1) * (1 + (s[a] - 1) / 2); }
-        for (const k in lend) s[k] *= lend[k]; }
       s.ward = Math.max(1, s.fireAll, s.lightAll, s.waxAll, s.chainAll, s.mothAll);
       s.allBase = { fireAll: s.fireAll, lightAll: s.lightAll, waxAll: s.waxAll, chainAll: s.chainAll, mothAll: s.mothAll }; // before any surge (see surge())
       if (s.buckler > (this.wardMax || 0)) this.ward = s.buckler; // a new buckler arrives whole
@@ -461,10 +456,11 @@
       }
 
       this.surge(dt);
-      // lamps that censers and moths carry (Censer Lamps, Moth Lamps): small lights that move with them (Game.isLit, the renderer)
+      // lamps that censers, moths and waxed creatures carry (Censer Lamps, Moth Lamps, Candle Glow): small lights that move with them (Game.isLit, the renderer)
       this.carried = [];
-      if (s.censerLamps && s.chainGuard && this.censerPos) for (const c of this.censerPos) this.carried.push({ x: c.x, y: c.y, r: 64, also: 'chainAll' });
-      if (s.mothLamps) for (const f of this.familiars.concat(this.swarm)) this.carried.push({ x: f.x, y: f.y, r: 46, also: 'mothAll' });
+      if (s.censerLamps && s.chainGuard && this.censerPos) for (const c of this.censerPos) this.carried.push({ x: c.x, y: c.y, r: 64 });
+      if (s.mothLamps) for (const f of this.familiars.concat(this.swarm)) this.carried.push({ x: f.x, y: f.y, r: 46 });
+      if (s.poolLight) for (const e of g.enemies) if (!e.dead && e.chill > 0 && !e.intangible) this.carried.push({ x: e.x, y: e.y, r: 40 + e.r });
 
       // blows burning through: each takes its light over a second (or as long as the Slow Dusk makes it)
       if (this.hurts.length && !this.dead) {
@@ -987,7 +983,7 @@
         ctx.fillStyle = '#e8fbff'; ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(0, 5); ctx.lineTo(-3.5, 0); ctx.closePath(); ctx.fill();
         ctx.restore();
       } else if (this.kind === 'relic') {
-        const d = LF.RELICS[this.relic], col = LF.RARITY[d.rarity].color;
+        const d = LF.RELICS[this.relic], col = LF.rar(d).color;
         const gr = ctx.createRadialGradient(this.x, this.y + bobY, 0, this.x, this.y + bobY, 26);
         gr.addColorStop(0, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
         ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(this.x, this.y + bobY, 26, 0, TAU); ctx.fill();

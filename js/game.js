@@ -481,7 +481,7 @@
     censerDrip(e) {
       const s = this.player.stats;
       if (this.zones.some(z => z.drip && !z.dead && LF.dist2(z.x, z.y, e.x, e.y) < 30 * 30)) return;
-      this.addZone({ kind: 'tallow', x: e.x, y: e.y, r: 30, life: s.censerDrip, drip: true, also: 'chainAll' });
+      this.addZone({ kind: 'tallow', x: e.x, y: e.y, r: 30, life: s.censerDrip, drip: true });
     }
     // What a censer's blow does beyond its harm, for a censer that was thrown (the swinging ones do the same in Player.update).
     censerStruck(e, blow) {
@@ -543,15 +543,14 @@
       const pr = p.lightR * 0.94;
       this.litByFire = false; // set when the only light on this spot is a brazier's or a wall lamp's
       this.litByWax = false; // set when the deepest light here is a pool of wax (Candle Glow)
-      this.litAlso = null; // what searing here also counts as (a pool of wax, with Candle Glow)
       // litDepth: how deep in the light this spot stands, 0 at the rim and 1 at the flame. Searing scales with it.
       let depth = -1, d2 = LF.dist2(x, y, p.x, p.y);
       if (d2 < pr * pr && map.los(p.x, p.y, x, y)) depth = 1 - Math.sqrt(d2) / pr;
       for (const z of this.zones) {
         if ((z.kind === 'light' || z.kind === 'beacon') && (d2 = LF.dist2(x, y, z.x, z.y)) < z.r * z.r) depth = Math.max(depth, 1 - Math.sqrt(d2) / z.r);
-        else if (z.kind === 'tallow' && p.stats.poolLight && (d2 = LF.dist2(x, y, z.x, z.y)) < z.r * z.r) { const dd = 1 - Math.sqrt(d2) / z.r; if (dd > depth) { depth = dd; this.litByWax = true; this.litAlso = 'waxAll'; } }
+        else if (z.kind === 'tallow' && p.stats.poolLight && (d2 = LF.dist2(x, y, z.x, z.y)) < z.r * z.r) { const dd = 1 - Math.sqrt(d2) / z.r; if (dd > depth) { depth = dd; this.litByWax = true; } }
       }
-      for (const c of p.carried || []) if ((d2 = LF.dist2(x, y, c.x, c.y)) < c.r * c.r) { const dd = 1 - Math.sqrt(d2) / c.r; if (dd > depth) { depth = dd; this.litByWax = false; this.litAlso = null; } } // a carried lamp unshrouds (it sears on its own: see update)
+      for (const c of p.carried || []) if ((d2 = LF.dist2(x, y, c.x, c.y)) < c.r * c.r) { const dd = 1 - Math.sqrt(d2) / c.r; if (dd > depth) { depth = dd; this.litByWax = false; } } // a carried lamp unshrouds (it sears on its own: see update)
       if (depth >= 0) { this.litDepth = depth; return true; }
       // Fires unshroud what stands in them, but they do not burn it unless the Tinderbox is held.
       for (const b of this.litBraziers) {
@@ -582,10 +581,6 @@
       // what multiplies a whole theme: fire, light (searing and the flare), wax, chain, moths
       if (src.type === 'chain' && s.surge.chainAll) this.player.mom = Math.min(1, (this.player.mom || 0) + 0.25); // Momentum builds with every censer's blow
       { const ty = src.type; dmg *= ty === 'sear' || ty === 'flare' ? s.lightAll : ty === 'wax' ? s.waxAll : ty === 'chain' ? s.chainAll : ty === 'moth' ? s.mothAll : ty === 'burn' || ty === 'cinder' || ty === 'thorns' || ty === 'fire' ? s.fireAll : 1; }
-      // bridges: harm that counts as a second theme as well, so that theme's multiplier takes it too
-      { let also = src.also;
-        if (!also && src.type === 'moth' && s.cinderMoth && e.burn > 0) { dmg *= 1 + s.cinderMoth; also = 'fireAll'; } // Cinder Moths
-        if (also) dmg *= s[also] || 1; }
       if (s.glare && e.stun > 0) dmg *= 1.5;
       if (e.elite && s.eliteDmg) dmg *= 1 + s.eliteDmg;
       if (e.affix === 'warded' && src.type === 'bolt' && !(e.wardBroken > 0)) { dmg *= 0.45; if (Math.random() < 0.15) fx.text(e.x, e.y - e.r - 16, 'WARDED: flare to break', '#9fc7ff', 9, 0.8); }
@@ -1002,8 +997,8 @@
       p.addRelic(id);
       if (!this.meta.seen[id]) { this.meta.seen[id] = 1; this.save(); }
       LF.audio.play(d.rarity === 'rare' || d.rarity === 'cursed' || d.rarity === 'brand' || d.rarity === 'shadow' ? 'rare' : 'relic');
-      this.toast(d.name, d.desc, LF.RARITY[d.rarity].color, d.glyph, d.color);
-      if (x !== undefined) { fx.ring(x, y, 6, 60, 0.5, LF.RARITY[d.rarity].color, 3); fx.burst(x, y, 16, { color: [d.color, '#fff'], speed1: 160, life: 0.6 }); }
+      this.toast(d.name, d.desc, LF.rar(d).color, d.glyph, d.color);
+      if (x !== undefined) { fx.ring(x, y, 6, 60, 0.5, LF.rar(d).color, 3); fx.burst(x, y, 16, { color: [d.color, '#fff'], speed1: 160, life: 0.6 }); }
       if (p.stats.reveal) this.map.revealAll();
     }
     lightBrazier(pr, silent) {
@@ -1502,9 +1497,8 @@
         if (z.kind === 'fire' || z.kind === 'beacon') {
           for (const e of this.enemies) {
             if (e.dead || e.intangible || e.spawnT > 0) continue;
-            if (LF.dist2(z.x, z.y, e.x, e.y) < (z.r + e.r) * (z.r + e.r)) { const tf = z.kind === 'fire' && p.stats.tallowFire; if (tf) this.waxEnemy(e, 1.2); /* Tallow Flames */ this.damageEnemy(e, z.dps * dt * (tf ? 1 + tf : 1), { type: 'burn', of: 'ground', quiet: true, noShroud: true, also: tf ? 'waxAll' : undefined }); if (z.kind === 'fire' && !e.dead && !(e.burn > 0)) this.ignite(e, this.player.stats.burnBase, 1.5); }
+            if (LF.dist2(z.x, z.y, e.x, e.y) < (z.r + e.r) * (z.r + e.r)) { if (z.kind === 'fire' && p.stats.tallowFire) this.waxEnemy(e, 1.2); /* Tallow Flames */ this.damageEnemy(e, z.dps * dt, { type: 'burn', of: 'ground', quiet: true, noShroud: true }); if (z.kind === 'fire' && !e.dead && !(e.burn > 0)) this.ignite(e, this.player.stats.burnBase, 1.5); }
           }
-          if (z.kind === 'fire' && p.stats.cinderMoth && !p.dead) { z.hatch = (z.hatch === undefined ? 1 : z.hatch) - dt; if (z.hatch <= 0) { z.hatch = 2; p.swarmMoths(1, 4, z.x, z.y); } } // Cinder Moths: fire hatches moths
           if (z.kind === 'fire' && Math.random() < dt * 9) fx.spawn({ x: z.x + LF.rand(-z.r, z.r) * 0.6, y: z.y + LF.rand(-z.r, z.r) * 0.6, vy: -50, life: 0.5, size: 3, color: LF.pick(['#ff7b2e', '#ffc24d', '#ff4d1f']) });
         } else if (z.kind === 'wax') {
           z.tick = (z.tick || 0) - dt;
@@ -1512,7 +1506,7 @@
           if (Math.random() < dt * 5) fx.spawn({ x: z.x + LF.rand(-z.r, z.r) * 0.6, y: z.y + LF.rand(-z.r, z.r) * 0.6, vy: -40, life: 0.5, size: 2.4, color: LF.pick(['#ff9a3d', '#ffd28a']) });
         } else if (z.kind === 'tallow') {
           // the player's own spilt wax: whatever stands in it is waxed
-          for (const e of this.enemies) { if (e.dead || e.intangible || e.spawnT > 0) continue; if (LF.dist2(z.x, z.y, e.x, e.y) < (z.r + e.r) * (z.r + e.r)) { this.waxEnemy(e, 1.2); e.pooled = this.time; if (z.also) e.waxAlso = z.also; } }
+          for (const e of this.enemies) { if (e.dead || e.intangible || e.spawnT > 0) continue; if (LF.dist2(z.x, z.y, e.x, e.y) < (z.r + e.r) * (z.r + e.r)) { this.waxEnemy(e, 1.2); e.pooled = this.time; } }
           // and it slows their shots: a bolt of shadow that crosses wax loses most of its speed, once
           for (const sh of this.ebullets) if (!sh.dead && !sh.waxed && LF.dist2(z.x, z.y, sh.x, sh.y) < z.r * z.r) { sh.waxed = true; sh.vx *= 0.4; sh.vy *= 0.4; sh.speed *= 0.4; }
         } else if (z.kind === 'mothcloud') {
@@ -1528,13 +1522,12 @@
         }
       }
       LF.compact(this.zones);
-      // lamps carried by censers and moths (Censer Lamps, Moth Lamps) sear what is near them, on top of the bearer's own glow,
-      // and that searing counts as the theme that carries them as well as light
+      // lamps carried by censers, moths and waxed creatures (Censer Lamps, Moth Lamps, Candle Glow) sear what is near them, on top of the bearer's own glow
       if (p.carried && p.carried.length && !p.dead) {
         for (const c of p.carried) for (const e of this.enemies) {
           if (e.dead || e.intangible || e.spawnT > 0) continue;
           const d2 = LF.dist2(c.x, c.y, e.x, e.y), rr = c.r + e.r;
-          if (d2 < rr * rr) this.damageEnemy(e, 10 * p.stats.sear * (1 - 0.5 * Math.sqrt(d2) / rr) * dt, { type: 'sear', quiet: true, sear: true, noShroud: true, also: c.also });
+          if (d2 < rr * rr) this.damageEnemy(e, 10 * p.stats.sear * (1 - 0.5 * Math.sqrt(d2) / rr) * dt, { type: 'sear', quiet: true, sear: true, noShroud: true });
         }
       }
       this.gloomed = gloomed;
