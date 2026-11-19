@@ -85,7 +85,7 @@
   LF.SHARDS = [
     { name: 'The Shard of Morning', power: 'Your lantern holds 10 more embers, and they burn down 15% slower.' },
     { name: 'The Shard of the Works', power: 'Every descent begins with the offer of a great work.' },
-    { name: 'The Shard of the Chain', power: 'Two more rerolls each descent, and one more relic to choose from at every stair.' },
+    { name: 'The Shard of the Chain', power: 'Rerolls cost a fifth less, and one more relic to choose from at every stair.' },
     { name: 'The Shard of the Heart', power: 'Once each descent, when your last ember would go out, they blaze back to full instead.' },
     { name: 'The Great Lantern', power: '' },
   ];
@@ -139,10 +139,10 @@
     'Snuffers shrink your light from a distance. Hunt them down.',
     'Cinders are kept even when you die. Spend them at the Hearth.',
     'A relic that builds on a power you lack is never offered. The relic that gives that power comes in its place.',
-    'At each stair the Forge will rank up a relic you carry, for glass: ' + LF.TUNE.forgeII + ' for rank II, ' + LF.TUNE.forgeIII + ' for rank III, and ' + LF.TUNE.forgeMore + ' more for each rank after that. Taking the same relic again from an offer ranks it too, for nothing.',
+    'The Forge button on a stair\'s offer ranks up a relic you carry, for glass. The higher its rank, the dearer the next: ' + LF.TUNE.forgeII + ' for rank II, ' + (LF.TUNE.forgeII + LF.TUNE.forgeMore + LF.TUNE.forgeRamp) + ' for rank III, and steeper after. Taking the same relic again from an offer ranks it too, for nothing.',
     'Ranks do not stop at III. A relic that keeps coming round keeps growing, and what multiplies grows by half again each time.',
     'What multiplies, multiplies everything else: three relics in each theme make all of that theme do more, and stack on each other. One theme pumped high beats five held low.',
-    'Glass buys rerolls. When an offer holds nothing you need, pay to see another: ' + LF.TUNE.rerollGlass + ' glass, and ' + LF.TUNE.rerollMore + ' more each time after on the same offer.',
+    'Every reroll costs glass: the first on an offer is cheap, and each after it costs more than the last. Glass spent rerolling is glass not spent at the Forge.',
     'Forms are not found. The Chandler sells them, when the Chandler is there and has the one you want: a form changes how your bolt or your flare works. Glass spent on rerolls is glass not saved for one.',
   ];
   // A tip that fits what actually killed you, when there is one.
@@ -202,7 +202,7 @@
     { id: 'ember', name: 'Ember Sense', desc: 'Embers restore 8% more', max: 3, cost: [25, 45, 75], glyph: 'flame', color: '#ff9d5c' },
     { id: 'flare', name: 'Dry Powder', desc: 'Flare recharges 8% faster', max: 3, cost: [20, 40, 70], glyph: 'sun', color: '#ffcf5c' },
     { id: 'purse', name: 'Sewn Purse', desc: 'Start each run with 15 glass', max: 3, cost: [15, 30, 50], glyph: 'glass', color: '#8fe6ff' },
-    { id: 'reroll', name: 'Second Glance', desc: '+1 relic reroll per run', max: 3, cost: [30, 60, 100], glyph: 'eye', color: '#9dffcf' },
+    { id: 'reroll', name: 'Second Glance', desc: 'Rerolls cost a tenth less', max: 3, cost: [30, 60, 100], glyph: 'eye', color: '#9dffcf' },
     { id: 'gift', name: 'Parting Gift', desc: 'Start with a random common relic', max: 1, cost: [90], glyph: 'heart', color: '#ff8fa3' },
     { id: 'choice', name: 'Open Hand', desc: 'One more relic to choose from', max: 1, cost: [160], glyph: 'star', color: '#fff3b0' },
     { id: 'tinder', name: 'Brazier Lore', desc: 'Braziers restore 1 more ember', max: 3, cost: [20, 40, 65], glyph: 'flame', color: '#ffb347' },
@@ -283,7 +283,8 @@
       this.player = new LF.Player(this);
       const up = this.meta.up;
       this.player.glass = 15 * (up.purse || 0);
-      this.player.rerolls = 2 + (up.reroll || 0) + ((this.meta.shards || 0) >= 3 ? 2 : 0); // enough to fish for the school a build needs
+      this.player.rerolls = 0; // every reroll is bought with glass
+      this.player.rerollOff = 0.1 * (up.reroll || 0) + ((this.meta.shards || 0) >= 3 ? 0.2 : 0); // what Second Glance and the Shard of the Chain take off a reroll's price
       this.run = { kills: 0, shots: 0, dmg: 0, taken: 0, time: 0, bosses: 0, glass: 0, dashes: 0, flares: 0, braziers: 0, elites: 0, won: false, cause: '' };
       // Every descent begins at the top, in Depth I. The deeper Depths are reached only by carrying on down in the same run.
       this.startCycle = 0;
@@ -348,12 +349,16 @@
       this.enemySpeedMul = 1.06; this.floorT = 0; this.lingerN = 0;
       const grow = LF.TUNE.grow;
       // The dark deepens by multiplying: hpGrow times the health and dmgGrow times the harm on each Level over the last.
-      this.enemyHpMul = 1.2 * LF.curve(LF.TUNE.hpGrow, this.floor) * (1 + this.loop * 0.25) * (1 + (this.carry || 0) * 0.8) * df.hp;
+      // Health never starts over: Level 1 of a new Depth is one more step down from Level 9 of the last, because the
+      // lantern that reaches it has kept everything. (`deep` is the Level counted from the top of the descent.)
+      const deep = this.mode === 'descent' ? this.depth : this.floor;
+      const hpAt = n => { let m = 1; for (let k = 2; k <= n; k++) m *= LF.TUNE.hpGrow[Math.floor(((k - 1) % 9) / 3)]; return m; };
+      this.enemyHpMul = 1.2 * hpAt(deep) * df.hp;
       // hits bite a little harder now that light sears and kills rekindle: losing light has to matter
       this.enemyDmgMul = 1.24 * LF.curve(LF.TUNE.dmgGrow, this.floor) * (1 + this.loop * 0.12) * (1 + (this.carry || 0) * 0.45) * df.dmg;
       this.bossDmgMul = this.enemyDmgMul * 1.14 / 1.24 * (this.floor === 6 ? LF.TUNE.secondHit : this.floor === 9 ? LF.TUNE.thirdHit : 1); // the great shadows are hard enough: they did not get the latest increase
-      this.bossHpMul = 1.7 * (this.floor === 3 ? LF.TUNE.first : this.floor === 6 ? LF.TUNE.second : this.floor === 9 ? LF.TUNE.third : 1) * LF.curve(LF.TUNE.hpGrow, this.floor) / LF.curve(LF.TUNE.hpGrow, 3) * (1 + this.loop * 0.2) * (1 + (this.carry || 0) * 0.75) * df.hp;
-      { const k = Math.max(0, 4 - this.floor) / 3; this.enemyHpMul *= 1 + LF.TUNE.earlyHp * k; this.enemyDmgMul *= 1 + LF.TUNE.early * k; } // the first Levels bite (the great shadow of Level 3 is left as it was)
+      this.bossHpMul = 1.7 * (this.floor === 3 ? LF.TUNE.first : this.floor === 6 ? LF.TUNE.second : this.floor === 9 ? LF.TUNE.third : 1) * hpAt(deep) / hpAt(3) * df.hp;
+      { const k = Math.max(0, 4 - this.floor) / 3; if (deep <= 9) this.enemyHpMul *= 1 + LF.TUNE.earlyHp * k; this.enemyDmgMul *= 1 + LF.TUNE.early * k; } // the first Levels bite (the great shadow of Level 3 is left as it was)
       if (this.mode === 'rush' && !this.practice) { this.enemyDmgMul *= 0.8; this.bossDmgMul *= 0.8; this.bossHpMul *= 0.62; } // no floors between fights to build on
       this.omen = null;
       this.floorRng = new LF.RNG((this.seed + this.depth * 104729) >>> 0);
@@ -580,7 +585,9 @@
       if (src.type === 'burn' || src.type === 'cinder' || src.type === 'thorns' || src.type === 'flare') dmg *= (src.of === 'ground' || src.type === 'flare' ? s.groundMul : src.of === 'mantle' || src.type === 'thorns' ? s.mantleMul : s.fireMul) * (s.pyre ? 1 + 0.01 * (this.player.pyre || 0) : 1);
       // what multiplies a whole theme: fire, light (searing and the flare), wax, chain, moths
       if (src.type === 'chain' && s.surge.chainAll) this.player.mom = Math.min(1, (this.player.mom || 0) + 0.25); // Momentum builds with every censer's blow
-      { const ty = src.type; dmg *= ty === 'sear' || ty === 'flare' ? s.lightAll : ty === 'wax' ? s.waxAll : ty === 'chain' ? s.chainAll : ty === 'moth' ? s.mothAll : ty === 'burn' || ty === 'cinder' || ty === 'thorns' || ty === 'fire' ? s.fireAll : 1; }
+      { const ty = src.type, th = ty === 'sear' || ty === 'flare' ? 'light' : ty === 'wax' ? 'wax' : ty === 'chain' ? 'chain' : ty === 'moth' ? 'moth' : ty === 'burn' || ty === 'cinder' || ty === 'thorns' || ty === 'fire' ? 'fire' : null;
+        if (th) dmg *= s[th + 'All'];
+        const br = th && this.player.bridgeTo && this.player.bridgeTo[th]; if (br) for (const k of br) dmg *= s[k]; } // a bridge: moths that are lamps bite as hard as all your light does
       if (s.glare && e.stun > 0) dmg *= 1.5;
       if (e.elite && s.eliteDmg) dmg *= 1 + s.eliteDmg;
       if (e.affix === 'warded' && src.type === 'bolt' && !(e.wardBroken > 0)) { dmg *= 0.45; if (Math.random() < 0.15) fx.text(e.x, e.y - e.r - 16, 'WARDED: flare to break', '#9fc7ff', 9, 0.8); }
@@ -1160,7 +1167,7 @@
     pickOffer(i) {
       const o = this.offer;
       if (!o) return;
-      const d = i >= 0 ? o.relics[i] : null;
+      let d = i >= 0 ? o.relics[i] : null;
       // a Legendary Form bought from the Chandler: the glass is taken here, and the form is announced
       if (o.buy && d) {
         if (this.player.glass < o.buy.price) { LF.audio.play('deny'); return; }
@@ -1174,6 +1181,7 @@
         this.player.glass -= cost; this.gainRelic(d.id, this.player.x, this.player.y); LF.audio.play('buy');
         o.relics = o.held(); o.forged = (o.forged || 0) + 1;
         if (o.relics.length) return;
+        d = null; // (nothing left to forge: the screen closes, and the rank already given is not given twice)
       }
       this.state = 'play'; this.offer = null; this.bufInteract = 0; this.bufDash = 0; this.bufFlare = 0;
       if (d && !d.pseudo) this.gainRelic(d.id, this.player.x, this.player.y); // a category card is a choice, not a relic
@@ -1181,16 +1189,27 @@
       if (o.onDone) o.onDone(d);
     }
     // what the Forge asks to give this relic its next rank
-    forgeCost(d) { const to = (this.player.relics[d.id] || 0) + 1; return to <= 2 ? LF.TUNE.forgeII : LF.TUNE.forgeIII + LF.TUNE.forgeMore * (to - 3); }
-    // what the next reroll of this offer costs in glass, once the lantern's own rerolls are spent: it doubles each time
-    rerollPrice(o) { return LF.TUNE.rerollGlass + LF.TUNE.rerollMore * ((o && o.paid) || 0); }
-    canReroll(o) { const p = this.player; return !!o && !o.cursed && !o.noReroll && (p.rerolls > 0 || p.glass >= this.rerollPrice(o)); }
+    // it goes by the rank the relic holds now, and grows faster than the rank does
+    forgeCost(d) { const T = LF.TUNE, k = Math.max(0, (this.player.relics[d.id] || 0) - 1); return T.forgeII + T.forgeMore * k + T.forgeRamp * k * k; }
+    // what the next reroll of this offer costs in glass: cheap at first, dearer each time
+    rerollPrice(o) { const T = LF.TUNE, n = (o && o.paid) || 0; return Math.max(1, Math.round((T.rerollGlass + T.rerollMore * n + T.rerollRamp * n * n) * (1 - (this.player.rerollOff || 0)))); }
+    canReroll(o) { const p = this.player; return !!o && !o.cursed && !o.noReroll && p.glass >= this.rerollPrice(o); }
+    // The Forge, opened from a stair's or a shard's offer: everything the lantern carries that can still grow, each with
+    // its price. Leaving it goes back to the same offer, with the same cards.
+    canForge(o) { const p = this.player; return !!o && !!o.forgeable && p.relicOrder.some(id => { const d = LF.RELICS[id]; return d && d.rarity !== 'boon' && p.relics[id] < d.max; }); }
+    openForge() {
+      const back = this.offer, p = this.player;
+      if (!this.canForge(back)) { LF.audio.play('deny'); return; }
+      const held = () => p.relicOrder.map(id => LF.RELICS[id]).filter(d => d && d.rarity !== 'boon' && p.relics[d.id] < d.max);
+      this.openOffer({ title: 'The Forge', sub: 'Glass forges a rank into a relic you carry.', relics: held(), held, forge: true, canSkip: true, dim: true, noReroll: true,
+        onDone: () => { back.t = 1; back.sel = 0; back.forgeSeen = true; back.relics = back.relics.filter(d => d.pseudo || !(p.relics[d.id] >= d.max)); this.offer = back; this.state = 'relic'; LF.ui.enter(this, 'relic'); } });
+    }
     rerollOffer() {
       const o = this.offer, p = this.player;
       // a mend's pages turn for nothing: it is showing what the lantern holds, not rolling anything new
       if (o && o.free && o.reroll && !o.noReroll) { o.relics = o.reroll(); o.t = 0; o.sel = 0; LF.audio.play('uiSelect'); return; }
       if (!this.canReroll(o)) { LF.audio.play('deny'); return; }
-      if (p.rerolls > 0) p.rerolls--; else { p.glass -= this.rerollPrice(o); o.paid = (o.paid || 0) + 1; }
+      p.glass -= this.rerollPrice(o); o.paid = (o.paid || 0) + 1;
       o.relics = o.reroll ? o.reroll() : LF.rollRelics(p, o.relics.length, { rng: this.rng, floor: this.floor, minRarity: o.minRarity });
       o.t = 0; LF.audio.play('uiSelect');
     }
@@ -1205,7 +1224,7 @@
       this.startFade(-1, 0.7, () => {
         const p = this.player;
         if (p.dead) return;
-        const next = () => { this.depth++; p.rerolls += LF.TUNE.rerollStair; this.loadFloor(); this.state = 'play'; this.startFade(1, 0.8); };
+        const next = () => { this.depth++; this.loadFloor(); this.state = 'play'; this.startFade(1, 0.8); };
         const cards = Math.max(2, 3 + p.stats.extraChoice - (this.vows.thrift ? 1 : 0));
         if (this.mode === 'descent') {
           const glass = Math.round((16 + this.depth * 4) * LF.TUNE.glassYield), clean = cleared >= 0.85 && !boss;
@@ -1214,41 +1233,19 @@
             // a lantern that arrives nearly out finds something the dark has left among the choices
             // a lantern that arrives nearly out is shown one thing more, and a rare one
             const dusk = !boss && p.frac() < 0.35;
-            const roll = () => { const r = LF.rollRelics(p, cards + (clean ? 1 : 0), { rng: this.rng, floor: this.floor }); return dusk ? r.concat(LF.rollRelics(p, 1, { rng: this.rng, floor: this.floor, minRarity: 'rare', filter: d => !r.includes(d) })) : r; };
+            const roll = () => { const r = LF.rollRelics(p, cards + (clean ? 1 : 0), { rng: this.rng, floor: this.floor }); const all = dusk ? r.concat(LF.rollRelics(p, 1, { rng: this.rng, floor: this.floor, minRarity: 'rare', filter: d => !r.includes(d) })) : r; const lg = LF.legendExtra(p, this.rng, all, this.floor); return lg ? all.concat([lg]) : all; }; // (and now and then a legendary, one card more)
             const relics = roll(), sh = dusk ? [1] : [];
             if (!relics.length) { take(); return; }
             this.openOffer({
-              title: 'The Stair Offers a Gift', relics, canSkip: false, dim: true, reroll: roll, altGlass: glass,
+              title: 'The Stair Offers a Gift', relics, canSkip: false, dim: true, reroll: roll, altGlass: glass, forgeable: true,
               sub: sh.length ? 'Your flame is nearly out. The stair shows a failing lantern one thing more.' : clean ? 'You left nothing alive behind you: one more to choose from.' : 'Take one with you into the dark below.',
               onDone: picked => { if (!picked) take(); else next(); },
             });
           };
           // after a great shadow the shard is the stair's gift: one offer, with one more to choose from, not two in a row
           const shard = boss ? LF.rollRelics(p, cards + 1, { rng: this.rng, floor: this.floor, minRarity: 'rare' }) : [];
-          // Glass runs together at the stair: every sixty held is a rank for one of three relics the lantern already
-          // holds, the bearer's choice. The deeper a relic's rank, the likelier it is among the three.
-          // One screen for all of it: a pick forges a rank and the screen stays, on the same page, until the glass
-          // runs short or the bearer is done (`at0` is the page to stay on; the cards do not fly in again).
-          // The Forge: everything the lantern carries that can still grow, on one screen, each with its price in glass.
-          const forge = then => {
-            const held = () => p.relicOrder.map(id => LF.RELICS[id]).filter(d => d && d.rarity !== 'boon' && p.relics[d.id] < d.max);
-            const list = held();
-            if (!list.some(d => p.glass >= this.forgeCost(d))) { then(); return; }
-            this.openOffer({ title: 'The Forge', sub: 'Glass forges a rank into a relic you carry.', relics: list, held, forge: true, canSkip: true, dim: true, noReroll: true, onDone: () => then() });
-          };
-          const mend = (then, at0) => {
-            if (LF.TUNE.forging) { forge(then); return; }
-            const held = p.relicOrder.map(id => LF.RELICS[id]).filter(d => d && d.rarity !== 'boon' && p.relics[d.id] < d.max);
-            if (!LF.TUNE.glassRanks || p.glass < LF.TUNE.melt || !held.length) { then(); return; }
-            // everything the lantern holds that can still grow, four to a page, in the order it was taken
-            const per = 4, pages = Math.ceil(held.length / per); let at = Math.min(at0 || 0, pages - 1);
-            const page = () => { at = (at + 1) % pages; return held.slice(at * per, at * per + per); };
-            const left = Math.floor(p.glass / LF.TUNE.melt);
-            this.openOffer({ title: 'The Glass Runs Together', sub: LF.TUNE.melt + ' glass forges a rank for a relic you hold, and only here is a third rank forged. You hold enough for ' + left + '.', relics: held.slice(at * per, at * per + per), t: at0 === undefined ? 0 : 1, canSkip: false, dim: true, mend: true, free: pages > 1, pages, noReroll: pages <= 1, reroll: page,
-              onDone: picked => { if (!picked) { then(); return; } p.glass -= LF.TUNE.melt; mend(then, at); } });
-          };
-          if (shard.length) this.openOffer({ title: 'A Shard of the Lantern', minRarity: 'rare', sub: 'The shadow had closed around this. It is yours now.', relics: shard, canSkip: false, dim: true, onDone: () => mend(next) });
-          else mend(stair);
+          if (shard.length) this.openOffer({ title: 'A Shard of the Lantern', minRarity: 'rare', sub: 'The shadow had closed around this. It is yours now.', relics: shard, canSkip: false, dim: true, forgeable: true, onDone: () => next() });
+          else stair();
           return;
         }
         // the Gauntlet and the Vigil keep the plain offer: a handful of relics, take one
@@ -1522,12 +1519,14 @@
         }
       }
       LF.compact(this.zones);
-      // lamps carried by censers, moths and waxed creatures (Censer Lamps, Moth Lamps, Candle Glow) sear what is near them, on top of the bearer's own glow
+      // lamps carried by censers, moths and waxed creatures (Censer Lamps, Moth Lamps, Candle Glow) sear what is near them, on top of the bearer's own glow.
+      // Each is the bearer's light in small: The Lens, White Light, the noon of High Noon, a waxed creature's glow and how full the lantern is all count
+      // (Light.searOn does not: a bridge is what lets a lantern of another theme sear)
       if (p.carried && p.carried.length && !p.dead) {
         for (const c of p.carried) for (const e of this.enemies) {
           if (e.dead || e.intangible || e.spawnT > 0) continue;
           const d2 = LF.dist2(c.x, c.y, e.x, e.y), rr = c.r + e.r;
-          if (d2 < rr * rr) this.damageEnemy(e, 10 * p.stats.sear * (1 - 0.5 * Math.sqrt(d2) / rr) * dt, { type: 'sear', quiet: true, sear: true, noShroud: true });
+          if (d2 < rr * rr) { const s = p.stats, dd = 1 - Math.sqrt(d2) / rr; this.damageEnemy(e, 10 * s.sear * (s.lensFocus ? 1 + (s.lensFocus - 1) * dd : 1) * (p.noonT > 0 ? 3 : 1) * (1 + s.searFlat / 4) * (s.waxGlow && e.chill > 0 ? 2 : 1) * (0.5 + 0.5 * dd) * (0.4 + 0.6 * Math.min(1, p.frac())) * dt, { type: 'sear', quiet: true, sear: true, noShroud: true }); }
         }
       }
       this.gloomed = gloomed;

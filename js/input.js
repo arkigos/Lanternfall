@@ -111,7 +111,7 @@
         uiUp: pressed.has('ArrowUp') || pressed.has('KeyW'), uiDown: pressed.has('ArrowDown') || pressed.has('KeyS'),
         uiLeft: pressed.has('ArrowLeft') || pressed.has('KeyA'), uiRight: pressed.has('ArrowRight') || pressed.has('KeyD'),
         confirm: pressed.has('Enter') || pressed.has('Space') || pressed.has('KeyE'), back: anyPressed(BIND.back),
-        mouseMoved: mouse.moved, wheel: mouse.wheel, reroll: pressed.has('KeyR'),
+        mouseMoved: mouse.moved, wheel: mouse.wheel, reroll: pressed.has('KeyR'), forge: pressed.has('KeyF'),
       };
       if (anyDown(BIND.left)) s.mx -= 1;
       if (anyDown(BIND.right)) s.mx += 1;

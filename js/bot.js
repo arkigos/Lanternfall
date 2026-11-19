@@ -65,6 +65,9 @@
     // what a build that mixes takes when its own type is not on offer: things that make the bolt kill faster
     const MIX = new Set('stoke brittle tautchain harry dazzle counterweight bankedcoals drippings flit gleaning glare brand'.split(' '));
     function chooseOffer(g) {
+      // opts.bridge (a legendary) with opts.after: once the bridge is held, the bot drafts as opts.after says (a second theme,
+      // another want list): the cards that make more sources, and the cards that make each source stronger
+      const opts = bridged(g);
       const o = g.offer, p = g.player, kind = offerKind(o), sc = p.schools || {};
       const mode = opts.pick || (opts.build ? 'build' : 'random');
       const ids = o.relics.map(d => d.id);
@@ -77,6 +80,8 @@
       const canReroll = g.canReroll(o) && (p.rerolls > 0 || (opts.glass !== 'forge' && p.glass - g.rerollPrice(o) >= saving(p))); // opts.glass 'forge': glass goes to the Forge and nowhere else
       const done = (pick, why) => {
         if (o.cursed && !opts.cursed) pick = -1;
+        // the Forge is a button on a stair's or a shard's offer: the bot looks in once, after any rerolls, before it takes a card
+        if (o.forgeable && !o.forgeSeen && opts.forge !== false && g.canForge(o) && p.relicOrder.some(id => { const d = LF.RELICS[id]; return d && p.relics[id] < d.max && p.glass >= g.forgeCost(d); })) { o.forgeSeen = true; g.openForge(); return; }
         st.offers.push({ d: g.depth, k: kind, off: ids, pick: pick >= 0 ? ids[pick] : null, why });
         g.pickOffer(pick);
       };
@@ -148,6 +153,7 @@
       return done(rnd(can));
     }
 
+    const bridged = g => opts.bridge && g.player && g.player.relics[opts.bridge] && opts.after ? Object.assign({}, opts, opts.after) : opts; // (outside chooseOffer, `opts` here is the bot's own)
     // a bot that chases one school hard buys nothing else from the Chandler
     const wanted = id => { const d = LF.RELICS[id]; if (d && d.form && (opts.pick === 'school' || opts.pick === 'build')) return !!(opts.want && opts.want.includes(id)) || d.school === opts.school || d.school === opts.school2; return !(opts.pick === 'school' && opts.chase === 'hard') || (d && d.school === opts.school); };
     // a build that is after a form it does not hold keeps the Chandler's price back from its rerolls
@@ -323,6 +329,10 @@
       for (const z of g.zones) if (z.kind === 'gloom' || z.kind === 'wax' || (z.kind === 'fire' && z.r > 40)) { const d = LF.dist(p.x, p.y, z.x, z.y); if (d < z.r + 30) { mvx += (p.x - z.x) / (d + 1) * 2; mvy += (p.y - z.y) / (d + 1) * 2; } }
       // boss telegraphs expose "avoid" circles
       if (g.hazards && !hurry) for (const hz of g.hazards) { const d = LF.dist(p.x, p.y, hz.x, hz.y); if (d < hz.r + 26) { mvx += (p.x - hz.x) / (d + 1) * 2.4; mvy += (p.y - hz.y) / (d + 1) * 2.4; } }
+      // The Still Flame pays a bearer for standing still: plant your feet in a fight while nothing is close, no shot is coming
+      // and nothing underfoot needs leaving
+      if (p.stats.surge && p.stats.surge.fireAll && target && !danger && nearest > 110 && !(g.hazards || []).some(hz => LF.dist(p.x, p.y, hz.x, hz.y) < hz.r + 26)
+        && !g.zones.some(z => !z.dead && (z.kind === 'gloom' || z.kind === 'wax' || (z.kind === 'fire' && z.r > 40)) && LF.dist(p.x, p.y, z.x, z.y) < z.r + 30)) { mvx = 0; mvy = 0; }
       // steer away from walls a little
       const l = Math.hypot(mvx, mvy);
       if (l > 0.01) { mvx /= l; mvy /= l; if (target && map.solidAt(p.x + mvx * 22, p.y + mvy * 22)) { const t = mvx; mvx = -mvy * st.strafe; mvy = t * st.strafe; } }

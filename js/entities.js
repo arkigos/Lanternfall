@@ -79,10 +79,14 @@
       s.flareCd = Math.max(0.8, s.flareCd); s.dashCd = Math.max(0.25, s.dashCd); s.stormCd = Math.max(0.4, s.stormCd); s.flareStun = Math.min(5, s.flareStun);
       // Counterweight: every censer takes its share of a blow, each on top of the last (never more than 85% in all)
       if (s.undying) s.burnTime = 999;
+      // Censer Lamps: Censer keeps adding censers past its third rank, each one more light
+      if (s.censerLamps && (this.relics.censer || 0) > 3) s.chainGuard += this.relics.censer - 3;
       s.flareDmg *= s.flareAmp; // White Flash multiplies whatever harm the flare has been given
       // ward: the strongest theme multiplier the lantern has divides every blow it takes (a lantern is as tough as it is deep)
       s.ward = Math.max(1, s.fireAll, s.lightAll, s.waxAll, s.chainAll, s.mothAll);
       s.allBase = { fireAll: s.fireAll, lightAll: s.lightAll, waxAll: s.waxAll, chainAll: s.chainAll, mothAll: s.mothAll }; // before any surge (see surge())
+      // a legendary bridge multiplies: what its own theme does grows with all the theme it carries into does (see Game.damageEnemy)
+      this.bridgeTo = {}; for (const id in this.relics) { const d = LF.RELICS[id]; if (d && d.legend && d.bridge) (this.bridgeTo[d.school] = this.bridgeTo[d.school] || []).push(d.bridge + 'All'); }
       if (s.buckler > (this.wardMax || 0)) this.ward = s.buckler; // a new buckler arrives whole
       this.wardMax = s.buckler; this.ward = Math.min(this.ward || 0, s.buckler);
       s.maxLight += this.bonusMax;
@@ -133,7 +137,7 @@
     }
     swarmMoths(n, life, x, y) {
       for (let i = 0; i < n; i++) this.swarm.push({ a: Math.random() * TAU, x: x === undefined ? this.x : x, y: y === undefined ? this.y : y, t: 0.15 + Math.random() * 0.6, life: (life + (this.stats.mothLife || 0)) * (this.stats.mothStay ? 2 : 1) + Math.random() * 0.8, temp: true });
-      { const cap = this.stats.mothStay ? 21 : 14; if (this.swarm.length > cap) this.swarm.splice(0, this.swarm.length - cap); }
+      { const cap = Math.round(LF.TUNE.swarmCap * (this.stats.mothStay ? 1.5 : 1)); if (this.swarm.length > cap) this.swarm.splice(0, this.swarm.length - cap); }
       LF.audio.play('spawn');
     }
     addLight(v) { this.light = Math.min(this.stats.maxLight, this.light + v); }
@@ -330,8 +334,11 @@
       for (let i = 0; i < flock.length; i++) {
         const f = flock[i];
         f.a += dt * (f.temp ? 2.8 : 2.1); f.t -= dt; if (f.down > 0) { f.down -= dt; f.t = Math.max(f.t, 0.2); } // (a dazed tame moth does not bite)
-        const tx = this.x + Math.cos(f.a + i * 2.1) * (f.temp ? 52 : 30), ty = this.y + Math.sin(f.a + i * 2.1) * (f.temp ? 38 : 22) - 8;
-        f.x += (tx - f.x) * Math.min(1, dt * 9); f.y += (ty - f.y) * Math.min(1, dt * 9);
+        // a loosed moth goes to the creature it fights and circles it there; a tame one circles you
+        if (f.temp && (!f.tgt || f.tgt.dead || f.tgt.intangible || LF.dist2(f.tgt.x, f.tgt.y, this.x, this.y) > 380 * 380)) f.tgt = g.nearestEnemy(this.x, this.y, 300, en => (en.lit || s.mothLight) && !en.intangible && !(en.spawnT > 0)) || null;
+        const ft = f.temp && f.tgt, ox = ft ? f.tgt.x : this.x, oy = ft ? f.tgt.y : this.y, rx = ft ? f.tgt.r + 10 + (i % 4) * 5 : f.temp ? 52 : 30;
+        const tx = ox + Math.cos(f.a + i * 2.1) * rx, ty = oy + Math.sin(f.a + i * 2.1) * rx * (ft ? 0.8 : 0.73) - 8;
+        { const k = Math.min(1, dt * (ft ? 5 : 9)); f.x += (tx - f.x) * k; f.y += (ty - f.y) * k; }
         if (f.t <= 0) {
           const e = g.nearestEnemy(f.x, f.y, 300, en => (en.lit || s.mothLight) && !en.intangible);
           if (e) {
@@ -458,9 +465,9 @@
       this.surge(dt);
       // lamps that censers, moths and waxed creatures carry (Censer Lamps, Moth Lamps, Candle Glow): small lights that move with them (Game.isLit, the renderer)
       this.carried = [];
-      if (s.censerLamps && s.chainGuard && this.censerPos) for (const c of this.censerPos) this.carried.push({ x: c.x, y: c.y, r: 64 });
-      if (s.mothLamps) for (const f of this.familiars.concat(this.swarm)) this.carried.push({ x: f.x, y: f.y, r: 46 });
-      if (s.poolLight) for (const e of g.enemies) if (!e.dead && e.chill > 0 && !e.intangible) this.carried.push({ x: e.x, y: e.y, r: 40 + e.r });
+      if (s.censerLamps && s.chainGuard && this.censerPos) for (const c of this.censerPos) this.carried.push({ x: c.x, y: c.y, r: 64 * (s.radiusMul || 1) }); // (each reaches farther as your own light does)
+      if (s.mothLamps) for (const f of this.familiars.concat(this.swarm)) this.carried.push({ x: f.x, y: f.y, r: 46 * (s.radiusMul || 1) });
+      if (s.poolLight) for (const e of g.enemies) if (!e.dead && e.chill > 0 && !e.intangible) this.carried.push({ x: e.x, y: e.y, r: (40 + e.r) * (s.radiusMul || 1) });
 
       // blows burning through: each takes its light over a second (or as long as the Slow Dusk makes it)
       if (this.hurts.length && !this.dead) {

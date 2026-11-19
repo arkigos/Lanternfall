@@ -31,7 +31,11 @@
   // rerolls: rerollGlass for the first on an offer, twice that for the next, and so on. draw is 0: an offer is dealt
   // from the whole deck with no lean toward the theme a lantern holds, and seek is 1 for the same reason. again is the
   // one lean left: a relic already held comes round twice as often, because that is the only way it gains a rank.
-  // forging: 1 puts the Forge at every stair. forgeII, forgeIII: the glass it takes to forge a relic to rank II, and to rank III.
+  // The Forge is a button on the stair's and the shard's offer, never a screen of its own. Its price goes by the rank a
+  // relic holds now: forgeII to take rank I to II, forgeMore more for each rank above I, and forgeRamp times the square
+  // of the ranks above I on top (40, 80, 140, 220, 320...). Every reroll costs glass: rerollGlass for the first on an
+  // offer, then rerollMore more and rerollRamp times the square of those already paid (5, 13, 27, 47, 73...), so a
+  // couple are cheap and then it is dear. Glass spent on one is glass not spent on the other. (forgeIII is no longer used.)
   // maxRank: how far a three-rank relic can be taken (its card still reads I, II, III: those are its first three). past:
   // what each rank beyond III multiplies by, on a relic that multiplies. forgeMore: what the Forge adds to its price for
   // each rank beyond III.
@@ -46,7 +50,7 @@
   // seek: how much likelier a theme's sources are offered to a lantern that holds that theme with nothing to start it.
   // their blows do. They have a great deal of health and hit softer than they did: the fight is long, and what decides
   // it is how fast the lantern kills, which is what a build changes. burn: a burn's damage a second before any relic.
-  LF.TUNE = { bolt: 13, grow: 0.65, typeStair: 0.45, first: 2, second: 1, secondHit: 0.8, third: 1, thirdHit: 0.85, late: 0, deep: 0, hpGrow: [1.8, 2.2, 3.5], dmgGrow: [1.12, 1.15, 1.18], bite: 25, wax: 22, link: 50, burn: 30, catchR: 46, catchT: 0.35, slow: 0.3, draw: 0, melt: 45, seek: 1, glassRanks: 0, forging: 1, forgeII: 30, forgeIII: 50, rerollGlass: 10, rerollMore: 5, formPrice: 150, chandler: 0.6, glassYield: 2, swap: 0.35, deepen: 1.08, maxRank: 10, past: 1.5, forgeMore: 30, early: 0.8, earlyHp: 0.8, pack: 0.6, again: 3, rerollStair: 1, forge: 0, surge: [1.8, 2.9, 4.5], still: [2.5, 4, 6.5], focus: [2.25, 3.4, 5.1], src: [1, 1.6, 2.5], amp: [1.5, 2.25, 3.4], mark: [1.5, 2.25, 3.4], glass: [1.8, 2.9, 4.5], white: 2 };
+  LF.TUNE = { bolt: 13, grow: 0.65, typeStair: 0.45, first: 2, second: 1, secondHit: 0.8, third: 1, thirdHit: 0.85, late: 0, deep: 0, hpGrow: [1.8, 2.2, 2.1], dmgGrow: [1.12, 1.15, 1.18], bite: 25, wax: 22, link: 50, burn: 30, catchR: 46, catchT: 0.35, slow: 0.3, draw: 0, melt: 45, seek: 1, glassRanks: 0, forging: 1, forgeII: 40, forgeIII: 50, rerollGlass: 5, rerollMore: 5, rerollRamp: 3, formPrice: 150, chandler: 0.6, glassYield: 2, swap: 0.35, deepen: 1.08, maxRank: 10, past: 1.25, forgeMore: 30, forgeRamp: 10, early: 0.8, earlyHp: 0.8, pack: 0.6, again: 3, rerollStair: 0, legendDraw: 0, legendSlot: 0.5, swarmCap: 200, forge: 0, surge: [1.8, 2.9, 4.5], still: [2.5, 4, 6.5], focus: [2.25, 3.4, 5.1], src: [1, 1.6, 2.5], amp: [1.5, 2.25, 3.4], mark: [1.5, 2.25, 3.4], glass: [1.8, 2.9, 4.5], white: 2 };
   // how much the dark has multiplied by a Level: the product of each step's growth (`by` is hpGrow or dmgGrow, one figure a Depth)
   LF.curve = (by, floor) => { let m = 1; for (let k = 2; k <= floor; k++) m *= by[Math.min(by.length - 1, Math.floor((k - 1) / 3))]; return m; };
   LF.baseStats = () => ({
@@ -133,7 +137,7 @@
     R(id1, nm1, C, 3, glyph, col, 'All your ' + what + (what === 'moths' ? ' do' : ' does') + ' more' + (key === 'lightAll' ? ': its searing, your flare and your critical strikes' : '') + '. More each rank.', (s, n) => { s[key] *= RK(n, ALL1); }),
     // the uncommon one grows the theme only while its own condition holds, and by more (Player.surge works it out every frame)
     R(id2, nm2, U, 3, glyph, col, 'All your ' + what + (what === 'moths' ? ' do' : ' does') + ' more ' + when2 + '. More each rank.', (s, n) => { s.surge[key] = RK(n, key === 'fireAll' ? LF.TUNE.still : LF.TUNE.surge); }),
-    R(id3, nm3, X, 1, glyph, col, 'All your ' + what + (what === 'moths' ? ' do ' : ' does ') + 'more for every rank of ' + key.replace('All', '') + ' you hold.', (s, n, pl) => { const th = key.replace('All', ''); let k = 0; if (pl) for (const id in pl.relics) { const d = LF.RELICS[id]; if (d && d.school === th) k += pl.relics[id]; } s[key] *= Math.pow(LF.TUNE.deepen, k); }),
+    R(id3, nm3, X, 1, glyph, col, 'All your ' + what + (what === 'moths' ? ' do ' : ' does ') + 'more for every rank of ' + key.replace('All', '') + ' you hold, and of any theme a legendary carries it into.', (s, n, pl) => { const th = key.replace('All', ''); let k = 0; if (pl) { const into = new Set(); for (const id in pl.relics) { const d = LF.RELICS[id]; if (d && d.legend && d.school === th) into.add(d.bridge); } for (const id in pl.relics) { const d = LF.RELICS[id]; if (d && (d.school === th || into.has(d.school))) k += pl.relics[id]; } } s[key] *= Math.pow(LF.TUNE.deepen, k); }),
   ];
   const FI = '#ff7b3d', WA = '#f0e2c0', LI = '#fff0b8', CH = '#d9b070', MO = '#e4d4ff';
   // what a great work needs first: any one of these. (Relics in the deck have no such rule: an amplifier can be
@@ -159,8 +163,8 @@
     R('hearthstone', 'Hearthstone', C, 3, 'flame', FI, 'Resting by a lit brazier mends you faster. More each rank.', (s, n) => { s.restRate *= RK(n, [2, 3, 5]); }),
     // Legendaries (bridges): a rare relic of one theme that makes it do another theme's work. That work is the other
     // theme's alone: light from wax is light, and only what grows your light grows it.
-    R('tallowflames', 'Tallow Flames', X, 1, 'flame', FI, 'Your fire leaves wax.', (s) => { s.tallowFire = 1; }, { bridge: 'wax', legend: true }),
-    R('firelight', 'Firelight', X, 1, 'flame', FI, 'Your light burns in its inner half.', (s) => { s.firelight = 1; }, { bridge: 'light', legend: true }),
+    R('tallowflames', 'Tallow Flames', X, 1, 'flame', FI, 'Your fire leaves wax, and burns harder the stronger your wax.', (s) => { s.tallowFire = 1; }, { bridge: 'wax', legend: true }),
+    R('firelight', 'Firelight', X, 1, 'flame', FI, 'Your light burns in its inner half, and your fire burns harder the stronger your light.', (s) => { s.firelight = 1; }, { bridge: 'light', legend: true }),
     R('heartwood', 'Heartwood', U, 3, 'flame', FI, 'The harm your fire does comes back to you as embers. More each rank.', (s, n) => { s.fireLeech = RK(n, [1, 2, 3]) * LF.EMBER; }),
     R('bankedcoals', 'Banked Coals', C, 3, 'flame', FI, 'Whatever dies burning gives back embers. More each rank.', (s, n) => { s.burnHeal += 1.25 * n; }),
     R('fireblade', 'The Blade of Fire', F, 3, 'flame', FI, 'In place of bolts you swing a blade of fire. It sets alight what it hits, cuts shots out of the air and feeds your flame. Harder each rank.', (s, n) => { s.melee = 1; s.ignite += 1; s.bladeMul = RK(n, [1, 1.5, 2]); }, { form: 'bolt' }),
@@ -175,7 +179,7 @@
     // ---- wax: it slows, it scalds, it spreads, and it sets
     R('tallowbolt', 'Tallow Bolt', U, 3, 'drop', WA, 'Your bolts are tipped with wax: what they hit is slowed and scalded. Harder each rank.', (s, n) => { s.boltWax += 1; s.waxDmg *= RK(n, LF.TUNE.src); s.boltColor = '#f6ecd0'; }),
     R('spiltwax', 'Spilt Wax', U, 3, 'drop', WA, 'Your dash spills a trail of wax that waxes whatever wades through it. Wider each rank.', (s, n) => { s.waxTrail += n; }),
-    R('candleglow', 'Candle Glow', X, 1, 'candle', WA, 'Your wax gives off light.', (s) => { s.poolLight = 1; }, { bridge: 'light', legend: true }),
+    R('candleglow', 'Candle Glow', X, 1, 'candle', WA, 'Your wax gives off light, and scalds harder the stronger your light.', (s) => { s.poolLight = 1; }, { bridge: 'light', legend: true }),
     R('candlefall', 'Candlefall', U, 3, 'candle', WA, 'Your flare waxes all it touches and floods the floor round you with wax. The flood lasts longer each rank.', (s, n) => { s.waxFlood += n; s.flareWax = 1; }),
     R('waxskin', 'Wax Skin', U, 3, 'candle', WA, 'A coat of wax takes blows before your light does, and sets again when you go unhurt. Thicker each rank.', (s, n) => { s.coatMax = RK(n, [8, 14, 24]) * LF.EMBER; }),
     R('lastcoat', 'The Last Coat', U, 1, 'candle', WA, 'Resting by a lit brazier mends you all the way, not just to half.', (s) => { s.restTo = 1; }),
@@ -219,7 +223,7 @@
     R('whiteflash', 'White Flash', C, 3, 'sun', LI, 'Your flare does more harm. More each rank.', (s, n) => { s.flareAmp *= RK(n, LF.TUNE.amp); }),
     R('glowingflare', 'Glowing Flare', U, 3, 'sun', LI, 'Standing in the light your flare leaves gives embers back. Faster each rank.', (s, n) => { s.flareGlow += 0.625 * n; }),
     R('flarememory', 'Flare of Memory', U, 3, 'heart', LI, 'Your flare gives back embers for every creature it touches. More each rank.', (s, n) => { s.flareHeal += 0.625 * n; }),
-    R('softlight', 'Softening Light', X, 1, 'sun', LI, 'Your light lays wax in its inner half.', (s) => { s.softLight = 1; }, { bridge: 'wax', legend: true }),
+    R('softlight', 'Softening Light', X, 1, 'sun', LI, 'Your light lays wax in its inner half, and sears harder the stronger your wax.', (s) => { s.softLight = 1; }, { bridge: 'wax', legend: true }),
     R('blindingglow', 'Blinding Glow', U, 3, 'sun', LI, 'Creatures in your light strike softer, the deeper they stand. Softer each rank.', (s, n) => { s.lightSoft = RK(n, [0.2, 0.33, 0.5]); }),
     R('slowdusk', 'The Slow Dusk', U, 3, 'sun', LI, 'Blows drain your light more slowly, and your flare cancels whatever a blow has yet to take. Slower each rank.', (s, n) => { s.hurtTime = Math.max(s.hurtTime, RK(n, [2, 3, 5])); s.flareMend = 1; }),
     R('keenlight', 'Keen Light', C, 3, 'lens', LI, 'Your bolts strike critically more often the deeper a creature stands in your light. More each rank.', (s, n) => { s.keen += 0.2 * n; }),
@@ -233,8 +237,8 @@
     R('castchains', 'Cast Chains', U, 1, 'chain', CH, 'Your flare swells your censers to twice their size for a few seconds.', (s) => { s.flareFling += 1; }),
     R('heavycenser', 'Heavy Censer', C, 3, 'chain', CH, 'Your censers strike harder. More each rank.', (s, n) => { s.chainMul = (1 + s.chainMul) * RK(n, LF.TUNE.amp) - 1; }),
     R('longchain', 'Long Chain', C, 3, 'chain', CH, 'Your censers swing wider. More each rank.', (s, n) => { s.chainReach += 0.08 * n; }),
-    R('censerlamps', 'Censer Lamps', X, 1, 'chain', CH, 'Your censers give off light.', (s) => { s.censerLamps = 1; }, { bridge: 'light', legend: true }),
-    R('drippingcenser', 'Dripping Censers', X, 1, 'chain', CH, 'Your censers drip wax.', (s) => { s.censerDrip = 3; }, { bridge: 'wax', legend: true }),
+    R('censerlamps', 'Censer Lamps', X, 1, 'chain', CH, 'Your censers give off light and strike harder the stronger your light. Censer never stops adding censers.', (s) => { s.censerLamps = 1; }, { bridge: 'light', legend: true }),
+    R('drippingcenser', 'Dripping Censers', X, 1, 'chain', CH, 'Your censers drip wax, and strike harder the stronger your wax.', (s) => { s.censerDrip = 3; }, { bridge: 'wax', legend: true }),
     R('counterweight', 'Counterweight', C, 3, 'shield', CH, 'Your censers are heavier: they throw creatures back farther and knock shots out of the air in a wider ring. More each rank.', (s, n) => { s.cwThrow = RK(n, [1.5, 2, 3]); s.cwWide = RK(n, [1.3, 1.6, 2]); }),
     R('tautchain', 'Taut Chain', C, 3, 'chain', CH, 'Your bolts hit harder against a shackled creature, or one a censer has just struck. More each rank.', (s, n) => { s.taut = (1 + s.taut) * RK(n, LF.TUNE.mark) - 1; }),
     R('longswing', 'The Long Swing', U, 3, 'ring', CH, 'The wider your censers swing, the harder they strike. More each rank.', (s, n) => { s.longSwing += 0.05 * n; }),
@@ -251,20 +255,20 @@
     ...WHOLE('temperedlinks', 'Tempered Links', 'momentum', 'Momentum', 'ironlaw', 'The Iron Law', 'chain', CH, 'chain', 'chainAll', 'while your chain keeps landing blows'),
 
     // ---- moth: small things that fight for you
-    R('lampmoth', 'Lamp Moth', U, 3, 'moth', MO, 'A tame moth circles you and bites what you light. One more each rank.', (s, n) => { s.familiars += n; }),
-    R('startled', 'Startled Wings', U, 3, 'wing', MO, 'Every dash looses a moth that fights beside you for a few seconds. One more each rank.', (s, n) => { s.dashMoth += n; }),
-    R('flock', 'Flock', U, 3, 'moth', MO, 'Your flare looses moths that fight beside you for a while. More each rank.', (s, n) => { s.flareMoth += 1 + 2 * n; }),
+    R('lampmoth', 'Lamp Moth', U, 3, 'moth', MO, 'A tame moth circles you and bites what you light. More each rank.', (s, n) => { s.familiars += Math.round(RK(n, [1, 2, 4])); }),
+    R('startled', 'Startled Wings', U, 3, 'wing', MO, 'Every dash looses a moth that fights beside you for a few seconds. More each rank.', (s, n) => { s.dashMoth += Math.round(RK(n, [1, 2, 3])); }),
+    R('flock', 'Flock', U, 3, 'moth', MO, 'Your flare looses moths that fight beside you for a while. More each rank.', (s, n) => { s.flareMoth += Math.round(RK(n, [3, 5, 9])); }),
     R('mothshot', 'Moth Shot', U, 1, 'moth', MO, 'Every fifth bolt that lands looses a moth that fights beside you for a few seconds.', (s) => { s.boltMoth += 1; }),
     R('mothdust', 'Moth Dust', C, 3, 'moth', MO, 'Your tame moths bite harder. More each rank.', (s, n) => { s.mothMul *= RK(n, LF.TUNE.amp); }),
     R('frenzy', 'Frenzy', C, 3, 'wing', MO, 'The moths you loose bite harder. More each rank.', (s, n) => { s.swarmMul *= RK(n, LF.TUNE.amp); }),
-    R('longwings', 'Long Wings', C, 3, 'wing', MO, 'The moths you loose live longer. More each rank.', (s, n) => { s.mothLife += 3 * n; }),
+    R('longwings', 'Long Wings', C, 3, 'wing', MO, 'The moths you loose live longer. More each rank.', (s, n) => { s.mothLife += RK(n, [3, 6, 12]); }),
     R('harry', 'Harry', C, 3, 'moth', MO, 'Your bolts hit harder against whatever a moth has just bitten. More each rank.', (s, n) => { s.harry = (1 + s.harry) * RK(n, LF.TUNE.mark) - 1; }),
     R('flit', 'Flit', C, 3, 'wing', MO, 'Your dash returns sooner and you move faster. More each rank.', (s, n) => { s.dashCd *= Math.pow(0.85, n); s.speed *= 1 + 0.04 * n; }),
     R('mothcloud', 'The Moth Cloud', F, 3, 'moth', MO, 'Your flare leaves a cloud of moths where it burst, biting everything inside again and again. It hangs longer each rank.', (s, n) => { s.mothCloud = RK(n, [4, 6, 9]); }, { form: 'flare' }),
     R('wingedbolts', 'Winged Bolts', F, 3, 'wing', MO, 'Your bolts are moths. They curve toward your aim, hit a little softer than a bolt, and each one bites. The bite is harder each rank.', (s, n) => { s.wing = RK(n, [0.5, 1, 2]); s.damage *= 0.8; s.boltColor = '#e4d4ff'; }, { form: 'bolt' }),
-    R('cindermoths', 'Cinder Moths', X, 1, 'moth', MO, 'Your moths burn.', (s) => { s.cinderMoth = 1; s.mothFire += 1; }, { bridge: 'fire', legend: true }),
-    R('censermoths', 'Censer Moths', X, 1, 'moth', MO, 'Moths ride your censers.', (s) => { s.censerMoths = 2; }, { bridge: 'chain', legend: true }),
-    R('mothlamps', 'Moth Lamps', X, 1, 'moth', MO, 'Your moths give off light.', (s) => { s.mothLamps = 1; }, { bridge: 'light', legend: true }),
+    R('cindermoths', 'Cinder Moths', X, 1, 'moth', MO, 'Your moths burn, and bite harder the stronger your fire.', (s) => { s.cinderMoth = 1; s.mothFire += 1; }, { bridge: 'fire', legend: true }),
+    R('censermoths', 'Censer Moths', X, 1, 'moth', MO, 'Moths ride your censers, and bite harder the stronger your chain.', (s) => { s.censerMoths = 2; }, { bridge: 'chain', legend: true }),
+    R('mothlamps', 'Moth Lamps', X, 1, 'moth', MO, 'Your moths give off light, and bite harder the stronger your light.', (s) => { s.mothLamps = 1; }, { bridge: 'light', legend: true }),
     R('decoywings', 'Decoy Wings', U, 3, 'moth', MO, 'When a blow lands, a moth beside you takes it for you. A loosed moth dies of it; a tame one is dazed for a while. More often each rank.', (s, n) => { s.decoy = RK(n, [2, 1.4, 0.9]); }),
     R('hatch', 'Embers Hatch', X, 1, 'moth', MO, 'An ember left on the ground for a few seconds hatches into a moth that fights for you. The ember is gone.', (s) => { s.hatch += 1; }),
     R('brood', 'The Brood', X, 1, 'moth', MO, 'Whatever dies to a moth\'s bite hatches another moth for a few seconds.', (s) => { s.broodKill += 1; }),
@@ -325,7 +329,7 @@
     R('boonstride', 'Light Feet', BN, 9, 'wing', '#ffe9b8', '+5% move speed.', (s, n) => { s.speed *= 1 + 0.05 * n; }),
     R('boonbreath', 'A Deep Breath', BN, 9, 'star', '#fff2cc', 'Your flare returns 12% sooner.', (s, n) => { s.flareCd *= Math.pow(0.88, n); }),
     R('boonember', 'Banked Embers', BN, 9, 'flame', '#ff9a50', 'Each ember you gather counts for 12% more.', (s, n) => { s.emberMul += 0.12 * n; }),
-    R('boonhand', 'An Open Hand', BN, 9, 'eye', '#ffe2a6', 'Two more rerolls, now.', () => {}, { onGain: g => { g.player.rerolls += 2; } }),
+    R('boonhand', 'An Open Hand', BN, 9, 'eye', '#ffe2a6', 'A handful of glass, now.', () => {}, { onGain: g => { g.player.glass += 40; g.run.glass += 40; } }),
     R('boonpurse', 'A Full Purse', BN, 9, 'glass', '#bfe3ff', '60 glass now, and 10% more glass from here on.', (s, n) => { s.glassMul += 0.1 * n; }, { onGain: g => { g.player.glass += 60; g.run.glass += 60; } }),
   ];
   for (const r of LF.BOONS) LF.RELICS[r.id] = r;
@@ -483,6 +487,8 @@
         if (r.rarity === U) w += floor * 1.2;
         if (opts.low) w *= r.rarity === C ? 1.7 : r.rarity === X ? 0.35 : 0.9; // a reliquary holds humbler things than a stair does
         if (player.relics[r.id]) w *= LF.TUNE.again; // a relic already held comes round again: taking it is a rank
+        // a legendary comes round more often the deeper the lantern is in the theme it carries, and more again once it holds the theme it carries into
+        if (r.legend) w *= (1 + LF.TUNE.legendDraw * Math.min(8, counts[r.school] || 0)) * (counts[r.bridge] ? 1.5 : 1);
         if (counts[r.school] && LF.TUNE.draw) w *= 1.25 + LF.TUNE.draw * Math.min(6, counts[r.school]); // (off: draw is 0) the lantern draws its own kind
         { const src = LF.SOURCES[r.school]; if (src && counts[r.school] && src.includes(r.id) && !src.some(id => player.relics[id])) w *= LF.TUNE.seek; } // and one that holds a theme with nothing to start it is shown a source
         return w;
@@ -492,6 +498,13 @@
       out.push(pick);
     }
     return out;
+  };
+  // now and then the stair shows a legendary as one card more (never in place of one), any of them alike: likelier the
+  // deeper the Level, up to legendSlot on Level 9. Null when none is dealt.
+  LF.legendExtra = function (player, rng, not, floor) {
+    const pool = LF.availRelics(player).filter(r => r.legend && !player.relics[r.id] && !(not || []).includes(r));
+    if (!pool.length || !rng.chance(LF.TUNE.legendSlot * Math.min(9, floor || 1) / 9)) return null;
+    return pool[rng.int(0, pool.length - 1)];
   };
 
   // ---------- glyph icons (vector, drawn at any size) ----------

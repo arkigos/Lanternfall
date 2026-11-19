@@ -611,8 +611,8 @@
       [touch ? 'Flare' : 'Flare (right click, or Q)', 'A burst of light that stuns and throws back everything near you, shatters enemy shots and lights braziers. It does no harm by itself, but what it touches stays kindled for a few seconds and takes far more damage. When the crowd closes in, this is the way out.'],
       [touch ? 'Dash' : 'Dash (space)', 'A short burst of speed that passes through attacks. Costs about an ember.'],
       ['Fires hold the dark off', 'Beside a lit brazier or a relit wall lamp your embers stop burning down. A brazier also refills you when lit, and, with nothing near, mends you up to half while you rest there.'],
-      ['Relics', 'Your lantern carries the first relic of its theme from the first step. Every stair offers three, and you may reroll them. Unmake nearly everything on a floor for one more to choose from. A reliquary holds three humbler things; a statue gives a blessing; a Trial of Embers leaves a great work; an altar offers a bargain.'],
-      ['Glass and cinders', 'At each stair the Forge ranks up a relic you carry for glass (' + LF.TUNE.forgeII + ' for rank II, ' + LF.TUNE.forgeIII + ' for rank III). Glass also buys rerolls: when an offer holds nothing you need, pay ' + LF.TUNE.rerollGlass + ' glass to see another, and ' + LF.TUNE.rerollMore + ' more each time after on the same offer. Offers are dealt from the whole deck, so some will hold nothing for you. Glass also buys forms from the Chandler, and a form is dear. Cinders are earned at the end and spent at the Hearth.'],
+      ['Relics', 'Your lantern carries the first relic of its theme from the first step. Every stair offers three, and you may reroll them for glass. Unmake nearly everything on a floor for one more to choose from. A reliquary holds three humbler things; a statue gives a blessing; a Trial of Embers leaves a great work; an altar offers a bargain.'],
+      ['Glass and cinders', 'Glass has two uses at a stair, and each takes from the other. The Forge button ranks up a relic you carry: ' + LF.TUNE.forgeII + ' glass for rank II, and dearer with every rank it already holds. A reroll shows you new cards: the first is cheap, and each after it on the same offer costs more. Offers are dealt from the whole deck, so some will hold nothing for you. Glass also buys forms from the Chandler, and a form is dear. Cinders are earned at the end and spent at the Hearth.'],
     ];
     ctx.font = `${Math.round(13 * u)}px ${LF.FONT_UI}`;
     const wrapped = rows.map(r => LF.wrapText(ctx, r[1], w - 44 * u).slice(0, 4));
@@ -987,7 +987,7 @@
     ctx.fillStyle = 'rgba(2,3,8,0.94)'; ctx.fillRect(0, 0, W, H);
     const ty = NAR ? 50 * u : H * 0.11;
     bigTitle(o.title, ty, NAR ? 26 : 38, '#ffe2b0');
-    txt('Glass forges a rank into a relic you carry: ' + LF.TUNE.forgeII + ' for rank II, ' + LF.TUNE.forgeIII + ' for rank III, ' + LF.TUNE.forgeMore + ' more each rank after.', W / 2, ty + (NAR ? 30 : 40) * u, NAR ? 12 : 14, '#c9bfae', 'center', LF.FONT_UI, 'italic');
+    txt('Glass forges a rank into a relic you carry. The higher its rank, the dearer the next.', W / 2, ty + (NAR ? 30 : 40) * u, NAR ? 12 : 14, '#c9bfae', 'center', LF.FONT_UI, 'italic');
     txt('\u25c6 ' + Math.floor(p.glass) + ' glass', W / 2, ty + (NAR ? 50 : 64) * u, NAR ? 14 : 17, '#8fe6ff', 'center', LF.FONT_UI, 'bold');
     const n = o.relics.length, cols = NAR ? 1 : n > 14 ? 4 : n > 6 ? 3 : 2, rows = Math.ceil(n / cols);
     const y0 = ty + (NAR ? 70 : 92) * u, room = H - y0 - (NAR ? 150 : 170) * u, gap = 8 * u;
@@ -1020,7 +1020,7 @@
       wtxt(shown.desc, W / 2, py + 26 * u, NAR ? 11.5 : 12.5, '#d8cdb8', Math.min(W - 40 * u, 640 * u), 16, '');
     }
     const bw = Math.min(240 * u, W - 40 * u);
-    if ((button(o.forged ? 'Done' : 'Leave the forge cold', (W - bw) / 2, H - 62 * u, bw, 44 * u, { back: true }) || inp.back) && o.t > 0.25) chosen = -1;
+    if ((button(o.forged ? 'Done' : 'Back to the cards', (W - bw) / 2, H - 62 * u, bw, 44 * u, { back: true }) || inp.back) && o.t > 0.25) chosen = -1;
     if (chosen > -2) { if (chosen >= 0) g.pickOffer(chosen); else { LF.audio.play('uiSelect'); g.pickOffer(-1); } }
   }
   function offer(g) {
@@ -1106,17 +1106,18 @@
       if (button(o.buy ? 'Leave it on the pedestal' : 'Walk away', bx, by, bw1, 44 * u, o.buy ? { back: true, size: 13 } : { back: true }) && o.t > 0.35) chosen = -1;
     }
     else {
-      const rr = !o.noReroll && !o.cursed, alt = o.altGlass > 0, keep = !!o.mend, cnt = (rr ? 1 : 0) + (alt ? 1 : 0) + (keep ? 1 : 0);
+      const rr = !o.noReroll && !o.cursed, alt = o.altGlass > 0, keep = !!o.mend, fg = !!o.forgeable, cnt = (rr ? 1 : 0) + (alt ? 1 : 0) + (keep ? 1 : 0) + (fg ? 1 : 0);
       const bw2 = Math.min(250 * u, (W - 32 * u - (cnt - 1) * 12 * u) / Math.max(1, cnt));
       const total = cnt * bw2 + (cnt - 1) * 12 * u; let bx = (W - total) / 2;
-      if (rr) { if (button(o.free ? 'Show the others' : rerollLabel(g, o), bx, by, bw2, 44 * u, { size: 14 }) || inp.reroll) { g.rerollOffer(); return; } bx += bw2 + 12 * u; }
+      if (rr) { if (button(o.free ? 'Show the others' : rerollLabel(g, o), bx, by, bw2, 44 * u, { size: NAR ? 13 : 14 }) || inp.reroll) { g.rerollOffer(); return; } bx += bw2 + 12 * u; }
+      if (fg) { if ((button('The Forge  \u00b7  \u25c6 ' + Math.floor(g.player.glass), bx, by, bw2, 44 * u, { size: NAR ? 13 : 14 }) || inp.forge) && o.t > 0.35) { LF.audio.play('uiSelect'); g.openForge(); return; } bx += bw2 + 12 * u; }
       if (alt && button('Leave them: take ' + o.altGlass + ' glass', bx, by, bw2, 44 * u, { size: NAR ? 13 : 14, back: true }) && o.t > 0.35) chosen = -1;
       if (keep && button('Done: keep the glass', bx, by, bw2, 44 * u, { size: NAR ? 13 : 14, back: true }) && o.t > 0.35) chosen = -1;
     }
     if (chosen > -2) { LF.audio.play('uiSelect'); g.pickOffer(chosen); }
   }
-  // the lantern's own rerolls go first; after them a reroll is bought with glass
-  function rerollLabel(g, o) { return g.player.rerolls > 0 ? 'Reroll  (' + g.player.rerolls + ' left)' : 'Reroll  \u00b7  ' + g.rerollPrice(o) + ' of ' + Math.floor(g.player.glass) + ' glass'; }
+  // every reroll is bought with glass, and each costs more than the last on the same offer
+  function rerollLabel(g, o) { return 'Reroll  \u00b7  \u25c6 ' + g.rerollPrice(o); }
   function statRows(g, y0) {
     const r = g.run;
     const rows = [g.mode === 'vigil' ? ['Waves survived', String(r.wave || 0)] : g.mode === 'rush' ? ['Shadows faced', (r.depth || g.depth) + ' of ' + g.rushLen()] : ['Reached', LF.place(r.depth || g.depth, ', ')], ['Creatures unmade', String(r.kills)], ['Elites', String(r.elites || 0)], ['Great shadows felled', String(r.bosses)], ['Time in the dark', LF.fmtTime(r.time)], g.mode === 'descent' ? ['Lamps relit', String(r.lamps || 0)] : ['Glass gathered', String(Math.floor(r.glass))]];
