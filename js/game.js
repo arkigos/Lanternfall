@@ -41,6 +41,15 @@
     ['eclipse', 'The dark that closed around the fallen Lantern. Totality passes. Outlast it.', true],
     ['choir', 'Three masks, one song. Only the mask that is singing can truly be hurt.', true],
     ['bearer', 'The first Lamplighter to reach the Lantern. It answers each dash and each flare with its own.', true],
+    ['weight', 'The great weight still swings to keep a chain that is gone. Leave its arc before it swings, and mind where it drags.', true],
+    ['founder', 'It cast every link of the great chain. Get out of the channels before the slag runs, and dash to break its links.', true],
+    ['lampeater', 'It swallowed the lamps of a whole street. Relight what it eats to tear the flame back out. Starved, it is soft.', true],
+    ['archivist', 'It keeps the roll of every bearer in Vael. Each name it reads stands up to fight for it. A flare scatters its pages.', true],
+    ['hound', 'It hunts by the smell of your flame. Hold still, or let your light run low, and it hunts blind along your trail.', true],
+    ['unlit', 'The high priest of those who prayed to the dark. In its own darkness it can barely be hurt: keep the braziers lit, or tear the veil with a flare.', true],
+    ['weeping', "The Lantern's broken lens. Its light bends and splits. When it shatters, break the shards before they find each other again.", true],
+    ['lastkeeper', 'It tended the Lantern at the top of the chain. Its oil lies dead until lit: burn it under the Keeper, and keep clear of the snuffer.', true],
+    ['fifth', 'Struck from every roll. It walks where you are going. When the Lantern draws your light, finish it.', true],
   ];
   // Feats: one-time goals, checked when a run ends. Each pays cinders once.
   LF.FEATS = [
@@ -60,6 +69,7 @@
     { id: 'lamps', name: "Lamplighter's Work", desc: 'Relight 500 wall lamps in total.', reward: 50, test: g => (g.meta.lamps || 0) >= 500 },
     { id: 'kills1000', name: 'Unmaker', desc: 'Unmake 1,000 creatures in total.', reward: 60, test: g => (g.meta.kills || 0) >= 1000 },
     { id: 'lanterns', name: 'Lamplighter', desc: 'Finish a Depth with three different lanterns.', reward: 120, test: g => Object.keys(g.meta.wonWith || {}).length >= 3 },
+    { id: 'allboss18', name: 'Every Shadow', desc: 'Fell all eighteen great shadows at least once.', reward: 200, test: g => LF.BOSS_SLOTS.every(k => (g.meta.felled || {})[k]) },
     { id: 'allboss', name: 'Nine Shadows', desc: 'Fell all nine great shadows at least once.', reward: 100, test: g => ['bell', 'warden', 'angler', 'mother', 'king', 'sexton', 'bearer', 'eclipse', 'choir'].every(k => (g.meta.felled || {})[k]) },
     { id: 'umbral', name: 'Umbral Dawn', desc: 'Finish a Depth on Umbral.', reward: 150, test: (g, r) => g.mode === 'descent' && !!r.everWon && g.diff === LF.DIFFS[2] },
     { id: 'cycle2', name: 'Deeper Still', desc: 'Reach Level 3 of the second Depth.', reward: 120, test: g => g.mode === 'descent' && g.depth >= 12 },
@@ -81,16 +91,17 @@
   // The great shadows of each boss depth, in the order they unlock.
   LF.BOSS_SETS = [['bell', 'warden', 'angler'], ['mother', 'king', 'sexton'], ['eclipse', 'choir', 'bearer']];
   // The Great Lantern broke as it fell. Each cycle of nine depths ends at one of its shards, and a shard, once
-  // taken up, is kept for every descent after. The fifth cycle ends at the Lantern itself.
+  // taken up, is kept for every descent after. The last Depth ends at the Lantern itself.
   LF.SHARDS = [
     { name: 'The Shard of Morning', power: 'Your lantern holds 10 more embers, and they burn down 15% slower.' },
     { name: 'The Shard of the Works', power: 'Every descent begins with the offer of a great work.' },
     { name: 'The Shard of the Chain', power: 'Rerolls cost a fifth less, and one more relic to choose from at every stair.' },
     { name: 'The Shard of the Heart', power: 'Once each descent, when your last ember would go out, they blaze back to full instead.' },
+    { name: 'The Shard of the Road', power: 'Every descent begins with 40 glass.' },
     { name: 'The Great Lantern', power: '' },
   ];
   LF.ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
-  // What the player reads: five Depths of nine Levels each. In code a `depth` is still one floor, counted from 1,
+  // What the player reads: six Depths of nine Levels each. In code a `depth` is still one floor, counted from 1,
   // and `loop` / `cycle` is which Depth it belongs to.
   LF.depthOf = d => Math.floor((Math.max(1, d | 0) - 1) / 9);
   LF.levelOf = d => ((Math.max(1, d | 0) - 1) % 9) + 1;
@@ -139,8 +150,8 @@
     'Snuffers shrink your light from a distance. Hunt them down.',
     'Cinders are kept even when you die. Spend them at the Hearth.',
     'A relic that builds on a power you lack is never offered. The relic that gives that power comes in its place.',
-    'The Forge button on a stair\'s offer ranks up a relic you carry, for glass. The higher its rank, the dearer the next: ' + LF.TUNE.forgeII + ' for rank II, ' + (LF.TUNE.forgeII + LF.TUNE.forgeMore + LF.TUNE.forgeRamp) + ' for rank III, and steeper after. Taking the same relic again from an offer ranks it too, for nothing.',
-    'Ranks do not stop at III. A relic that keeps coming round keeps growing, and what multiplies grows by half again each time.',
+    'After each stair\'s card, the Forge ranks up a relic you carry, for glass. The higher its rank, the dearer the next: ' + LF.TUNE.forgeII + ' for rank II, ' + (LF.TUNE.forgeII + LF.TUNE.forgeMore + LF.TUNE.forgeRamp) + ' for rank III, and steeper after. Taking the same relic again from an offer ranks it too, for nothing.',
+    'Ranks do not stop at III. A relic that keeps coming round keeps growing, a little more each time.',
     'What multiplies, multiplies everything else: three relics in each theme make all of that theme do more, and stack on each other. One theme pumped high beats five held low.',
     'Every reroll costs glass: the first on an offer is cheap, and each after it costs more than the last. Glass spent rerolling is glass not spent at the Forge.',
     'Forms are not found. The Chandler sells them, when the Chandler is there and has the one you want: a form changes how your bolt or your flare works. Glass spent on rerolls is glass not saved for one.',
@@ -278,7 +289,7 @@
         const felled = this.meta.felled || {}, rr = new LF.RNG((this.seed ^ 0x5eed5) >>> 0);
         this.rushOrder = [];
         if (this.practice) this.rushOrder.push(this.practice);
-        else for (const set of LF.BOSS_SETS) { const pool = set.filter((b, i) => i < 2 || felled[set[i - 1]]); rr.shuffle(pool); this.rushOrder.push(pool[0], pool[1]); }
+        else for (let band = 0; band < 3; band++) { const pool = [...new Set(LF.BOSS_SLOTS.map((b, s) => s % 3 === band && (s < 6 || felled[b]) ? LF.bossAt(s) : null).filter(Boolean))]; rr.shuffle(pool); this.rushOrder.push(pool[0], pool[1] || pool[0]); }
       }
       this.player = new LF.Player(this);
       const up = this.meta.up;
@@ -298,6 +309,7 @@
       // At one tier of each type, chosen afresh each descent, the bolt may be turned to that type.
       this.boltTier = {}; for (const k in LF.BOLT_OF) this.boltTier[k] = this.rng.int(1, 3);
       this.pendingBolt = null;
+      if (this.mode === 'descent' && (this.meta.shards || 0) >= 5) this.player.glass += 40; // the Shard of the Road
       if (!this.practice) { this.meta.runs++; this.save(); }
       this.loadFloor();
       this.state = 'play';
@@ -330,6 +342,7 @@
     rushLen() { return this.rushOrder ? this.rushOrder.length : LF.RUSH.length; }
     rushFloor(i) {
       const b = this.rushOrder ? this.rushOrder[i] : LF.RUSH[i][0];
+      const s = LF.bossSlot(b); if (s >= 0) return (s % 3 + 1) * 3;
       for (let t = 0; t < LF.BOSS_SETS.length; t++) if (LF.BOSS_SETS[t].includes(b)) return (t + 1) * 3;
       return 3;
     }
@@ -344,7 +357,9 @@
       const p = this.player;
       this.floor = ((this.depth - 1) % 9) + 1; this.loop = Math.floor((this.depth - 1) / 9);
       if (this.mode === 'rush') { this.floor = this.rushFloor(Math.min(this.rushLen(), this.depth) - 1); this.loop = 0; }
-      this.biome = LF.BIOMES[Math.floor((this.floor - 1) / 3)];
+      // the section this Level lies in: its name, colours, epigraphs and its own feature (js/sections.js)
+      this.section = this.mode === 'rush' ? LF.SECTIONS[Math.max(0, LF.bossSlot(this.pickBoss()))] : LF.sectionAt(this.loop, this.floor);
+      this.biome = this.section;
       const df = this.diff;
       this.enemySpeedMul = 1.06; this.floorT = 0; this.lingerN = 0;
       const grow = LF.TUNE.grow;
@@ -352,21 +367,24 @@
       // Health never starts over: Level 1 of a new Depth is one more step down from Level 9 of the last, because the
       // lantern that reaches it has kept everything. (`deep` is the Level counted from the top of the descent.)
       const deep = this.mode === 'descent' ? this.depth : this.floor;
-      const hpAt = n => { let m = 1; for (let k = 2; k <= n; k++) m *= LF.TUNE.hpGrow[Math.floor(((k - 1) % 9) / 3)]; return m; };
+      // Depth I keeps its own shape (hpGrow, three Levels at a time). Each Depth after it multiplies health by its figure in
+      // hpDepth, spread evenly over its nine Levels, so the arc runs from tens to the hundred thousands by the end of
+      // Depth VI instead of to the trillions. (Depth II's is the largest: the build is still widening there.)
+      const hpAt = n => { let m = 1; for (let k = 2; k <= n; k++) { const dd = LF.TUNE.hpDepth; m *= k <= 9 ? LF.TUNE.hpGrow[Math.floor((k - 1) / 3)] : Math.pow(dd[Math.min(dd.length - 1, Math.floor((k - 10) / 9))], 1 / 9); } return m; };
       this.enemyHpMul = 1.2 * hpAt(deep) * df.hp;
       // hits bite a little harder now that light sears and kills rekindle: losing light has to matter
       this.enemyDmgMul = 1.24 * LF.curve(LF.TUNE.dmgGrow, this.floor) * (1 + this.loop * 0.12) * (1 + (this.carry || 0) * 0.45) * df.dmg;
       this.bossDmgMul = this.enemyDmgMul * 1.14 / 1.24 * (this.floor === 6 ? LF.TUNE.secondHit : this.floor === 9 ? LF.TUNE.thirdHit : 1); // the great shadows are hard enough: they did not get the latest increase
-      this.bossHpMul = 1.7 * (this.floor === 3 ? LF.TUNE.first : this.floor === 6 ? LF.TUNE.second : this.floor === 9 ? LF.TUNE.third : 1) * hpAt(deep) / hpAt(3) * df.hp;
+      this.bossHpMul = 1.7 * (this.floor === 3 ? LF.TUNE.first : this.floor === 6 ? LF.TUNE.second : this.floor === 9 ? LF.TUNE.third : 1) * hpAt(deep) / 3.24 * LF.TUNE.bossHp[this.loop > 0 ? 1 : 0] * df.hp; // (3.24: Level 3's health before the arc was flattened, so a great shadow stays as many Lurkers as it was, and then bossHp more)
       { const k = Math.max(0, 4 - this.floor) / 3; if (deep <= 9) this.enemyHpMul *= 1 + LF.TUNE.earlyHp * k; this.enemyDmgMul *= 1 + LF.TUNE.early * k; } // the first Levels bite (the great shadow of Level 3 is left as it was)
       if (this.mode === 'rush' && !this.practice) { this.enemyDmgMul *= 0.8; this.bossDmgMul *= 0.8; this.bossHpMul *= 0.62; } // no floors between fights to build on
       this.omen = null;
       this.floorRng = new LF.RNG((this.seed + this.depth * 104729) >>> 0);
       // in a second cycle and beyond, every floor bears an omen
       if (this.floor % 3 !== 0 && this.depth >= 2 && (this.floorRng.chance(0.42) || this.loop >= 1)) this.omen = this.floorRng.pick(LF.OMENS);
-      if (this.mode === 'vigil') { this.omen = null; this.biome = LF.BIOMES[Math.abs(this.seed) % 3]; }
+      if (this.mode === 'vigil') { this.omen = null; this.biome = this.section = LF.BIOMES[Math.abs(this.seed) % 3]; }
       const map = this.map = this.mode === 'vigil' ? LF.generateArena(this.seed)
-        : LF.generateFloor(this.floor, this.seed + this.depth * 7919, { loop: (this.carry || 0) + (this.loop - (this.carry || 0)) * 0.3, omen: this.omen ? this.omen.id : null, bossType: this.pickBoss() });
+        : LF.generateFloor(this.floor, this.seed + this.depth * 7919, { loop: (this.carry || 0) + (this.loop - (this.carry || 0)) * 0.3, omen: this.omen ? this.omen.id : null, bossType: this.pickBoss(), feature: this.section.feature });
       this.enemies = []; this.bullets = []; this.ebullets = []; this.pickups = []; this.zones = []; this.flashes = []; this.delays = [];
       fx.clear();
       this.bufDash = 0; this.bufFlare = 0; this.bufInteract = 0; this.hitDir = null; this.rush = false; this.tideHigh = false;
@@ -396,11 +414,12 @@
       }
       for (const pr of this.props) if (pr.kind === 'brazier' && pr.lit) this.lightBrazier(pr, true);
       if (p.stats.reveal) map.revealAll();
+      { const F = LF.FEATURES[this.section.feature]; if (F && F.start) F.start(this); }
       map.computeFlow(p.x, p.y);
       this.renderer.buildMap(map, this.biome);
       this.room = null; this.flowT = 0; this.seenT = 0;
       const isBoss = !!map.boss;
-      this.banner = { text: this.mode === 'rush' ? (this.practice ? 'Rehearsal' : 'Shadow ' + this.depth + ' of ' + this.rushLen()) : isBoss ? LF.place(this.depth) : this.biome.name, sub: isBoss ? (this.floor === 9 && this.mode === 'descent' ? (this.loop >= 4 ? 'The Great Lantern is below. Something stands in front of it' : 'A shard of the Lantern is below. Something stands in front of it') : 'Something vast is waiting') : LF.place(this.depth) + (this.omen ? '  ·  Omen: ' + this.omen.name : ''), sub2: isBoss ? '' : LF.pick(LF.EPIGRAPHS[Math.floor((this.floor - 1) / 3)]), t: 0, dur: 4.6 };
+      this.banner = { text: this.mode === 'rush' ? (this.practice ? 'Rehearsal' : 'Shadow ' + this.depth + ' of ' + this.rushLen()) : isBoss ? LF.place(this.depth) : this.biome.name, sub: isBoss ? (this.floor === 9 && this.mode === 'descent' ? (this.loop >= LF.LAST_DEPTH ? 'The Great Lantern is below. Something stands in front of it' : 'A shard of the Lantern is below. Something stands in front of it') : 'Something vast is waiting') : LF.place(this.depth) + (this.omen ? '  ·  Omen: ' + this.omen.name : ''), sub2: isBoss ? '' : LF.pick(this.section.epi || LF.EPIGRAPHS[Math.floor((this.floor - 1) / 3)]), t: 0, dur: 4.6 };
       if (this.mode === 'vigil') this.banner = { text: 'The Long Vigil', sub: 'Hold the light for as long as you can', sub2: 'The first wave comes in a moment.', t: 0, dur: 4.2 };
       if (this.omen) this.toast('Omen: ' + this.omen.name, this.omen.desc, '#c9a7ff', 'eye', '#c9a7ff');
       if ((this.omen && this.omen.id === 'hunt') || (this.vows.hunted && !isBoss)) {
@@ -420,16 +439,13 @@
     // ---------------------------------------------------------- helpers used by entities
     stat(name, n = 1) { if (this.run) this.run[name] = (this.run[name] || 0) + n; }
     omenMul(key) { return this.omen && this.omen[key] ? this.omen[key] : 1; }
-    // Each boss depth has an original and one or two alternates; each alternate can appear once the shadow before it has been felled.
+    // Each section's third Level holds its own great shadow (LF.BOSS_SLOTS).
     pickBoss() {
       if (this.mode === 'rush') { const i = Math.min(this.rushLen(), this.depth) - 1; return this.rushOrder ? this.rushOrder[i] : LF.RUSH[i][0]; }
       if (this.floor % 3 !== 0) return null;
-      const set = LF.BOSS_SETS[this.floor / 3 - 1];
-      const felled = this.meta.felled || {};
       if (this.forceBoss) return this.forceBoss;
-      // a daily descent draws from every shadow, so it is the same for everyone and for every try
-      const pool = set.filter((b, i) => i === 0 || this.daily || felled[set[i - 1]]);
-      return pool[Math.min(pool.length - 1, Math.floor(this.floorRng.next() * pool.length))];
+      // every section ends at its own great shadow, always the same one (js/sections.js)
+      return LF.bossAt(Math.min(LF.LAST_DEPTH, this.loop) * 3 + this.floor / 3 - 1);
     }
     hint(text) { this.hintText = text; this.hintT = 1.4; }
     delay(t, fn) { this.delays.push({ t, fn }); }
@@ -587,7 +603,7 @@
       if (src.type === 'chain' && s.surge.chainAll) this.player.mom = Math.min(1, (this.player.mom || 0) + 0.25); // Momentum builds with every censer's blow
       { const ty = src.type, th = ty === 'sear' || ty === 'flare' ? 'light' : ty === 'wax' ? 'wax' : ty === 'chain' ? 'chain' : ty === 'moth' ? 'moth' : ty === 'burn' || ty === 'cinder' || ty === 'thorns' || ty === 'fire' ? 'fire' : null;
         if (th) dmg *= s[th + 'All'];
-        const br = th && this.player.bridgeTo && this.player.bridgeTo[th]; if (br) for (const k of br) dmg *= s[k]; } // a bridge: moths that are lamps bite as hard as all your light does
+        const br = th && this.player.bridgeTo && this.player.bridgeTo[th]; if (br) for (const k of br) dmg *= Math.pow(s[k], LF.TUNE.flat); } // a bridge: moths that are lamps bite as hard as all your light does
       if (s.glare && e.stun > 0) dmg *= 1.5;
       if (e.elite && s.eliteDmg) dmg *= 1 + s.eliteDmg;
       if (e.affix === 'warded' && src.type === 'bolt' && !(e.wardBroken > 0)) { dmg *= 0.45; if (Math.random() < 0.15) fx.text(e.x, e.y - e.r - 16, 'WARDED: flare to break', '#9fc7ff', 9, 0.8); }
@@ -848,10 +864,10 @@
         : this.mode === 'rush' ? Math.round((r.bosses * 26 + (won || r.everWon ? 50 : 0)) * this.diff.cinders * (1 + this.vowBonus()))
         : Math.round(((this.depth - (this.startDepth || 1)) * 6 + Math.min(r.kills, (this.depth - (this.startDepth || 1) + 1) * 45) * 0.22 + r.bosses * 22 + (won || r.everWon ? 60 : 0)) * this.diff.cinders * (1 + this.vowBonus()));
       if (won) r.everWon = true;
-      if (won && this.mode === 'descent' && this.loop >= 4) r.lit = true; // the fifth Depth: the Great Lantern itself
+      if (won && this.mode === 'descent' && this.loop >= LF.LAST_DEPTH) r.lit = true; // the last Depth: the Great Lantern itself
       // the shard at the bottom of this cycle, if it is the next one unclaimed
       r.shard = 0;
-      if (won && this.mode === 'descent' && this.loop < 5 && this.loop === (this.meta.shards || 0)) { this.meta.shards = this.loop + 1; r.shard = this.loop + 1; this.player.recalc(); }
+      if (won && this.mode === 'descent' && this.loop <= LF.LAST_DEPTH && this.loop === (this.meta.shards || 0)) { this.meta.shards = this.loop + 1; r.shard = this.loop + 1; this.player.recalc(); }
       this.meta.cinders += Math.max(0, r.cinders - (r.paid || 0));
       r.paid = Math.max(r.paid || 0, r.cinders);
       if (this.mode === 'descent') this.meta.best = Math.max(this.meta.best, this.depth);
@@ -879,7 +895,7 @@
       r.unlocks = LF.LANTERNS.filter(l => l.unlocked(this.meta) && !this.unlockedAtStart.includes(l.id)).map(l => 'New lantern kindled: ' + l.name);
       for (const l of LF.LOOKS) if (LF.lookOpen(l, this.meta) && !(this.looksAtStart || []).includes(l.id)) r.unlocks.push('A Lightbearer answers: ' + l.name);
       const felled = this.meta.felled || {};
-      for (const [a, b] of [['bell', 'warden'], ['warden', 'angler'], ['mother', 'king'], ['king', 'sexton'], ['eclipse', 'choir'], ['choir', 'bearer']]) if (felled[a] && !this.felledAtStart[a]) r.unlocks.push('A new shadow stirs below: ' + LF.ENEMY_DEFS[b].name);
+      // (great shadows no longer unlock one another: each section always ends at its own)
       if ((this.meta.bosses || 0) >= 1 && !this.vowsWereOpen) r.unlocks.push('Vows can now be sworn before a descent');
       if (r.masteryUp) r.unlocks.push(LF.LANTERN[this.lanternId].name + ' mastery ' + ['', 'I', 'II', 'III'][r.masteryUp] + ': +4% damage and +2 embers with it');
       if (!this.meta.feats) this.meta.feats = {};
@@ -1151,7 +1167,7 @@
         case 'font': return pr.used ? null : 'Drink from the Font of Light';
         case 'statue': return pr.used ? null : 'Kneel before the Weeping Lamplighter';
         case 'trial': return pr.used ? null : 'Wake the Brazier of Trials';
-        case 'exit': return pr.open && !pr.hidden ? (this.victoryReady ? (this.mode === 'descent' ? (this.loop >= 4 ? 'Give it your flame' : 'Take up the shard') : 'Step into the light') : 'Descend') : null;
+        case 'exit': return pr.open && !pr.hidden ? (this.victoryReady ? (this.mode === 'descent' ? (this.loop >= LF.LAST_DEPTH ? 'Give it your flame' : 'Take up the shard') : 'Step into the light') : 'Descend') : null;
       }
       return null;
     }
@@ -1194,15 +1210,13 @@
     // what the next reroll of this offer costs in glass: cheap at first, dearer each time
     rerollPrice(o) { const T = LF.TUNE, n = (o && o.paid) || 0; return Math.max(1, Math.round((T.rerollGlass + T.rerollMore * n + T.rerollRamp * n * n) * (1 - (this.player.rerollOff || 0)))); }
     canReroll(o) { const p = this.player; return !!o && !o.cursed && !o.noReroll && p.glass >= this.rerollPrice(o); }
-    // The Forge, opened from a stair's or a shard's offer: everything the lantern carries that can still grow, each with
-    // its price. Leaving it goes back to the same offer, with the same cards.
-    canForge(o) { const p = this.player; return !!o && !!o.forgeable && p.relicOrder.some(id => { const d = LF.RELICS[id]; return d && d.rarity !== 'boon' && p.relics[id] < d.max; }); }
-    openForge() {
-      const back = this.offer, p = this.player;
-      if (!this.canForge(back)) { LF.audio.play('deny'); return; }
+    // The Forge opens after the stair's card is taken (or the glass instead): everything the lantern carries that can
+    // still grow, each with its price. It is passed by when the glass buys nothing there.
+    forgeThen(then) {
+      const p = this.player;
       const held = () => p.relicOrder.map(id => LF.RELICS[id]).filter(d => d && d.rarity !== 'boon' && p.relics[d.id] < d.max);
-      this.openOffer({ title: 'The Forge', sub: 'Glass forges a rank into a relic you carry.', relics: held(), held, forge: true, canSkip: true, dim: true, noReroll: true,
-        onDone: () => { back.t = 1; back.sel = 0; back.forgeSeen = true; back.relics = back.relics.filter(d => d.pseudo || !(p.relics[d.id] >= d.max)); this.offer = back; this.state = 'relic'; LF.ui.enter(this, 'relic'); } });
+      if (!held().some(d => p.glass >= this.forgeCost(d))) { then(); return; }
+      this.openOffer({ title: 'The Forge', sub: 'Glass forges a rank into a relic you carry.', relics: held(), held, forge: true, canSkip: true, dim: true, noReroll: true, onDone: () => then() });
     }
     rerollOffer() {
       const o = this.offer, p = this.player;
@@ -1237,14 +1251,14 @@
             const relics = roll(), sh = dusk ? [1] : [];
             if (!relics.length) { take(); return; }
             this.openOffer({
-              title: 'The Stair Offers a Gift', relics, canSkip: false, dim: true, reroll: roll, altGlass: glass, forgeable: true,
+              title: 'The Stair Offers a Gift', relics, canSkip: false, dim: true, reroll: roll, altGlass: glass,
               sub: sh.length ? 'Your flame is nearly out. The stair shows a failing lantern one thing more.' : clean ? 'You left nothing alive behind you: one more to choose from.' : 'Take one with you into the dark below.',
-              onDone: picked => { if (!picked) take(); else next(); },
+              onDone: picked => { if (!picked) { p.glass += glass; this.run.glass += glass; } this.forgeThen(next); },
             });
           };
           // after a great shadow the shard is the stair's gift: one offer, with one more to choose from, not two in a row
           const shard = boss ? LF.rollRelics(p, cards + 1, { rng: this.rng, floor: this.floor, minRarity: 'rare' }) : [];
-          if (shard.length) this.openOffer({ title: 'A Shard of the Lantern', minRarity: 'rare', sub: 'The shadow had closed around this. It is yours now.', relics: shard, canSkip: false, dim: true, forgeable: true, onDone: () => next() });
+          if (shard.length) this.openOffer({ title: 'A Shard of the Lantern', minRarity: 'rare', sub: 'The shadow had closed around this. It is yours now.', relics: shard, canSkip: false, dim: true, onDone: () => this.forgeThen(next) });
           else stair();
           return;
         }
@@ -1396,8 +1410,10 @@
       }
       if (this.mode === 'rush' ? this.depth >= this.rushLen() : this.floor === 9) this.victoryReady = true;
       if (this.mode === 'rush') { const pl = this.player; pl.bonusMax += 15; pl.recalc(); pl.addLight(pl.stats.maxLight); fx.text(pl.x, pl.y - 44, '+6 max embers', '#ffe2a6', 13, 1.6); }
-      this.banner = { text: e.def.name + ' is unmade', sub: this.floor === 9 ? (this.mode === 'descent' ? (this.loop >= 4 ? 'Beneath it, the Great Lantern. It has gone out' : 'Beneath it, a shard of the Lantern') : 'A stair of pale light rises') : 'The way down lies open', t: 0, dur: 4, small: true };
+      this.banner = { text: e.def.name + ' is unmade', sub: this.floor === 9 ? (this.mode === 'descent' ? (this.loop >= LF.LAST_DEPTH ? 'Beneath it, the Great Lantern. It has gone out' : 'Beneath it, a shard of the Lantern') : 'A stair of pale light rises') : 'The way down lies open', t: 0, dur: 4, small: true };
       LF.audio.play('gateOpen');
+      // a line of what the shadow knew, once the banner has gone (js/sections.js and each shadow's `lore`)
+      if (e.def.lore && this.mode !== 'rush') this.delay(4.2, () => { if (!this.player.dead) this.toast(e.def.name, e.def.lore, '#e2c9ff', 'eye', '#e2c9ff', 9); });
     }
 
     // ---------------------------------------------------------- frame update
@@ -1593,13 +1609,15 @@
         if ((r.type === 'ambush' || r.type === 'trial') && r.sealed) {
           // safety net: a creature that cannot reach the player is moved; a seal never lasts forever
           r.sealT = (r.sealT || 0) + dt;
-          if (r.sealT > 40 && Math.floor(r.sealT) !== Math.floor(r.sealT - dt)) {
+          if (r.sealT > 20 && Math.floor(r.sealT) !== Math.floor(r.sealT - dt)) {
             for (const e of this.enemies) {
-              if (e.dead || e.room !== r.id || e.def.ghost || e.spawnT > 0) continue;
-              if (map.flowDist(e.x, e.y) === 65535 || map.solidAt(e.x, e.y)) { const sp = map.randomSpot(r, this.rng, 1, p, 120); e.x = sp.x; e.y = sp.y; }
+              if (e.dead || e.room !== r.id || e.spawnT > 0) continue;
+              const outside = e.x < r.x * TILE || e.y < r.y * TILE || e.x > (r.x + r.w) * TILE || e.y > (r.y + r.h) * TILE;
+              if (outside || map.flowDist(e.x, e.y) === 65535 || map.solidAt(e.x, e.y)) { const sp = map.randomSpot(r, this.rng, 1, p, 120); e.x = sp.x; e.y = sp.y; e.kx = 0; e.ky = 0; }
             }
           }
-          if (r.sealT > 200) for (const e of this.enemies) if (!e.dead && e.room === r.id) { e.noDrops = true; this.killEnemy(e, { type: 'self' }); }
+          // and if it still holds after a while, the gates give way by themselves: whatever is left is unmade, no more waves come
+          if (r.sealT > LF.TUNE.ambushOpen * (r.type === 'trial' ? 2 : 1)) { r.pending = []; for (const e of this.enemies) if (!e.dead && e.room === r.id) { e.noDrops = true; this.killEnemy(e, { type: 'self' }); } }
           let alive = 0;
           for (const e of this.enemies) if (!e.dead && e.room === r.id) alive++;
           if (alive === 0) {
@@ -1646,6 +1664,9 @@
       LF.compact(this.ebullets);
       for (const pk of this.pickups) if (!pk.dead) pk.update(dt, this);
       LF.compact(this.pickups);
+
+      // the section's own feature (js/features.js)
+      { const F = this.section && LF.FEATURES[this.section.feature]; if (F && F.update) F.update(this, dt); }
 
       // floor hazards: idle, then a warning, then the strike
       for (const pr of this.props) {

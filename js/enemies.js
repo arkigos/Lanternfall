@@ -118,11 +118,18 @@
       } else this.burnAge = 0;
       if (this.dotT > 0) { this.dotT -= dt; if (this.dotT <= 0 && this.dotAcc >= 1) { fx.text(this.x + LF.rand(-6, 6), this.y - this.r - 6, String(Math.round(this.dotAcc)), '#ffb36b', 10, 0.6); this.dotAcc = 0; } }
       // knockback
+      // A shove is capped, and taken in short steps against the walls, so no blow can throw a creature through a wall
+      // or out of a sealed room. Even a creature that walks through walls stops at one when it is thrown.
       if (this.kx || this.ky) {
-        this.x += this.kx * dt; this.y += this.ky * dt;
+        { const sp = Math.hypot(this.kx, this.ky), cap = LF.TUNE.shoveCap; if (sp > cap) { this.kx *= cap / sp; this.ky *= cap / sp; } }
+        const mx = this.kx * dt, my = this.ky * dt, steps = Math.max(1, Math.ceil(Math.hypot(mx, my) / 6));
+        for (let i = 0; i < steps; i++) {
+          const ox = this.x, oy = this.y; this.x += mx / steps; this.y += my / steps;
+          if (!d.ghost) g.map.resolveCircle(this, this.r);
+          else if (g.map.solidAt(this.x, this.y) && !g.map.solidAt(ox, oy)) { this.x = ox; this.y = oy; this.kx = 0; this.ky = 0; break; }
+        }
         const k = Math.max(0, 1 - 7 * dt); this.kx *= k; this.ky *= k;
         if (Math.abs(this.kx) + Math.abs(this.ky) < 4) { this.kx = 0; this.ky = 0; }
-        if (!d.ghost) g.map.resolveCircle(this, this.r);
       }
       if (this.stun > 0 && d.noStun) this.stun = 0; // part of a great shadow: nothing stuns it
       if (this.stun > 0) { this.stun -= dt; this.holdShackle(g); return; }

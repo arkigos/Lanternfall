@@ -388,7 +388,7 @@
         // (the Flail and Cast Chains swell the censers for a moment: a bigger thing on the same chain, so whatever is leashed to the bearer stays in its path)
         { const big = (this.flingT > 0 ? 2 : 1) * (flail ? 1.5 : 1); this.guardBig = (this.guardBig || 1) + (big - (this.guardBig || 1)) * Math.min(1, dt * 10); }
         const fat = this.guardBig;
-        const hard = (1 + s.chainMul) * (flail ? 1 + 2 * s.flail : 1);
+        const hard = (1 + s.chainMul) * (flail ? Math.pow(1 + 2 * s.flail, LF.TUNE.flat) : 1);
         this.guardR = (this.guardR || reach) + (reach - (this.guardR || reach)) * Math.min(1, dt * 12);
         const R = this.guardR;
         // (clockwise, so the chain's arc trails behind the censer it drives)
@@ -964,8 +964,12 @@
       if (this.kind === 'relic') want = false;
       const reach = p.stats.glean ? Math.max(p.stats.pickup, p.lightR) : p.stats.pickup;
       if (want && d < reach) {
+        // Steered, not only pushed: once in reach it turns toward the bearer at once and keeps up with them, so a
+        // close pass at a run still gathers it (the reach itself is unchanged).
         const pull = 900 * (1 - d / reach) + 220;
         this.vx += (p.x - this.x) / d * pull * dt; this.vy += (p.y - this.y) / d * pull * dt;
+        const sp = 240 + 520 * (1 - d / reach) + Math.hypot(p.vx || 0, p.vy || 0), k = Math.min(1, 9 * dt);
+        this.vx += ((p.x - this.x) / d * sp - this.vx) * k; this.vy += ((p.y - this.y) / d * sp - this.vy) * k;
       }
       this.x += this.vx * dt; this.y += this.vy * dt;
       g.map.resolveCircle(this, 3);

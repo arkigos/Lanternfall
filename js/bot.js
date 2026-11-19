@@ -80,8 +80,6 @@
       const canReroll = g.canReroll(o) && (p.rerolls > 0 || (opts.glass !== 'forge' && p.glass - g.rerollPrice(o) >= saving(p))); // opts.glass 'forge': glass goes to the Forge and nowhere else
       const done = (pick, why) => {
         if (o.cursed && !opts.cursed) pick = -1;
-        // the Forge is a button on a stair's or a shard's offer: the bot looks in once, after any rerolls, before it takes a card
-        if (o.forgeable && !o.forgeSeen && opts.forge !== false && g.canForge(o) && p.relicOrder.some(id => { const d = LF.RELICS[id]; return d && p.relics[id] < d.max && p.glass >= g.forgeCost(d); })) { o.forgeSeen = true; g.openForge(); return; }
         st.offers.push({ d: g.depth, k: kind, off: ids, pick: pick >= 0 ? ids[pick] : null, why });
         g.pickOffer(pick);
       };

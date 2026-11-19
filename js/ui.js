@@ -513,7 +513,7 @@
     const dline = (dd ? 'Today\'s descent: ' + LF.placeIn(dd.best) + (dd.won ? ', shard reached' : '') + ' in ' + dd.tries + (dd.tries === 1 ? ' try' : ' tries') : 'Daily: one seed a day') + (g.meta.vigilBest ? '   ·   Longest vigil: wave ' + g.meta.vigilBest : '   ·   Vigil: endless waves') + (rushOpen ? (g.meta.rushWins ? '   ·   Gauntlets run: ' + g.meta.rushWins : '') : '   ·   Gauntlet: fell 3 shadows to open');
     txt(dline, W / 2, y + sh + 16 * u, 12, dd ? '#9dffcf' : '#77747e', 'center', LF.FONT_UI, 'italic');
     if (LF.makeBot && button('Watch a descent', x + bw * 0.2, y + sh + 32 * u, bw * 0.6, 30 * u, { size: 12 })) { g.startDemo(); return; }
-    const st = `Deepest: ${g.meta.best ? LF.placeIn(g.meta.best) : 'none'}   ·   Descents: ${g.meta.runs}   ·   Shards: ${Math.min(5, g.meta.shards || 0)} of 5`;
+    const st = `Deepest: ${g.meta.best ? LF.placeIn(g.meta.best) : 'none'}   ·   Descents: ${g.meta.runs}   ·   Shards: ${Math.min(LF.SHARDS.length, g.meta.shards || 0)} of ${LF.SHARDS.length}`;
     txt(st, W / 2, H - 34 * u, 13, '#7d786f', 'center');
     txt('Made in one night by Claude', W / 2, H - 14 * u, 10.5, '#55524c', 'center', LF.FONT_UI, 'italic');
   }
@@ -612,7 +612,7 @@
       [touch ? 'Dash' : 'Dash (space)', 'A short burst of speed that passes through attacks. Costs about an ember.'],
       ['Fires hold the dark off', 'Beside a lit brazier or a relit wall lamp your embers stop burning down. A brazier also refills you when lit, and, with nothing near, mends you up to half while you rest there.'],
       ['Relics', 'Your lantern carries the first relic of its theme from the first step. Every stair offers three, and you may reroll them for glass. Unmake nearly everything on a floor for one more to choose from. A reliquary holds three humbler things; a statue gives a blessing; a Trial of Embers leaves a great work; an altar offers a bargain.'],
-      ['Glass and cinders', 'Glass has two uses at a stair, and each takes from the other. The Forge button ranks up a relic you carry: ' + LF.TUNE.forgeII + ' glass for rank II, and dearer with every rank it already holds. A reroll shows you new cards: the first is cheap, and each after it on the same offer costs more. Offers are dealt from the whole deck, so some will hold nothing for you. Glass also buys forms from the Chandler, and a form is dear. Cinders are earned at the end and spent at the Hearth.'],
+      ['Glass and cinders', 'Glass has two uses at a stair, and each takes from the other. After the card, the Forge ranks up a relic you carry: ' + LF.TUNE.forgeII + ' glass for rank II, and dearer with every rank it already holds. A reroll shows you new cards: the first is cheap, and each after it on the same offer costs more. Offers are dealt from the whole deck, so some will hold nothing for you. Glass also buys forms from the Chandler, and a form is dear. Cinders are earned at the end and spent at the Hearth.'],
     ];
     ctx.font = `${Math.round(13 * u)}px ${LF.FONT_UI}`;
     const wrapped = rows.map(r => LF.wrapText(ctx, r[1], w - 44 * u).slice(0, 4));
@@ -678,7 +678,7 @@
       if (k) portrait(g, b[0], pcx, y + ch / 2, ps);
       else { ctx.fillStyle = 'rgba(10,10,18,0.8)'; ctx.beginPath(); ctx.arc(pcx, y + ch / 2, ps * 0.55, 0, TAU); ctx.fill(); txt('?', pcx, y + ch / 2 + 1 * u, 20, '#4a4852', 'center', LF.FONT_TITLE, '700'); }
       const fs = NAR ? 10.5 : 11.5, lh = NAR ? 13 : 15, maxL = Math.max(1, Math.floor((ch - 26 * u) / (lh * u)));
-      txt(k ? def.name : (b[2] ? 'A great shadow  ·  Level ' + (LF.BOSS_SETS.findIndex(s => s.includes(b[0])) + 1) * 3 : 'Not yet met'), tx, y + 16 * u, NAR ? 12.5 : 14, k ? (b[2] ? '#e2c9ff' : '#f3e9d6') : '#6f6c78', 'left', LF.FONT_UI, 'bold');
+      txt(k ? def.name : (b[2] ? 'A great shadow  ·  ' + LF.bossPlace(b[0]) : 'Not yet met'), tx, y + 16 * u, NAR ? 12.5 : 14, k ? (b[2] ? '#e2c9ff' : '#f3e9d6') : '#6f6c78', 'left', LF.FONT_UI, 'bold');
       if (k) { ctx.font = `${Math.round(fs * u)}px ${LF.FONT_UI}`; LF.wrapText(ctx, b[1], cw - (tx - x) - 8 * u).slice(0, maxL).forEach((l, j) => txt(l, tx, y + (NAR ? 31 : 38) * u + j * lh * u, fs, '#b9ad96')); }
     });
     tabs(g, 'shadows');
@@ -1106,11 +1106,10 @@
       if (button(o.buy ? 'Leave it on the pedestal' : 'Walk away', bx, by, bw1, 44 * u, o.buy ? { back: true, size: 13 } : { back: true }) && o.t > 0.35) chosen = -1;
     }
     else {
-      const rr = !o.noReroll && !o.cursed, alt = o.altGlass > 0, keep = !!o.mend, fg = !!o.forgeable, cnt = (rr ? 1 : 0) + (alt ? 1 : 0) + (keep ? 1 : 0) + (fg ? 1 : 0);
+      const rr = !o.noReroll && !o.cursed, alt = o.altGlass > 0, keep = !!o.mend, cnt = (rr ? 1 : 0) + (alt ? 1 : 0) + (keep ? 1 : 0);
       const bw2 = Math.min(250 * u, (W - 32 * u - (cnt - 1) * 12 * u) / Math.max(1, cnt));
       const total = cnt * bw2 + (cnt - 1) * 12 * u; let bx = (W - total) / 2;
       if (rr) { if (button(o.free ? 'Show the others' : rerollLabel(g, o), bx, by, bw2, 44 * u, { size: NAR ? 13 : 14 }) || inp.reroll) { g.rerollOffer(); return; } bx += bw2 + 12 * u; }
-      if (fg) { if ((button('The Forge  \u00b7  \u25c6 ' + Math.floor(g.player.glass), bx, by, bw2, 44 * u, { size: NAR ? 13 : 14 }) || inp.forge) && o.t > 0.35) { LF.audio.play('uiSelect'); g.openForge(); return; } bx += bw2 + 12 * u; }
       if (alt && button('Leave them: take ' + o.altGlass + ' glass', bx, by, bw2, 44 * u, { size: NAR ? 13 : 14, back: true }) && o.t > 0.35) chosen = -1;
       if (keep && button('Done: keep the glass', bx, by, bw2, 44 * u, { size: NAR ? 13 : 14, back: true }) && o.t > 0.35) chosen = -1;
     }
@@ -1142,7 +1141,7 @@
     ctx.globalAlpha = a;
     const ty = NAR ? 80 * u : H * 0.17;
     bigTitle('Your light went out', ty, NAR ? 34 : 50, '#ffb3a0');
-    const sb = wtxt('Snuffed by ' + (g.run.cause || 'the dark') + (g.mode === 'vigil' ? ' during wave ' + (g.vigil ? g.vigil.wave : 0) : g.mode === 'rush' ? (g.practice ? ' in rehearsal' : ', shadow ' + (g.run.depth || g.depth) + ' of the Gauntlet') : ' on ' + LF.placeIn(g.run.depth || g.depth) + (() => { const f = (((g.run.depth || g.depth) - 1) % 9) + 1, what = g.loop >= 4 ? 'The Lantern' : 'The shard'; return f < 9 ? '. ' + what + ' lies ' + (9 - f) + (9 - f === 1 ? ' level' : ' levels') + ' below' : '. ' + what + ' was within reach'; })()), W / 2, ty + (NAR ? 38 : 48) * u, NAR ? 14 : 16, '#c9bfae', W - 40 * u, 18, 'italic');
+    const sb = wtxt('Snuffed by ' + (g.run.cause || 'the dark') + (g.mode === 'vigil' ? ' during wave ' + (g.vigil ? g.vigil.wave : 0) : g.mode === 'rush' ? (g.practice ? ' in rehearsal' : ', shadow ' + (g.run.depth || g.depth) + ' of the Gauntlet') : ' on ' + LF.placeIn(g.run.depth || g.depth) + (() => { const f = (((g.run.depth || g.depth) - 1) % 9) + 1, what = g.loop >= LF.LAST_DEPTH ? 'The Lantern' : 'The shard'; return f < 9 ? '. ' + what + ' lies ' + (9 - f) + (9 - f === 1 ? ' level' : ' levels') + ' below' : '. ' + what + ' was within reach'; })()), W / 2, ty + (NAR ? 38 : 48) * u, NAR ? 14 : 16, '#c9bfae', W - 40 * u, 18, 'italic');
     const y = statRows(g, NAR ? sb + 24 * u : H * 0.3);
     if (g.run.tip) wtxt('Tip: ' + g.run.tip, W / 2, H - (NAR ? 40 : 26) * u, 13, '#a89f90', W - 40 * u, 16, 'italic');
     ctx.globalAlpha = 1;
@@ -1163,16 +1162,16 @@
     sun.addColorStop(0, 'rgba(255,236,190,0.9)'); sun.addColorStop(0.4, 'rgba(255,170,90,0.35)'); sun.addColorStop(1, 'rgba(255,120,60,0)');
     ctx.fillStyle = sun; ctx.fillRect(0, 0, W, H);
     const ty = NAR ? 80 * u : H * 0.15;
-    bigTitle(g.practice ? 'Rehearsed' : g.mode === 'rush' ? 'The Gauntlet Is Run' : g.loop >= 4 ? 'The Vigil Is Kept' : 'A Shard of the Lantern', ty, g.mode === 'rush' || g.loop < 4 ? (NAR ? 34 : 50) : (NAR ? 36 : 60), '#fff2d6');
-    const sb = wtxt(g.practice ? (g.run.finalBoss || 'The shadow') + ' is unmade, for now. Nothing was won or lost; below, it is still waiting.' : g.mode === 'rush' ? 'Six great shadows, one lantern, no rest between. The dark will remember this.' : g.loop >= 4 ? 'You set your lantern down inside the Great Lantern and do not take it up again. You were the ember it was waiting for. Far above, in a city that had forgotten the colour, the windows are turning gold.' : g.run.shard ? LF.SHARDS[g.run.shard - 1].name + ' is yours, for this descent and every one after it. ' + LF.SHARDS[g.run.shard - 1].power + ' ' + ['Four more lie', 'Three more lie', 'Two more lie', 'Only the Lantern itself lies'][g.run.shard - 1] + ' below.' : (g.run.finalBoss || 'The shadow') + ' is unmade again. You carry this shard already; the next one lies deeper.', W / 2, ty + (NAR ? 46 : 56) * u, NAR ? 14 : 16, '#f3e2c6', W - 40 * u, 19, 'italic');
+    bigTitle(g.practice ? 'Rehearsed' : g.mode === 'rush' ? 'The Gauntlet Is Run' : g.loop >= LF.LAST_DEPTH ? 'The Vigil Is Kept' : 'A Shard of the Lantern', ty, g.mode === 'rush' || g.loop < LF.LAST_DEPTH ? (NAR ? 34 : 50) : (NAR ? 36 : 60), '#fff2d6');
+    const sb = wtxt(g.practice ? (g.run.finalBoss || 'The shadow') + ' is unmade, for now. Nothing was won or lost; below, it is still waiting.' : g.mode === 'rush' ? 'Six great shadows, one lantern, no rest between. The dark will remember this.' : g.loop >= LF.LAST_DEPTH ? 'You set your lantern down inside the Great Lantern and do not take it up again. You were the ember it was waiting for. Far above, in a city that had forgotten the colour, the windows are turning gold.' : g.run.shard ? LF.SHARDS[g.run.shard - 1].name + ' is yours, for this descent and every one after it. ' + LF.SHARDS[g.run.shard - 1].power + ' ' + ['Four more lie', 'Three more lie', 'Two more lie', 'Only the Lantern itself lies'][g.run.shard - 1] + ' below.' : (g.run.finalBoss || 'The shadow') + ' is unmade again. You carry this shard already; the next one lies deeper.', W / 2, ty + (NAR ? 46 : 56) * u, NAR ? 14 : 16, '#f3e2c6', W - 40 * u, 19, 'italic');
     const y = statRows(g, NAR ? sb + 26 * u : H * 0.3);
     const un = g.run.unlocks || [];
     un.forEach((s, i) => txt(s, W / 2, y + 6 * u + i * 22 * u, NAR ? 12.5 : 14, '#7a4a10', 'center', LF.FONT_UI, 'bold'));
     const gap = 12 * u, bw = Math.min(270 * u, (W - 32 * u - gap) / 2), bh = 48 * u, x0 = (W - bw * 2 - gap) / 2, by = Math.min(H - 70 * u, y + 14 * u + un.length * 22 * u);
     if (ui.t > 1) {
       if (g.mode === 'rush') { if (button(NAR ? 'Again' : g.practice ? 'Face it again' : 'Run it again', x0, by, bw, bh, { size: 15 })) { ui.daily = null; ui.practice = g.practice || null; ui.mode = 'rush'; goDescend(g); return; } }
-      else if (g.loop < 4 && button(NAR ? 'Deeper (Depth ' + LF.ROMAN[g.loop + 1] + ')' : 'Descend deeper  (Depth ' + LF.ROMAN[g.loop + 1] + ')', x0, by, bw, bh, { size: NAR ? 13 : 15 })) { g.continueDeeper(); return; }
-      if (button(NAR ? 'Return' : g.loop >= 4 && g.mode === 'descent' ? 'Let it burn' : 'Return with the light', x0 + bw + gap, by, bw, bh, { size: 15 })) { g.state = 'title'; ui.enter(g, 'title'); LF.audio.intensity = 0; }
+      else if (g.loop < LF.LAST_DEPTH && button(NAR ? 'Deeper (Depth ' + LF.ROMAN[g.loop + 1] + ')' : 'Descend deeper  (Depth ' + LF.ROMAN[g.loop + 1] + ')', x0, by, bw, bh, { size: NAR ? 13 : 15 })) { g.continueDeeper(); return; }
+      if (button(NAR ? 'Return' : g.loop >= LF.LAST_DEPTH && g.mode === 'descent' ? 'Let it burn' : 'Return with the light', x0 + bw + gap, by, bw, bh, { size: 15 })) { g.state = 'title'; ui.enter(g, 'title'); LF.audio.intensity = 0; }
     }
     tooltip();
   }

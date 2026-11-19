@@ -269,7 +269,7 @@
       }
       // biome dressing: decals scattered over open floor, so each third of the descent has its own look
       this.glowDecals = []; this.sigil = null;
-      const bi = Math.max(0, LF.BIOMES.indexOf(b));
+      const bi = b.deco !== undefined ? b.deco : Math.max(0, LF.BIOMES.indexOf(b));
       for (let y = 1; y < map.h - 1; y++) for (let x = 1; x < map.w - 1; x++) {
         if (map.get(x, y) !== T.FLOOR) continue;
         const r = rng.next(), px = x * TILE + 16, py = y * TILE + 16;
@@ -448,6 +448,9 @@
         }
       }
 
+      // the section's own feature, on the floor under everything else (js/features.js)
+      { const F = g.section && LF.FEATURES[g.section.feature]; if (F && F.floor) F.floor(ctx, g, g.time, inView); }
+
       // props (bodies)
       for (const pr of g.props) if (inView(pr.x, pr.y, 80)) this.drawProp(ctx, pr, g);
 
@@ -520,7 +523,7 @@
       for (const pk of g.pickups) { const r = pk.kind === 'relic' ? 60 : pk.kind === 'ember' ? 26 : 16; lc.drawImage(white, pk.x - r, pk.y - r, r * 2, r * 2); }
       for (const pr of g.props) {
         if (!inView(pr.x, pr.y, 120)) continue;
-        if (pr.kind === 'exit' && !pr.hidden) { if (g.victoryReady && g.mode === 'descent') { const hs = g.loop >= 4 ? 300 : 180; lc.globalAlpha = 1; lc.drawImage(white, pr.x - hs, pr.y - hs, hs * 2, hs * 2); } else { lc.globalAlpha = 0.6; lc.drawImage(white, pr.x - 70, pr.y - 70, 140, 140); } }
+        if (pr.kind === 'exit' && !pr.hidden) { if (g.victoryReady && g.mode === 'descent') { const hs = g.loop >= LF.LAST_DEPTH ? 300 : 180; lc.globalAlpha = 1; lc.drawImage(white, pr.x - hs, pr.y - hs, hs * 2, hs * 2); } else { lc.globalAlpha = 0.6; lc.drawImage(white, pr.x - 70, pr.y - 70, 140, 140); } }
         else if (pr.kind === 'chest' && !pr.opened) { lc.globalAlpha = 0.45; lc.drawImage(white, pr.x - 46, pr.y - 46, 92, 92); }
         else if (pr.kind === 'shrine' && !pr.used) { lc.globalAlpha = 0.5; lc.drawImage(white, pr.x - 60, pr.y - 60, 120, 120); }
         else if (pr.kind === 'pedestal' && !pr.sold) { lc.globalAlpha = 0.5; lc.drawImage(white, pr.x - 44, pr.y - 44, 88, 88); }
@@ -529,6 +532,7 @@
         else if ((pr.kind === 'statue' || pr.kind === 'trial') && !pr.used) { lc.globalAlpha = 0.5; lc.drawImage(white, pr.x - 60, pr.y - 60, 120, 120); }
         else if (pr.kind === 'trap' && pr.state) { lc.globalAlpha = pr.state === 2 ? 0.7 : 0.4; lc.drawImage(white, pr.x - 46, pr.y - 46, 92, 92); }
         else if (pr.kind === 'lamp' && pr.lit) { lc.globalAlpha = 0.62; lc.drawImage(white, pr.x - 84, pr.y - 76, 168, 168); }
+        else if (pr.kind === 'feat') { const F = LF.FEATURES[pr.feat]; if (F && F.light) { F.light(lc, white, g, pr); lc.globalAlpha = 0.5; } }
       }
       for (const e of g.enemies) if (!e.dead && e.def.light) e.def.light(e, lc, white, g);
       lc.globalAlpha = 1;
@@ -711,7 +715,7 @@
         }
         case 'exit':
           if (pr.hidden) break;
-          if (g.victoryReady && g.mode === 'descent' && g.loop < 4) {
+          if (g.victoryReady && g.mode === 'descent' && g.loop < LF.LAST_DEPTH) {
             // a shard of the Great Lantern: a curved splinter of its glass with fire still caught in it
             ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.ellipse(x, y + 18, 26, 8, 0, 0, TAU); ctx.fill();
             ctx.fillStyle = '#3a2410'; ctx.beginPath(); ctx.moveTo(x - 6, y - 36); ctx.lineTo(x + 15, y - 12); ctx.lineTo(x + 8, y + 18); ctx.lineTo(x - 12, y + 14); ctx.lineTo(x - 17, y - 8); ctx.closePath(); ctx.fill();
@@ -740,6 +744,7 @@
           ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x - 6, y - 6, 2, 12);
           break;
         case 'trap': drawTrap(ctx, pr, x, y, g.time); break;
+        case 'feat': { const F = LF.FEATURES[pr.feat]; if (F && F.draw) F.draw(ctx, g, pr, x, y, g.time); } break;
         case 'lamp':
           ctx.fillStyle = '#2a2622'; ctx.fillRect(x - 1.5, y - 14, 3, 9);
           ctx.fillStyle = pr.lit ? '#6b5433' : '#34302b'; ctx.beginPath(); ctx.moveTo(x - 5, y - 6); ctx.lineTo(x + 5, y - 6); ctx.lineTo(x + 3.5, y - 1); ctx.lineTo(x - 3.5, y - 1); ctx.closePath(); ctx.fill();
@@ -802,6 +807,7 @@
           break;
         case 'chest': if (!pr.opened) drawGlow(ctx, pr.locked ? '#7a6ad0' : '#ffe08a', x, y - 4, 26 + Math.sin(t * 3) * 3, 0.35); break;
         case 'trap': glowTrap(ctx, pr, x, y, t); break;
+        case 'feat': { const F = LF.FEATURES[pr.feat]; if (F && F.glow) F.glow(ctx, g, pr, x, y, t); } break;
         case 'lamp':
           if (!pr.lit) break;
           ctx.fillStyle = 'rgba(255,214,150,0.95)'; ctx.beginPath(); ctx.ellipse(x, y - 9 + Math.sin(t * 9 + pr.x) * 0.6, 2, 3.4, 0, 0, TAU); ctx.fill();
@@ -833,7 +839,7 @@
         case 'exit':
           if (pr.hidden) break;
           if (g.victoryReady && g.mode === 'descent') {
-            const beat = 0.5 + 0.5 * Math.sin(t * 1.3), big = g.loop >= 4, sc = big ? 1 : 0.5, nr = big ? 12 : 7;
+            const beat = 0.5 + 0.5 * Math.sin(t * 1.3), big = g.loop >= LF.LAST_DEPTH, sc = big ? 1 : 0.5, nr = big ? 12 : 7;
             drawGlow(ctx, '#ffb347', x, y, (230 + beat * 40) * sc, 0.4); drawGlow(ctx, '#fff2cc', x, y, (80 + beat * 16) * sc, 0.85);
             ctx.fillStyle = `rgba(255,236,190,${0.75 + 0.2 * beat})`; ctx.beginPath(); ctx.arc(x, y, (15 + beat * 3) * sc, 0, TAU); ctx.fill();
             ctx.strokeStyle = 'rgba(255,214,150,0.35)'; ctx.lineWidth = 3; ctx.lineCap = 'round';

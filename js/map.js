@@ -357,7 +357,7 @@
   LF.generateFloor = function (floor, seed, opts = {}) {
     const rng = new LF.RNG(seed);
     const loop = opts.loop || 0;
-    GEN = { omen: opts.omen || null };
+    GEN = { omen: opts.omen || null, feature: opts.feature || null };
     if (floor % 3 === 0) return generateBossFloor(floor, rng, loop, opts);
 
     const W = Math.min(60 + floor * 3, 84), H = Math.min(44 + floor * 2, 60);
@@ -521,9 +521,12 @@
           const sp = map.randomSpot(r, rng, 2);
           map.props.push({ kind: 'brazier', x: sp.x, y: sp.y, lit: false, room: r.id });
         }
-        if (floor >= 2 && rng.chance(0.3)) {
+        // a section's own feature lays out what it needs in each room (js/features.js); Depth I's are the floor hazards below
+        { const F = LF.FEATURES[GEN.feature]; if (F && F.populate) F.populate(map, r, rng, floor); }
+        const own = !GEN.feature || GEN.feature === 'geyser' || GEN.feature === 'grasp' || GEN.feature === 'vent';
+        if (floor >= 2 && rng.chance(0.3) && own) {
           // floor hazards on a visible cycle, by biome: burst drains, the grasping dark, ruptured lamp-oil mains
-          const sub = floor <= 3 ? 'geyser' : floor <= 6 ? 'grasp' : 'vent', nt = rng.int(2, 4);
+          const sub = GEN.feature || (floor <= 3 ? 'geyser' : floor <= 6 ? 'grasp' : 'vent'), nt = rng.int(2, 4);
           for (let j = 0; j < nt; j++) {
             const sp = map.randomSpot(r, rng, 2, { x: r.cx * TILE, y: r.cy * TILE }, 40);
             map.props.push({ kind: 'trap', sub, x: sp.x, y: sp.y, room: r.id, phase: rng.range(0, 4), period: sub === 'vent' ? 4.2 : 3.6 });

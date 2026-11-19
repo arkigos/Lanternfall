@@ -7,14 +7,15 @@ of the world. Between one bell and the next, the chain broke. It fell through th
 and that is the Lanternfall. It broke as it fell, and it is going out. You are the last of the four born to keep
 the Vigil, the one flame held back to relight it, following its shards down to where it lies.
 
-**Five Depths.** Nine Levels make a Depth, and each of the first four ends at a shard of the Lantern. A shard is kept for
+**Six Depths.** Nine Levels make a Depth, and each of the first five ends at a shard of the Lantern. A shard is kept for
 every descent after: Morning (+25 light, slower burn), the Rites (start with a rite), the Chain (two more
-rerolls and one more choice at every stair), the Heart (one free rekindling per descent). Every descent
-begins at the top of the first Depth; the deeper ones are reached by carrying on down in the same run. The fifth
-Depth ends at the Great Lantern, and you become the ember that lights it.
+rerolls and one more choice at every stair), the Heart (one free rekindling per descent), the Road (start with 40
+glass). Every descent begins at the top of the first Depth; the deeper ones are reached by carrying on down in the
+same run. The sixth Depth ends at the Great Lantern, and you become the ember that lights it.
 
-Nine Levels to a Depth, three biomes, nine bosses, 144 relics, five starting lanterns, vows, a daily seed,
-and an endless wave-survival mode (The Long Vigil).
+Nine Levels to a Depth, eighteen places to pass through, each with something of its own, and eighteen great
+shadows, each waiting at the end of its own place. Five starting lanterns, vows, a daily seed, and an endless
+wave-survival mode (The Long Vigil).
 
 Play it in the browser: https://arkigos.github.io/Lanternfall/
 Or open `Lanternfall-standalone.html` in any browser (one file, no server needed).

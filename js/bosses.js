@@ -51,7 +51,8 @@
   }
   function pickAttack(e, list) {
     let a;
-    do { a = LF.pick(list); } while (list.length > 1 && a === e.lastAtk);
+    const fresh = list.filter(x => x !== e.lastAtk); // (never loops: a list of one repeated attack just repeats it)
+    a = LF.pick(fresh.length ? fresh : list);
     e.lastAtk = a;
     return a;
   }
