@@ -933,7 +933,7 @@
         if (!kind || this.player.stats.flareBurn) this.ignite(e, this.player.stats.burnBase);
         e.mark = Math.max(e.mark, 3 + this.player.stats.markTime);
         if (!e.boss) {
-          e.stun = Math.max(e.stun, stun);
+          if (!e.elite && e.r <= LF.TUNE.stunSize) e.stun = Math.max(e.stun, stun); // the flare stuns only small creatures: no elites, nothing heavy
           const a = Math.atan2(e.y - y, e.x - x); e.kx += Math.cos(a) * 280; e.ky += Math.sin(a) * 280;
           if (e.def.onStun) e.def.onStun(e, this);
         }
@@ -975,7 +975,7 @@
         if (ps.flareWax) this.waxEnemy(e);
         if (ps.flareBurn) this.ignite(e, ps.burnBase);
         e.mark = Math.max(e.mark, 3 + this.player.stats.markTime);
-        if (!e.boss) { e.stun = Math.max(e.stun, stun); e.kx += cx * 300; e.ky += cy * 300; if (e.def.onStun) e.def.onStun(e, this); }
+        if (!e.boss) { if (!e.elite && e.r <= LF.TUNE.stunSize) e.stun = Math.max(e.stun, stun); e.kx += cx * 300; e.ky += cy * 300; if (e.def.onStun) e.def.onStun(e, this); }
       }
       if (ps.flareHeal && touched && !this.player.dead) { this.player.addLight(ps.flareHeal * touched); fx.text(this.player.x, this.player.y - 34, '+' + Math.round(ps.flareHeal * touched / 2.5 * 10) / 10 + ' embers', '#fff0b8', 11, 0.9); }
       for (const b of this.ebullets) if (!b.dead && near(b.x, b.y, 6)) { b.dead = true; fx.burst(b.x, b.y, 4, { color: '#ffb347', speed1: 80, life: 0.3 }); }

@@ -417,15 +417,15 @@
     const free = rng.shuffle(rooms.filter(r => r.type === 'normal'));
     free.sort((a, b) => a.links.length - b.links.length); // dead ends first for special rooms
     const take = () => free.shift();
-    if (free.length) take().type = 'treasure';
+    // Fewer offerings: a reliquary on only some Levels (TUNE.reliquary), never two, and fewer vaults (TUNE.vault)
+    if (free.length && rng.chance(LF.TUNE.reliquary)) take().type = 'treasure';
     // the Chandler: on some Levels past the first, never on a great shadow's
     if (floor >= 2 && floor % 3 !== 0 && !loop && free.length > 3 && rng.chance(LF.TUNE.chandler)) take().type = 'shop'; // (only a Level with rooms to spare: that keeps the Chandler, and so a form, rare)
     if (free.length > 3 && rng.chance(0.75)) take().type = 'shrine';
     if (floor >= 2 && free.length > 4 && rng.chance(0.5)) take().type = 'trial';
     if (floor >= 2 && free.length > 4 && rng.chance(0.38)) take().type = 'statue';
-    if (free.length > 5 && floor >= 4) take().type = 'treasure';
     if (GEN.omen === 'gilded' && free.length > 2) take().type = 'treasure';
-    if (floor >= 2 && free.length > 4 && rng.chance(0.4)) take().type = 'vault';
+    if (floor >= 2 && free.length > 4 && rng.chance(LF.TUNE.vault)) take().type = 'vault';
     for (const r of free) if (rng.chance(0.38)) r.type = 'ambush';
 
     map.start = { x: startRoom.cx * TILE, y: startRoom.cy * TILE };
